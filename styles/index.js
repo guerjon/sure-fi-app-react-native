@@ -1,0 +1,162 @@
+import {StyleSheet,Dimensions} from 'react-native'
+
+var {width, height} = Dimensions.get('window'); 
+
+const margin = 20
+const title_margin  = 15
+const success_green = "#00DD00"
+const medium_font_size = 18
+const cancel_red = "red"
+
+export  const styles = StyleSheet.create({
+  	mainContainer: {
+      marginVertical:30,
+      flex:1
+    },
+    container: {
+		  flex:1
+  	},
+  	image_container:{
+      flex:1,
+      width:null,
+      height:null
+  	},
+    image_complete_container:{
+      
+      height:height,
+      width:width,
+    },
+  	circleContainer:{
+  		width: width,
+  		height: 170,
+  		alignItems:"center",
+  		top:-930
+  	},
+  	welcome: {
+		fontSize: 20,
+		textAlign: 'center',
+		margin: 10,
+  	},
+  	
+  	coverflow: {
+  		width: width,
+  		height: 350,
+  	},
+  	launchImage:{
+  		width: 1000,
+    	height: 1000,
+    	borderRadius: 500,
+  		alignItems:"center",
+  		justifyContent:"flex-end",
+  		backgroundColor: "#2a323d"
+  	},
+  	textView:{ 
+  		alignItems:"center",
+  	},
+  	text:{
+  		marginTop:40,
+  		fontSize: 20
+  	},
+    bridgeContainer:{
+      flex:1
+    },
+    bridgeImageContainer:{
+      alignItems:"center",
+      justifyContent:"center",
+      width:width,
+      marginVertical:30
+    },
+    bridgeImage:{
+      height:height/4,
+      width:width/2,
+      
+    },
+    bridgeText:{
+      fontSize:22
+    },
+    touchableSectionContainer:{
+      backgroundColor:"white",
+      width:width,
+      alignItems:"center",
+    },
+    pairSectionsContainer:{
+      marginVertical:5,
+    },
+    touchableSection:{
+      width:width,
+      
+    },
+    touchableSectionInner:{
+      flexDirection:"row",
+      alignItems:"center",
+      
+    },
+    touchableSectionInnerImage:{
+      width:width/5,
+      height:height/6,
+      marginHorizontal:20,
+      
+    },
+    touchableSectionInnerText:{
+      fontSize:medium_font_size
+    },
+    titleContainer:{
+       margin:  title_margin
+    },
+    title:{
+      fontSize: 18,
+    },
+    preview: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      alignItems: 'center'
+    },
+    bigButtonContainer:{
+      flex:1,
+      alignItems:"center",
+      justifyContent: "center",      
+      flexDirection: "row",
+    },
+    bigGreenButton:{
+      backgroundColor: success_green,
+      marginHorizontal:10,
+      padding: 20
+    },
+    bigRedButton:{
+      backgroundColor: cancel_red,
+      marginHorizontal:10,
+      padding: 20
+    },    
+    bigGreenButtonText:{
+      color: "white",
+      fontSize:medium_font_size
+    },
+    rowContainer:{
+      marginVertical: 10
+    },
+    rowContainerContainer:{
+      backgroundColor: "white",
+      marginVertical: 10,
+
+    },
+    simpleRow: {
+      borderBottomWidth: 0.5,
+      flexDirection: "row",
+      
+    },
+    simpleRowText:{
+      fontSize: 18,
+      padding: 10
+    }, 
+    white_row : {
+      padding: 10,
+      borderBottomWidth: 0.2,
+    },
+    white_row_text: {
+      fontSize: 18,
+    },
+    link : {
+      color: "#000099"
+    }
+});
+

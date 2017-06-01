@@ -1,0 +1,247 @@
+-----------------+--------------------------android-----------------+--------------------------
+
+MainActivity -- Entry Point
+activity_main.xml -- its just a layout!
+AndroidManifest.xml describes the fundamental characteristics of the app and defines each of its components.
+
+when we added an activity to android we have to do 3 things
+
+1.- add the class NameActivity.java 
+2.- create the name_activity.xml layout file 
+3.- add the <activity> element to the Android Manifest
+
+
+
+How to implement a java's librarys to react-native
+
+we need Create our class and extend the class SimpleViewManager with our type, by example if our class is called "OurClass" then
+
+
+
+public class OurClass extends SimpleVieManager<OurType>
+
+"OurType" can be our own implementation or we can use some react-native classes like a ImageView, EditView,TextView etc...
+
+since this is a extends from SimpleViewManager we must implemented the getName() method and createViewInstance(ThemedReactContext context)
+
+
+
+
+-----------------+--------------------------redux-----------------+--------------------------
+the state, i mean the entire object is of the whole application is stored in an object tree within a single store. 
+
+An actions is a plane object! and is the only way to change something in the principal state.
+
+to make a state change we have to make a dispatch to the store
+
+store.dispatch({
+	//action	
+});
+
+
+
+when a createStore is made, yoy have to pass a redux on in 
+
+by example suppose counter is a function like this
+
+counter(state,action) => {// something}
+
+then you can pass this to a store
+
+var store = Redux.createStore(counter);
+
+
+remember a redux is a function, this take the actual state and an action like parameters
+and return the next state.
+
+Actions must have a type field, in this field the correct action is indicated, this means put a string in the actions by exameple
+
+{
+	type: "ADD_TODO",
+	otherThings...
+}
+
+{
+	type : "CONQUER_THE_WORLD",
+	otherThings
+}
+
+
+Do not put API calls into reducers.
+
+the structre in the app has to be 
+app
+	lb
+	components
+	containers
+	reducers
+	actions
+
+
+-----------------+--------------------------redux-----------------+--------------------------
+
+
+------------------------------------- Basic redux set up ---------------------------------
+1. to do in index.js
+
+	- import Provider from react-redux
+	- pass the store to the Provider element
+	- wrap our principal component App in Provider
+	- save provider in a constant with an arrow function and pass this to AppRegistry
+
+
+
+2. create the constants.js, 
+
+	- here we'll place all the values or strings than can be repet.
+
+3. create the reducers
+
+	- for every reducer its good idea put a initial state
+	- the function of every reducer should have a funcion with state and action like parameters, state = initial state if state is null
+	- in the function we have to check the action.type and return a new state from it, the actions types should be a constant declarated in constans.js
+
+4. combine the reducers in reducers/index.js
+
+	- we need import the funciton combineReducers from 'redux' and pass like an object every reducer in this way combineReducers({reducer1,reducer2,...,reducerN});
+
+5. create the actions
+
+	- the actions are directly linked to the reducers, by example if we have the next reducer
+
+	function reducerX(state = initialState,action){
+		switch(action.type){
+			case ACTION_1:
+				return {
+					...newState1
+				}
+			case ACTION_2:
+				return {
+					...newState2
+				}
+				.
+				.
+				.
+			case ACTION_N:
+				return {
+					...newStateN
+				}
+		}
+	}
+
+	then  in the the actions we have to have actions with the types ACTION_1, ACTION_2,...,ACTION_N this is the razon to have constans.js because in constans we should have this
+
+	export const ACTION_1 = "CONSTANT_TYPE_1";
+	export const ACTION_2 = "CONSTANT_TYPE_2";
+						.
+						.
+						.
+	export const ACTION_3 = "CONSTANT_TYPE_N";
+
+
+	so the actions are functions than must to return  a plain object wit a type attribute using a constant something like this
+
+	function actionX(){
+		return {
+			type: ACTION_1
+		}
+	}
+6. configurate the store 
+
+	- import createStore from redux, and the index.js from reducers (remember here the reducers are combined)
+	- export a function than return createStore(app)  where app are the reduers import i mean import app from 'reducers.js'
+
+7. finally we have to do our app Component
+
+	- we need connect function from react-redux package
+	- declare the function mapStateToProps, this function take like parameter the general state and you have only take a part of it and return like a new state to the App Component
+	- declare the funciton mapDispatchToprops, this function take like parameter the dispatch function here you can pass like parameters to the App Component  
+
+-------------------------------------------------------------------- Basic Redux set up end ---------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------- Bluethooh thing ---------------------------------------------------------------------------------------
+
+Peripherals
+
+	la pieza de metal
+
+Centrals
+
+	Its the Mobile phone 
+
+Generic Access Protocol (GAP)
+	Es un protocolo usado por los perifericos
+	maneja los requisitos de coneccion de los centrales
+	maneja la emisi'on de datos en los perifericos en un lapso de tiempo, es decir esta madre maneja que tan rapido los perifericos emiten los datos y cuales datos.
+	Este protocolo tambi'en dice que multiples centrals pueden leer las emiciones de un mismo periferico
+
+Gatt (Generic Attribute Profile )
+	Es una como interfaz que usan los centrals o los celulares, para comunicarse con los perifericos
+	En este profile se guardan servicios los cuales a su vez guardan caracteristicas
+	Cada caracteristica tienen el leer, escribir y notificar como opcion.
+	Notificar le dice al periferico que envie una se~nal al central que esta conectado y subscrito a esa caracteristica cuando esa caracteristica sea acualizada
+
+UUID's
+
+	numero extremadamente grandes para identificar a los dispositivos
+
+
+Activity: Las pantallas en android, una View es un activity
+Intent : es una clase que te permite cambiar de una activity a otra.
+Dialog: Es un pop up o un toast 
+
+List Adapters ???
+Service 
+	- Un servicio es un proceso que se queda corriendo el background para que despues otras apps o esta misma pero en diferente tiempo obtengan una respuesta
+
+ServiceConnection
+	es una interface y lo unico que hace es monitorear el estado de un servicio, si, como el anterior.
+
+
+
+Bluetooth APIs
+
+
+
+BroadCasterReciver 
+	solo le pasamos un parametro y nos muestra un pop up si hay conexion o no
+
+
+BTLE_Device
+	es un contenedor para los bluetooth device objects 
+	aqui se guardan los rssi que son algo en el periferico que se guarda en el cettral ??
+
+ListAdapter_BTLE_Devices esta clase nos ayudara a mostrar al usuario cuales son los dispositivos que se van encontrando pana 
+
+
+Pasos para obtener esta madre
+
+Primero obtener el bluethootManager, para esto necesitamos la clase BluetoothManager y hacer un cast sobre el contexto, asi
+
+
+final BluetoothManager  bluetoothManager = (BluetoothManager) ma.getSystemService(Context.BLUETOOTH_SERVICE);
+
+despues de obtener el bluetoothManager tenemos que sacarle el adapter esto se hace con bluetoothManager.getAdapter();
+
+y con esto se inicializan las variables necesarias, al parecer aqui solo es un transpaso de inicializaciones;
+
+
+despues vamos declarar el metodo scanning, que regresa un boolean que representa el estado del scanner
+
+tambi'en tenemos que declarar el metodo start donde empezaremos o iniciaremos el scanner, si al parecer el scanner tiene que ser inicializado
+
+
+
+
+
+
+-------------------------------------------------------------------- Bluethooh thing end ---------------------------------------------------------------------------------------
+
+
+------------------------------------------Redux && react native-------------------------
+la principal idea es declarar un reducer que mantenga el estado de la navegacion en el store
+despues en el componente mas alto vamos a declarar el estado de la navegacion y este sera pasado
+a todos los hijos como cualquier prop
+
+
