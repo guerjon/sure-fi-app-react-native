@@ -17,7 +17,8 @@ const initialState = {
   central_device : {},
   scanning_central_units: false,
   bluetooth_error : false,
-  central_device_is_not_on_pairing_mode : false
+  central_device_is_not_on_pairing_mode : false,
+  alert_not_matched : false
 }
 
 export default function scanCentralReducer (state = initialState, action) {
@@ -46,7 +47,8 @@ export default function scanCentralReducer (state = initialState, action) {
     case CENTRAL_DEVICE_NOT_MATCHED:
     	return {
     		...state,
-    		central_device_matched: false
+    		central_device_matched: false,
+        alert_not_matched : action.alert_not_matched
     	}
     case RESET_QR_CENTRAL_STATE:
       return {

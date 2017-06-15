@@ -8,12 +8,13 @@ export default function dataReducer (state = initialState, action) {
     case "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER":
       return {
         ...state,
-        firmware_file: null       
+        //firmware_file: null       
       }
     case "SET_CENTRAL_FIRMWARE_FILE":
       return {  
         ...state,
-        firmware_file : action.firmware_file
+        firmware_file : action.firmware_file,
+        central_update_mode : true
       }
     case "DELETE_CENTRAL_FIRMWARE_FILE":
       return {

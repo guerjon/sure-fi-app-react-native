@@ -1,4 +1,4 @@
-export const FIRMWARE_CENTRAL_ROUTE = "http://admin.sure-fi.com/mobile/api/firmware/get_available_firmware/lynk_central"
+export const FIRMWARE_CENTRAL_ROUTE = "http://admin.sure-fi.com/mobile/api/firmware/get_available_firmware/eaa4c810-e477-489c-8ae8-c86387b1c62e"
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -64,11 +64,18 @@ export const TO_HEX_STRING = string_array => {
   		}).join('')
 }
 
+
+export const BYTES_TO_HEX= (byteArray) => {
+  return byteArray.map(function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('')
+}
+
 export const HEX_TO_BYTES = (hex) => {
       for (var bytes = [], c = 0; c < hex.length; c += 2){
       var sub = hex.substr(c, 2);
-      
       var parse_int = parseInt(sub, 16)
+
       bytes.push(parse_int);
     }
     return bytes;
@@ -82,6 +89,20 @@ export const  UINT8TOSTRING = (u8a) => {
     }
     return c.join("");
   }
+
+
+export const longToByteArray = (long) => {
+    // we want to represent the input as a 8-bytes array
+    var byteArray = [0, 0, 0, 0, 0, 0, 0, 0];
+
+    for ( var index = 0; index < byteArray.length; index ++ ) {
+        var byte = long & 0xff;
+        byteArray [ index ] = byte;
+        long = (long - byte) / 256 ;
+    }
+
+    return byteArray;
+}
 
 export const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 export const BASE64 = {
@@ -134,6 +155,16 @@ export const IS_EMPTY = obj => {
     return true;
 }
 
+export const REVERSE_STRING = str => {
+    var splitString = str.split("");
+    var reverseArray = splitString.reverse();
+    var joinArray = reverseArray.join(""); 
+    return joinArray; 
+}
+ 
+
+  
+
 export const GET_HEADERS = {
   'Accept': 'application/json',
   'Content-Type': 'application/x-www-form-urlencoded',
@@ -143,12 +174,15 @@ export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_READ_UUID  = "C8BF000C-0EC5-2536-2143-2D155783CE78"
 
+
+export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
+
+
 export const COMMAND_START_FIRWMARE_UPDATE = 0x03
 export const COMMAND_START_ROW = 0x04
 export const COMMAND_ROW_PIECE = 0x05
 export const COMMAND_END_ROW = 0x06
 export const COMMAND_FINISH_FIRMWARE_UPDATE = 0x07
-
-
 
 

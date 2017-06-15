@@ -5,7 +5,8 @@ import {
   	View,
   	Image,
   	Dimensions,
-  	TouchableHighlight
+  	TouchableHighlight,
+  	Linking
 } from 'react-native';
 
 import { StackNavigator } from 'react-navigation';
@@ -22,6 +23,17 @@ class MainScreen extends Component {
   	constructor(props) {
 		super(props);
   	}
+
+	openSureFiPage(url){
+		console.log(url)
+		Linking.canOpenURL(url).then(supported => {
+			if (!supported) {
+				console.log('Can\'t handle url: ' + url);
+			} else {
+				return Linking.openURL(url);
+			}
+		}).catch(err => console.error('An error occurred', err));
+	} 	
 
 	static navigationOptions = { title: 'Welcome', header: null };
   
@@ -53,7 +65,7 @@ class MainScreen extends Component {
 							</View>
 							<View style={styles.textView}>
 								<Text style={styles.text}>
-									Sure-Fi Bridges
+									Access Controll Bridges
 								</Text>
 							</View>
 						</View>
@@ -66,10 +78,9 @@ class MainScreen extends Component {
 							</View>
 							<View style={styles.textView}>
 								<Text style={styles.text}>
-									Access Control Systems
+									Access Control Systems (Coming 2018)
 								</Text>
 							</View>
-
 						</View>
 						<View>
 							<View>
@@ -80,10 +91,9 @@ class MainScreen extends Component {
 							</View>
 							<View style={styles.textView}>
 								<Text style={styles.text}>
-									HVAC Systems
+									HVAC Systems (Coming Q4 2017)
 								</Text>
 							</View>
-
 						</View>
 						<View>
 							<View>
@@ -110,21 +120,24 @@ class MainScreen extends Component {
 									Help / Troubleshooting
 								</Text>
 							</View>
-
 						</View>
 						<View>
-							<View>
-								<Image source={require('./images/menu_web.imageset/menu_web.png')} >
-								</Image>
-							</View>
-							<View>
-							</View>
-							<View style={styles.textView}>
-								<Text style={styles.text}>
-									Visit Sure-Fi.com
-								</Text>
-							</View>
+							<TouchableHighlight onPress={() => this.openSureFiPage("http://sure-fi.com/")}>
+								<View>
+									<View>
+										<Image source={require('./images/menu_web.imageset/menu_web.png')} >
+										</Image>
+									</View>
+									<View style={styles.textView}>
+										
+											<Text style={styles.text}>
+												Visit Sure-Fi.com
+											</Text>
+									</View>
+								</View>
+							</TouchableHighlight>
 						</View>
+
 		  			</Coverflow>      
 				</Image>
 	  		</View>
@@ -134,5 +147,3 @@ class MainScreen extends Component {
 
 
 export default connect()(MainScreen)
-
-

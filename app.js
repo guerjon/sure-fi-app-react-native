@@ -14,22 +14,28 @@ import BridgesConfiguration from './bridges/bridges_configuration/index'
 import ConfigurationScanCentralUnits from './bridges/bridges_configuration/scan_central_units'
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
+import FirmwareUpdate from './bridges/bridges_configuration/firmware_update'
+import ConfigureRadioCentral from './bridges/bridges_configuration/configure_radio_central'
 
 const mapStateToProps = state => ({
   nav: state.nav,
 });
 
 export const AppNavigator = StackNavigator({
-	BridgesConfiguration : {screen : BridgesConfiguration},
 	Main: {screen: MainScreen,headerMode: 'screen'},
+	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
+	UpdateFirmwareCentral : {screen : UpdateFirmwareCentral},
+	SelectFirmwareCentral : {screen : SelectFirmwareCentral},
+	
+	BridgesConfiguration : {screen : BridgesConfiguration},
 	PairBridge: {screen: PairBridge},
 	Bridges: {screen: Bridges},	
 	ScanRemoteUnits: { screen: ScanRemoteUnits},	
 	ScanCentralUnits: { screen: ScanCentralUnits},
 	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
-	SelectFirmwareCentral : {screen : SelectFirmwareCentral},
-	UpdateFirmwareCentral : {screen : UpdateFirmwareCentral},
-	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
+	FirmwareUpdate : {screen : FirmwareUpdate},
+	
+	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
 });
 
 

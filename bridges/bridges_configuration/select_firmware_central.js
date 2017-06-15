@@ -11,7 +11,7 @@ import {
 	FlatList
 
 } from 'react-native'
-import {styles} from '../../styles/index.js'
+import {styles,first_color} from '../../styles/index.js'
 import {connect} from 'react-redux'
 import {
 	FIRMWARE_CENTRAL_ROUTE
@@ -64,12 +64,15 @@ class selectFirmwareFile extends Component{
 	componentDidMount() {
 		this.dispatch = this.props.dispatch
 		this.navigate = this.props.navigation.navigate
-		
 		this.downloadFirmwareFiles()
 	}
 
 	static navigationOptions = {
-		title : "Select Firmware File"
+		title : "Select Firmware File",
+		headerStyle: {backgroundColor: first_color},
+		headerTitleStyle : {color :"white"},
+		headerBackTitleStyle : {color : "white",alignSelf:"center"},
+		headerTintColor: 'white',
 	}
 
 	downloadFirmwareFiles(){
@@ -148,17 +151,15 @@ class selectFirmwareFile extends Component{
 	}
 
 	changeRender(file){
-		
-		this.dispatch({type: "FIRMWARE_FILE_SELECTED", central_firmware_file_selected: file})
 		this.dispatch({type: "SET_CENTRAL_FIRMWARE_FILE", firmware_file : file})
 		Alert.alert(
 			"Select this Firmware?",
 			"Are you sure to select this firmware to update?",
 			[
 				{text: "Cancel",onPress : () => this.deleteFiles() },
-				{text: "Continue",onPress : () => this.props.navigation.goBack()}
+				{text: "Continue",onPress : () => this.props.navigation.navigate("UpdateFirmwareCentral")}
 			]
-			)
+		)
 	}
 
 	deleteFiles(){
@@ -180,9 +181,14 @@ class selectFirmwareFile extends Component{
 		}
 
 		return(
-			<ScrollView style={{flex:1}}>
-				{content}
-			</ScrollView>
+			<Image  
+				source={require('../../images/temp_background.imageset/temp_background.png')} 
+				style={styles.image_complete_container}
+			>					
+				<ScrollView style={{flex:1}}>
+					{content}	
+				</ScrollView>
+			</Image>
 		);
 	}
 }

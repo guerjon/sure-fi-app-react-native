@@ -9,7 +9,7 @@ import {
   	FlatList,
   	Alert
 } from 'react-native'
-import {styles} from '../styles/index.js'
+import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -33,7 +33,11 @@ var ConnectDevice = modules.ConnectDevice
 class PairBridge extends Component{
 	
 	static navigationOptions ={
-		title : "Pair New Sure-Fi Bridge"
+		title : "Pair New Sure-Fi Bridge",
+		headerStyle: {backgroundColor: first_color},
+		headerTitleStyle : {color :"white"},
+		headerBackTitleStyle : {color : "white",alignSelf:"center"},
+		headerTintColor: 'white',
 	}
 
 	componentDidMount() {

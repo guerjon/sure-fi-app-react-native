@@ -20,14 +20,18 @@ import {
 import {connect} from 'react-redux'
 import * as constants from '../constants'
 import {scan_styles} from '../styles/scan.js'
-import {styles} from '../styles/index'
+import {styles,first_color} from '../styles/index'
 import Camera from 'react-native-camera';
 import BleManager from 'react-native-ble-manager';
 
 class ScanCentralUnits extends Component {
   
   static navigationOptions = {
-    title: "Scan Central Unit"
+    title: "Scan Central Unit",
+    headerStyle: {backgroundColor: first_color},
+    headerTitleStyle : {color :"white"},
+    headerBackTitleStyle : {color : "white",alignSelf:"center"},
+    headerTintColor: 'white',
   }
 
   componentDidMount() {
@@ -123,6 +127,7 @@ class ScanCentralUnits extends Component {
     clearInterval(scanning)
     
     if(devices.length > 0){
+      console.log("devices",devices)
       dispatch({type: constants.DEVICES_FOUNDED})
     }
     else  
@@ -199,7 +204,7 @@ class ScanCentralUnits extends Component {
         }
 
     }else{
-      dispatch({type: constants.CENTRAL_DEVICE_NOT_MATCHED})
+      dispatch({type: constants.CENTRAL_DEVICE_NOT_MATCHED, alert_not_matched : device_id})
     }
 
   }
@@ -233,7 +238,7 @@ class ScanCentralUnits extends Component {
         dispatch({type: "LOADED"})
     })
     .catch((error) => {
-      dispatch({type: ERROR_ON_CENTRAL_SCANNING})
+      dispatch({type: constants.ERROR_ON_CENTRAL_SCANNING})
       console.log(error);
     });
 
@@ -241,7 +246,19 @@ class ScanCentralUnits extends Component {
 
   render() {
     
-    var {manufactured_data,central_device_matched,central_device,writing_on_device,error_on_wrote,dispatch,scanning_central_units,devices_founded,navigation,bluetooth_error,scanned_central_units,central_device_is_not_on_pairing_mode} = this.props
+    var {
+      manufactured_data,
+      central_device_matched,
+      central_device,
+      writing_on_device,
+      error_on_wrote,dispatch,
+      scanning_central_units,
+      devices_founded,navigation,
+      bluetooth_error,
+      scanned_central_units,
+      central_device_is_not_on_pairing_mode,
+      alert_not_matched
+    } = this.props
 
     if(bluetooth_error){
       return (
@@ -340,9 +357,14 @@ class ScanCentralUnits extends Component {
           )
 
       }else{
+        if(alert_not_matched){
+          var message = (<Text style={{color:"red"}}>"Device: (  {alert_not_matched}  ) Not Found" </Text>)
+        }else{
+          var message = (<Text>Plese scan the QR Code of your Sure-Fi Central Device</Text>)
+        }        
         return(
             <View style={styles.mainContainer}>
-              <View><Text>Plese scan the QR Code of your Sure-Fi Central Device</Text></View>
+              <View>{message}</View>
                 <Camera
                   ref={(cam) => {
                     this.camera = cam;
@@ -389,7 +411,8 @@ const mapStateToProps = state => ({
   central_device: state.scanCentralReducer.central_device,
   bluetooth_error : state.scanCentralReducer.bluetooth_error,
   manufactured_data : state.scanCentralReducer.manufactured_data,
-  central_device_is_not_on_pairing_mode : state.scanCentralReducer.central_device_is_not_on_pairing_mode
+  central_device_is_not_on_pairing_mode : state.scanCentralReducer.central_device_is_not_on_pairing_mode,
+  alert_not_matched : state.scanCentralReducer.alert_not_matched
 })
 
 export default connect(mapStateToProps)(ScanCentralUnits);

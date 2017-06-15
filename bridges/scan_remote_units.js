@@ -18,13 +18,20 @@ import {
 import {connect} from 'react-redux'
 import * as constants from '../constants'
 import {scan_styles} from '../styles/scan.js'
-import {styles} from '../styles/index'
+import {styles,first_color} from '../styles/index'
 import modules from '../CustomModules.js'
 import Camera from 'react-native-camera';
 import BleManager from 'react-native-ble-manager';
 
 class ScanRemoteUnits extends Component {
   
+  static navigationOptions = {
+    title : "Scan Remote Unit",
+    headerStyle: {backgroundColor: first_color},
+    headerTitleStyle : {color :"white"},
+    headerBackTitleStyle : {color : "white",alignSelf:"center"},
+    headerTintColor: 'white',
+  }
 
   componentDidMount() {
     var {dispatch} = this.props;

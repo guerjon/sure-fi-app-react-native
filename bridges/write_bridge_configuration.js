@@ -4,7 +4,7 @@ import {View, Text,Image,TouchableHighlight,ScrollView,  Platform,
   NativeAppEventEmitter
 } from 'react-native'
 import {connect} from 'react-redux'
-import {styles} from '../styles/index'
+import {styles,first_color} from '../styles/index'
 import modules from '../CustomModules.js'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {
@@ -73,7 +73,11 @@ const spinner = (<Icon name="spinner" size={15} color="gray" />)
 class WriteBridgeConfiguration extends Component{
 
 	static navigationOptions = {
-		title : "Configuring Sure-Fi Bridge"
+		title : "Configuring Sure-Fi Bridge",
+		headerStyle: {backgroundColor: first_color},
+		headerTitleStyle : {color :"white"},
+		headerBackTitleStyle : {color : "white",alignSelf:"center"},
+		headerTintColor: 'white',
 	}
 
 	componentDidMount() {

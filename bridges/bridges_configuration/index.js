@@ -7,9 +7,11 @@ import {
   	TouchableHighlight,
   	ActivityIndicator,
   	FlatList,
-  	Alert
+  	Alert,
+  	NativeModules,
+  	NativeEventEmitter
 } from 'react-native'
-import {styles} from '../../styles/index.js'
+import {styles,first_color} from '../../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -21,11 +23,16 @@ import {
 	RESET_QR_CENTRAL_STATE,
 	HEX_TO_BYTES,
 	UINT8TOSTRING,
-	BASE64
+	BASE64,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID,
+	IS_EMPTY
+
 } from '../../constants'
 import modules from '../../CustomModules.js'
 import { NavigationActions } from 'react-navigation'
-import BleManager from 'react-native-ble-manager';
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 
 var ScanCentral = modules.ScanCentral
@@ -34,7 +41,11 @@ var ConnectDevice = modules.ConnectDevice
 class BridgesConfiguration extends Component{
 	
 	static navigationOptions ={
-		title : "Configure Sure-Fi Bridge"
+		title : "Configure Sure-Fi Bridge",
+		headerStyle: {backgroundColor: first_color},
+		headerTitleStyle : {color :"white"},
+		headerBackTitleStyle : {color : "white",alignSelf:"center"},
+		headerTintColor: 'white',
 	}
 
 	componentDidMount() {
@@ -42,22 +53,15 @@ class BridgesConfiguration extends Component{
 		dispatch({type: "RESET_CENTRAL_REDUCER"})
 	}
 
-
 	initBLEManager(){
-		BleManager.start({showAlert: false});
-        this.handleDiscoverPeripheral = this.handleDiscoverPeripheral.bind(this);
-
-        NativeAppEventEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral );      
-        
+		BleManagerModule.start({showAlert: false});
+        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral() );
         setTimeout(() => this.stopScanning(this.toggleScanning()),10000)
 	}
-
 
 	toggleScanning(){
 	    return setInterval( ()=> this.handleScan(), 3000)
   	}
-
-  	
 
   	handleDiscoverPeripheral(data){
 	    var {devices,dispatch} = this.props;
@@ -73,7 +77,7 @@ class BridgesConfiguration extends Component{
   	}
 
   	handleScan() {
-    	BleManager.scan([], 3, true)
+    	BleManagerModule.scan([], 3, true)
             .then((results) => {console.log('Scanning...'); });
   	}
 
@@ -113,16 +117,13 @@ class BridgesConfiguration extends Component{
 
 	disconnect(){
 		var {central_device,dispatch} = this.props
-		BleManager.disconnect(central_device.id).then(() => {
-			dispatch({type : "DISCONNECTED_CENTRAL_UNIT"})
-			console.log("disconnect to :" + central_device.id)
-		})
+		BleManagerModule.disconnect(central_device.id,() => dispatch({type : "DISCONNECTED_CENTRAL_UNIT"}));
 	}
 
 	connect(){
 		var {central_device,dispatch} = this.props
 
-		BleManager.connect(central_device.id)
+		BleManagerModule.connect(central_device.id)
 		  .then((peripheralInfo) => {
 		    dispatch({type: "CONNECTED_CENTRAL_UNIT"})
 		    console.log(peripheralInfo)
@@ -144,26 +145,19 @@ class BridgesConfiguration extends Component{
 	}
 
 	unPair(){
+	    this.write([0x000000])
+	    Alert.alert("Success","Un-Pair successfully sent")
+	}
 
- 		var {dispatch,central_device} = this.props;
- 		var hex = HEX_TO_BYTES("000000")
-	    var u8 = new Uint8Array(hex)
-	    var b64encoded = BASE64.btoa(UINT8TOSTRING(u8));
-	    
-	    BleManager.write(central_device.id, '98BF000A-0EC5-2536-2143-2D155783CE78', '98BF000C-0EC5-2536-2143-2D155783CE78', b64encoded)
-	      .then(() => {
-	        // Success code
-	        console.log('Write on:+'+ central_device.id + ' ' + b64encoded);
-	        Alert.alert("Success","Un-Pair Message successfully sent")
-	      })
-	      .catch((error) => {
-	        console.log(error);
-	      });		
+	write(data){
+		var {central_device} = this.props
+		BleManagerModule.retrieveServices(central_device.id,() => {
+			BleManagerModule.specialWrite(central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
+		})
 	}
 
 	render(){
-		
-		var {devices,central_matched,central_device,connected_central_unit} = this.props;
+		var {devices,central_device,connected_central_unit} = this.props;
 		if(connected_central_unit){
 			var central_status_text_style = {
 				color: "#00DD00",
@@ -178,7 +172,7 @@ class BridgesConfiguration extends Component{
 			}
 		}
 
-		if(central_matched){
+		if(!IS_EMPTY(central_device)){
 			return(
 				<ScrollView style={styles.pairContainer}>
 					<Image  
@@ -246,14 +240,14 @@ class BridgesConfiguration extends Component{
 							</View>
 							{
 								connected_central_unit &&
-									<View style={{}}>
+									<View style={{marginTop: 10}}>
 										<View style={{padding:10}}>
 											<Text style={styles.title}>
 												CONFIGURATION OPTIONS
 											</Text>
 										</View>
 										<View style={{backgroundColor:"white"}}>
-											<View style={{padding:10}}>
+											<View>
 												<TouchableHighlight 
 													style={styles.white_row} 
 													onPress={
@@ -264,7 +258,7 @@ class BridgesConfiguration extends Component{
 															    {text: 'Cancel', onPress: () => console.log('Cancel Pressed')},
 																{text: 'Un-Pair', onPress: () => this.unPair(), style:'cancel'}
 															]
-															)
+														)
 													}
 												>
 													<Text style={styles.white_row_text}>
@@ -279,9 +273,9 @@ class BridgesConfiguration extends Component{
 														Update Firmware - Central
 													</Text>
 												</TouchableHighlight>
-												<TouchableHighlight style={styles.white_row}>
+												<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("ConfigureRadioCentral")}>
 													<Text style={styles.white_row_text}> 
-														Update Firmware - Remote
+														Configure Radio - Central
 													</Text>
 												</TouchableHighlight>
 											</View>
@@ -329,7 +323,6 @@ class BridgesConfiguration extends Component{
 }
 
 const mapStateToProps = state => ({
-  	central_matched : state.configurationScanCentralReducer.central_device_matched,
   	central_device: state.configurationScanCentralReducer.central_device,
   	connected_central_unit : state.writeBridgeConfigurationReducer.connected_central_unit
 });

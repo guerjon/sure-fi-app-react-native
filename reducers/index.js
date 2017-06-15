@@ -8,6 +8,8 @@ import writeBridgeConfigurationReducer from './writeBridgeConfigurationReducer'
 import configurationScanCentralReducer from './configurationScanCentralReducer'
 import updateFirmwareCentralReducer from './bridges_configuration/updateFirmwareCentralReducer'
 import selectFirmwareCentralReducer from './bridges_configuration/selectFirmwareCentralReducer'
+import firmwareUpdateReducer from './bridges_configuration/firmwareUpdateReducer'
+import configureRadioCentralReducer from './bridges_configuration/configureRadioCentralReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -18,7 +20,9 @@ const rootReducer = combineReducers({
     writeBridgeConfigurationReducer,
     configurationScanCentralReducer,
     updateFirmwareCentralReducer,
-    selectFirmwareCentralReducer
+    selectFirmwareCentralReducer,
+    firmwareUpdateReducer,
+    configureRadioCentralReducer
 })
 
 export default rootReducer

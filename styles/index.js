@@ -4,9 +4,11 @@ var {width, height} = Dimensions.get('window');
 
 const margin = 20
 const title_margin  = 15
-const success_green = "#00DD00"
+export const success_green = "#00DD00"
 const medium_font_size = 18
 const cancel_red = "red"
+export const first_color = "#2a323d"
+ 
 
 export  const styles = StyleSheet.create({
   	mainContainer: {
@@ -48,7 +50,7 @@ export  const styles = StyleSheet.create({
     	borderRadius: 500,
   		alignItems:"center",
   		justifyContent:"flex-end",
-  		backgroundColor: "#2a323d"
+  		backgroundColor: first_color
   	},
   	textView:{ 
   		alignItems:"center",
@@ -61,18 +63,22 @@ export  const styles = StyleSheet.create({
       flex:1
     },
     bridgeImageContainer:{
-      alignItems:"center",
-      justifyContent:"center",
       width:width,
-      marginVertical:30
+      marginVertical:25,
     },
     bridgeImage:{
       height:height/4,
       width:width/2,
       
     },
+    imageBridgesContainer : {
+      alignItems : "center"
+    },
+    textBridgesContainer : {
+      alignItems : "center"
+    },
     bridgeText:{
-      fontSize:22
+      fontSize:18
     },
     touchableSectionContainer:{
       backgroundColor:"white",
@@ -149,7 +155,7 @@ export  const styles = StyleSheet.create({
       padding: 10
     }, 
     white_row : {
-      padding: 10,
+      padding: 15,
       borderBottomWidth: 0.2,
     },
     white_row_text: {
