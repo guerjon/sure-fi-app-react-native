@@ -294,8 +294,7 @@ class ScanCentralUnits extends Component {
      
         
         this.manager.connect(central_device.id,(peripheralInfo) => {
-            console.log("connected to :",peripheralInfo)
-            //this.writeSecondService(central_device.manufactured_data.security_string)
+            this.writeSecondService(central_device.manufactured_data.security_string)
         })
     }
 

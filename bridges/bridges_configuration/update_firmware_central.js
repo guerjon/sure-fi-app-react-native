@@ -3,33 +3,16 @@ import {
 	View,
 	Text,
 	Image,
-	StyleSheets,
 	ScrollView,
 	TouchableHighlight,
 	NativeEventEmitter,
 	NativeModules
 
 } from 'react-native'
-import {styles,first_color} from '../../styles/index.js'
+import {styles,first_color,success_green} from '../../styles/index.js'
 import {
 	IS_EMPTY,
-	GET_HEADERS,
-	BASE64,
-	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_SERVICE_UUIDD,
 	SUREFI_CMD_WRITE_UUID,
-	SUREFI_CMD_READ_UUID,
-	SUREFI_CMD_READ_UUIDD,
-	COMMAND_START_FIRWMARE_UPDATE,
-	COMMAND_START_ROW,
-	COMMAND_ROW_PIECE,
-	COMMAND_END_ROW,
-	COMMAND_FINISH_FIRMWARE_UPDATE,
-	UINT8TOSTRING,
-	HEX_TO_BYTES,
-	ERROR_ON_CENTRAL_SCANNING
-
-
 } from '../../constants.js'
 import {connect} from 'react-redux'
 import RNFetchBlob from 'react-native-fetch-blob'
@@ -61,21 +44,21 @@ class UpdateFirmwareCentral extends Component{
 		if(!IS_EMPTY(this.props.firmware_file)){
 			if(this.props.central_update_mode){
 				var content = (
-					<View style={{margin:40,flexDirection:"row"}}>
-						
-						<TouchableHighlight style={styles.bigRedButton} onPress={() => this.props.dispatch({type: "DELETE_FIRMWARE_SELECTED"})}>
-							<Text style={styles.bigGreenButtonText}>
-								Cancel
-							</Text>
-						</TouchableHighlight>
-						
-
-						<TouchableHighlight onPress={() => this.navigate("FirmwareUpdate")} style={styles.bigGreenButton}>
-							<Text style={styles.bigGreenButtonText}>
-								Start
-							</Text>
-						</TouchableHighlight>
-
+					<View style={{flexDirection:"row"}}>
+						<View style={{flex:1}}>
+							<TouchableHighlight style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:20}} onPress={() => this.props.dispatch({type: "DELETE_FIRMWARE_SELECTED"})}>
+								<Text style={styles.bigGreenButtonText}>
+									Cancel
+								</Text>
+							</TouchableHighlight>
+						</View>
+						<View style={{flex:1}}>
+							<TouchableHighlight onPress={() => this.navigate("FirmwareUpdate")} style={{backgroundColor: success_green,alignItems:"center",justifyContent:"center",padding:20}}>
+								<Text style={styles.bigGreenButtonText}>
+									Start
+								</Text>
+							</TouchableHighlight>
+						</View>
 					</View>
 				)
 			}
@@ -98,9 +81,11 @@ class UpdateFirmwareCentral extends Component{
 										</Text>
 									</View>
 								</TouchableHighlight>
-								{content}
+								
 							</View>
+							{content}
 						</View>
+
 					</Image>
 				</ScrollView>
 			)

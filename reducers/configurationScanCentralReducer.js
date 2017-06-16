@@ -24,7 +24,8 @@ export default function configurationScanCentralReducer (state = initialState, a
         ...state,
         manufactured_data : [],
         central_device : {},
-        scanning_status : "no_device_found"
+        scanning_status : "no_device_found",
+        central_device_status : "disconnected"
       }
     case "CONFIGURATION_CENTRAL_DEVICE_MATCHED":
     	return {

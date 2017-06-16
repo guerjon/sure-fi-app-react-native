@@ -58,6 +58,7 @@ class BridgesConfiguration extends Component {
         dispatch({
             type: "RESET_CENTRAL_REDUCER"
         })
+        this.handlerDisconnect = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.handleDisconnectedPeripheral(data) );
     }
 
     scanCentralDevices() {
@@ -68,6 +69,14 @@ class BridgesConfiguration extends Component {
         this.props.navigation.navigate("ConfigurationScanCentralUnits", {
             screenBefore: "configure-bridge"
         })
+    }
+
+    handleDisconnectedPeripheral(data){
+    	var {central_device,dispatch} = this.props
+    	BleManagerModule.disconnect(central_device.id, () => dispatch({
+            type: "DISCONNECT_CENTRAL_DEVICE"
+        }));
+    	Alert.alert("Disconnected","The device " + central_device.manufactured_data.device_id.toUpperCase() + " has been disconnected.")	
     }
 
     renderDevice(device) {

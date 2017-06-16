@@ -13,31 +13,20 @@ import {
 	Alert
 
 } from 'react-native'
-import {styles} from '../../styles/index.js'
+import {styles,success_green} from '../../styles/index.js'
 import {
-	IS_EMPTY,
 	GET_HEADERS,
-	BASE64,
 	SUREFI_CMD_SERVICE_UUID,
 	SUREFI_CMD_SERVICE_UUIDD,
 	SUREFI_CMD_WRITE_UUID,
 	SUREFI_CMD_READ_UUID,
 	SUREFI_CMD_READ_UUIDD,
-	COMMAND_START_FIRWMARE_UPDATE,
-	COMMAND_START_ROW,
-	COMMAND_ROW_PIECE,
-	COMMAND_END_ROW,
-	COMMAND_FINISH_FIRMWARE_UPDATE,
 	UINT8TOSTRING,
 	HEX_TO_BYTES,
-	ERROR_ON_CENTRAL_SCANNING,
 	BYTES_TO_HEX
-
 } from '../../constants.js'
 import {connect} from 'react-redux'
 import RNFetchBlob from 'react-native-fetch-blob'
-var TimerMixin = require('react-timer-mixin');
-var reactMixin = require('react-mixin');
 import ProgressBar from 'react-native-progress/Bar';
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -84,7 +73,6 @@ class UpdateFirmwareCentral extends Component{
 	    BleManagerModule.connect(central_device.id,() => this.startNotification())
 	    
 	}
-
 
 	handleCharacteristicNotification(data){
 		var {dispatch} = this.props
@@ -541,17 +529,45 @@ class UpdateFirmwareCentral extends Component{
 
 	getStartRow(){
 		var {progress} = this.props
+
 		if(progress > 0){
 			var content = (
 				<View>
-					<View>
-						<ProgressBar progress={progress} width={250} height={40}/>
+					<View style={{margin:20,flexDirection:"row"}}>
+						<View style={{flex:1}}>
+							<Text style={{fontSize:16}}>
+								Updating
+							</Text>
+						</View>
+						<View style={{flex: 1}}>
+							<Text style={{alignSelf:"flex-end"}}>
+								{progress.toFixed(2) * 100 } %
+							</Text>
+						</View>
 					</View>
-					<View>
-						<Text>
-							{progress.toFixed(2) * 100 } %
-						</Text>
-					</View>
+					
+						<View>
+							<View>
+								<ProgressBar progress={progress} width={250} height={40}/>
+							</View>
+
+							{
+								progress == 1 && (
+									<View style={{alignItems:"center",marginTop:20}}>
+										<Text style={{fontSize: 16,marginBottom:20}}>
+											Success on updating !
+										</Text>
+										<TouchableHighlight onPress={() => this.props.navigation.goBack()} style={{backgroundColor:success_green,padding:20}}>
+											<Text style={{color:"white",fontSize:16}}>
+												Continue
+											</Text>
+										</TouchableHighlight>
+									</View>
+								)
+								
+								
+							}
+						</View>					
 				</View>
 			)
 		}else{
@@ -560,15 +576,8 @@ class UpdateFirmwareCentral extends Component{
 			)
 		}
 		return(
-			<View>
-				<View>
-					<Text>
-						Updating
-					</Text>
-				</View>
-				<View>
-					{content}
-				</View>
+			<View style={{padding:50}}>
+				{content}
 			</View>
 		)
 	}
@@ -601,7 +610,7 @@ class UpdateFirmwareCentral extends Component{
 					source={require('../../images/temp_background.imageset/temp_background.png')} 
 					style={styles.image_complete_container}
 				>				
-					<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+					<View style={{flex:1,alignItems:"center"}}>
 						{content}
 					</View>
 				</Image>
@@ -610,7 +619,7 @@ class UpdateFirmwareCentral extends Component{
 
 	}
 }
-//reactMixin(UpdateFirmwareCentral, TimerMixin);
+
 
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,

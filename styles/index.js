@@ -126,7 +126,8 @@ export  const styles = StyleSheet.create({
     bigGreenButton:{
       backgroundColor: success_green,
       marginHorizontal:10,
-      padding: 20
+      padding: 20,
+      borderRadius: 10
     },
     bigRedButton:{
       backgroundColor: cancel_red,

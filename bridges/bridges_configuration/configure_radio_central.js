@@ -80,10 +80,19 @@ class ConfigureRadio extends Component {
 	}
 
 	componentDidMount() {
-		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this);
-		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', this.handleDisconnectedPeripheral );
-    	bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification );
-    	this.temporalyConnect()
+		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.handleDisconnectedPeripheral(data) );
+    	bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
+    	this.startNotification()
+	}
+
+	handleDisconnectedPeripheral(data){
+
+    	var {central_device,dispatch} = this.props
+    	BleManagerModule.disconnect(central_device.id, () => dispatch({
+            type: "DISCONNECT_CENTRAL_DEVICE"
+        }));
+    	Alert.alert("Disconnected","The device " + central_device.manufactured_data.device_id.toUpperCase() + " has been disconnected.")	
+    	this.props.navigation.goBack()	
 	}
 
 	startNotification(){
@@ -120,6 +129,7 @@ class ConfigureRadio extends Component {
 	}
 
 	handleCharacteristicNotification(data){
+		console.log("data",data)
 		var {dispatch} = this.props
 		var values = data.value
 		var power =  powerOptions.get(values[3])
@@ -142,10 +152,8 @@ class ConfigureRadio extends Component {
 
 	write(data){
 		var {central_device} = this.props
-
-		BleManagerModule.retrieveServices(central_device.id,() => {
-			BleManagerModule.specialWrite(central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
-		})
+		console.log("write this",data)
+		BleManagerModule.specialWrite(central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 	}
 
 
@@ -305,7 +313,8 @@ class ConfigureRadio extends Component {
 }
 
 const mapStateToProps = state => ({
-  	central_device: {id :"FD:C0:90:D7:05:95"},
+  	//central_device: {id :"FD:C0:90:D7:05:95"},
+  	central_device: state.configurationScanCentralReducer.central_device,
   	page_status : state.configureRadioCentralReducer.page_status,
   	options_selected : state.configureRadioCentralReducer.options_selected,
   	option_selected : state.configureRadioCentralReducer.option_selected,
