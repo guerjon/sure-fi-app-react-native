@@ -61,15 +61,15 @@ class UpdateFirmwareCentral extends Component{
 		if(!IS_EMPTY(this.props.firmware_file)){
 			if(this.props.central_update_mode){
 				var content = (
-					<View style={{margin:40}}>
-						<View>
-
-						</View>
+					<View style={{margin:40,flexDirection:"row"}}>
+						
 						<TouchableHighlight style={styles.bigRedButton} onPress={() => this.props.dispatch({type: "DELETE_FIRMWARE_SELECTED"})}>
 							<Text style={styles.bigGreenButtonText}>
 								Cancel
 							</Text>
 						</TouchableHighlight>
+						
+
 						<TouchableHighlight onPress={() => this.navigate("FirmwareUpdate")} style={styles.bigGreenButton}>
 							<Text style={styles.bigGreenButtonText}>
 								Start
@@ -114,7 +114,7 @@ class UpdateFirmwareCentral extends Component{
 					>	
 						<View style={styles.mainContainer}>
 							<View style={{alignItems:"center"}}>
-								<TouchableHighlight onPress={() => this.navigate("SelectFirmwareCentral")}>
+								<TouchableHighlight onPress={() => this.navigate("SelectFirmwareCentral")} style={{padding:20}}>
 									<Text style={styles.link}>
 										Select Firmaware File
 									</Text>

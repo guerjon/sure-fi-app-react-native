@@ -14,6 +14,7 @@ const initialState = {
   manufactured_data : [],
   central_device : {},
   scanning_status: "no_device_found",
+  central_device_status : "disconnected"
 }
 
 export default function configurationScanCentralReducer (state = initialState, action) {
@@ -49,6 +50,21 @@ export default function configurationScanCentralReducer (state = initialState, a
     case "START_SCANNING":
       return {
          central_device : {}
+      }
+    case "CONNECTING_CENTRAL_DEVICE":
+      return {
+        ...state,
+        central_device_status : "connecting"
+      }
+    case "CONNECTED_CENTRAL_DEVICE":
+      return {
+        ...state,
+        central_device_status : "connected"
+      }
+    case "DISCONNECT_CENTRAL_DEVICE":
+      return{
+        ...state,
+        central_device_status : "disconnected"
       }
     default:
       return state

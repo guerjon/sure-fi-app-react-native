@@ -16,7 +16,9 @@ import {
     Platform,
     PermissionsAndroid,
     NativeAppEventEmitter,
-    Image
+    Image,
+    NativeModules,
+    NativeEventEmitter
 } from 'react-native'
 
 import {
@@ -32,10 +34,11 @@ import {
 } from '../../styles/index'
 import Camera from 'react-native-camera';
 import BleManager from 'react-native-ble-manager';
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-
-//var md5 = require('md5');
-md5 = require('js-md5');
+var md5 = require('md5');
+//md5 = require('js-md5');
 
 class ScanCentralUnits extends Component {
 
@@ -62,14 +65,14 @@ class ScanCentralUnits extends Component {
             type: "CONFIGURATION_RESET_CENTRAL_REDUCER"
         })
         dispatch({
-            type: "RESET_PAIR_REDUCER"
+            type: " "
         })
 
         BleManager.start({
             showAlert: false
         });
 
-        NativeAppEventEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
 
         this.scanning = this.startScanning()
         	this.devices = []
@@ -170,22 +173,21 @@ class ScanCentralUnits extends Component {
             });
     }
 
- 
-
-
     getSecurityString(peripheralRXUUID,peripheralTXUUID){
 
         peripheralRXUUID = constants.REVERSE_STRING(peripheralRXUUID.toUpperCase())
         peripheralTXUUID = peripheralTXUUID.toUpperCase() + "x~sW5-C\"6fu>!!~X"
         let string = peripheralRXUUID + peripheralTXUUID
-        return md5(string)
+        let md5_string  = md5(string)
+        let hex_string = constants.HEX_TO_BYTES(md5_string)
+        return hex_string
     }
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
+        //Vibration.vibrate()
         //console.log("scan_Result",scan_result)
         var device_id = scan_result.data;
-
+        this.scan_result_id = device_id
         var {
             dispatch,
             navigation
@@ -277,30 +279,35 @@ class ScanCentralUnits extends Component {
         navigation.goBack()
     }
 
+    writeSecondService(data){
+        var {central_device} = this.props
+        console.log("before_write")
+        BleManagerModule.retrieveServices(central_device.id,() => {
+            BleManagerModule.specialWrite(central_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20)
+        })
+        console.log("after_write")
+    }
+
     connect() {
         var {
             central_device,
             dispatch
         } = this.props
         dispatch({
-            type: "LOADING"
+            type: "CONNECTING_CENTRAL_DEVICE"
         })
+        console.log("central_device",central_device)
+
         BleManager.connect(central_device.id)
             .then((peripheralInfo) => {
-                console.log("security_string",central_device.manufactured_data.security_string)
-                console.log("security_string 1",constants.BASE64.btoa(central_device.manufactured_data.security_string))
                 dispatch({
-                    type: "CONNECTED_CENTRAL_UNIT"
+                    type: "CONNECTED_CENTRAL_DEVICE"
                 })
-                dispatch({
-                    type: "LOADED"
-                })
+                this.writeSecondService(central_device.manufactured_data.security_string)
             })
             .catch((error) => {
-                dispatch({
-                    type: ERROR_ON_CENTRAL_SCANNING
-                })
-                console.log(error);
+                console.log(error)
+                //Alert.alert("Error",error)
             });
 
     }
@@ -351,7 +358,7 @@ class ScanCentralUnits extends Component {
 	  			</TouchableHighlight>
 				<TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center"}} onPress={() => this.smartGoBack()}>
 				  <Text style={{color: "white",fontSize:16}}>
-					Confirm Device
+					Confirm
 				  </Text>
 				</TouchableHighlight>
 			</View>
@@ -372,7 +379,7 @@ class ScanCentralUnits extends Component {
                 var message = <Text>Plese scan the QR Code of your Sure-Fi Central Device</Text>
             return this.renderCamera(message,clear_button)
             case "device_scanned_not_matched":
-                var message = <Text style={{fontSize:16, color:"red"}}>Device not found </Text>
+                var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) </Text>
                 return this.renderCamera(message,clear_button)
             case "device_scanned_and_matched":
                 var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>

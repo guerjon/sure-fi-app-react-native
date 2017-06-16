@@ -7,7 +7,8 @@ import {
   	TouchableHighlight,
   	ActivityIndicator,
   	FlatList,
-  	Alert
+  	Alert,
+  	NativeModules
 } from 'react-native'
 import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
@@ -20,15 +21,16 @@ import {
 	SCANNING_CENTRAL_UNITS,
 	SCANNING_REMOTE_UNITS,
 	RESET_QR_CENTRAL_STATE,
-	RESET_QR_REMOTE_STATE
-	
+	RESET_QR_REMOTE_STATE,
+	IS_EMPTY
 } from '../constants'
 import modules from '../CustomModules.js'
 import { NavigationActions } from 'react-navigation'
-
+const BleManagerModule = NativeModules.BleManager;
 
 var ScanCentral = modules.ScanCentral
 var ConnectDevice = modules.ConnectDevice
+
 
 class PairBridge extends Component{
 	
@@ -42,17 +44,21 @@ class PairBridge extends Component{
 
 	componentDidMount() {
 		var {dispatch} = this.props;
+		this.manager = BleManagerModule
 		dispatch({type: "RESET_PAIR_REDUCER"})
+        this.manager.start({
+            showAlert: false
+        },(info) => console.log("staring bluetooth manager",info));
 	}
 
 	scanRemoteDevices(){
 		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanRemoteUnits")
+		this.props.navigation.navigate("ScanRemoteUnits",{manager: this.manager})
 	}
 
 	scanCentralDevices(){
 		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanCentralUnits")
+		this.props.navigation.navigate("ScanCentralUnits",{manager : this.manager})
 	}
 
 	renderDevice(device){
@@ -74,7 +80,7 @@ class PairBridge extends Component{
 			"Are you sure you are ready to initiate configuration of this Sure-Fi Bridge?",
 			[
 				{text: "Cancel",onPress : () => null},
-				{text: "Continue",onPress : () => this.props.navigation.navigate("WriteBridgeConfiguration")}
+				{text: "Continue",onPress : () => this.props.navigation.navigate("WriteBridgeConfiguration",{manager: this.manager})}
 			]
 		);
 	}
@@ -87,10 +93,10 @@ class PairBridge extends Component{
 
 	render(){
 		
-		var {devices,central_matched,remote_matched,central_device,remote_device} = this.props;
+		var {devices,central_device,remote_device} = this.props;
 		
-		if(central_matched){
-			if(remote_matched){
+		if(!IS_EMPTY(central_device)){
+			if(!IS_EMPTY(remote_device)){
 				return(
 					<ScrollView style={styles.pairContainer}>
 						<Image  
@@ -219,45 +225,45 @@ class PairBridge extends Component{
 					</ScrollView>
 				);
 			}
-		}else{
-			return(
-				<ScrollView style={styles.pairContainer}>
-					<Image  
-						source={require('../images/temp_background.imageset/temp_background.png')} 
-						style={styles.image_complete_container}
-					>	
-						<View style={styles.pairSectionsContainer}>
-							<View style={styles.titleContainer}>
-								<Text style={styles.title}>
-									Central Unit
-								</Text>
-							</View>
-							<View style={styles.touchableSectionContainer}>
-								<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-									<View style={styles.touchableSectionInner}>
-										<Image 
-											source={require('../images/hardware_select.imageset/hardware_select.png')} 
-											style={styles.touchableSectionInnerImage}
-										>
-										</Image>
-										<Text style={styles.touchableSectionInnerText}>
-											Select Central Unit
-										</Text>
-									</View>
-								</TouchableHighlight>
-							</View>							
-						</View>
-					</Image>
-				</ScrollView>
-			);	
 		}
+		
+		return(
+			<ScrollView style={styles.pairContainer}>
+				<Image  
+					source={require('../images/temp_background.imageset/temp_background.png')} 
+					style={styles.image_complete_container}
+				>	
+					<View style={styles.pairSectionsContainer}>
+						<View style={styles.titleContainer}>
+							<Text style={styles.title}>
+								Central Unit
+							</Text>
+						</View>
+						<View style={styles.touchableSectionContainer}>
+							<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+								<View style={styles.touchableSectionInner}>
+									<Image 
+										source={require('../images/hardware_select.imageset/hardware_select.png')} 
+										style={styles.touchableSectionInnerImage}
+									>
+									</Image>
+									<Text style={styles.touchableSectionInnerText}>
+										Select Central Unit
+									</Text>
+								</View>
+							</TouchableHighlight>
+						</View>							
+					</View>
+				</Image>
+			</ScrollView>
+		);	
+		
 	}
 }
 
 const mapStateToProps = state => ({
   	central_matched : state.scanCentralReducer.central_device_matched,
   	central_device: state.scanCentralReducer.central_device,
-
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device
 });

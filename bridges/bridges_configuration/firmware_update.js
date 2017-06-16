@@ -547,7 +547,7 @@ class UpdateFirmwareCentral extends Component{
 					<View>
 						<ProgressBar progress={progress} width={250} height={40}/>
 					</View>
-					<View>	
+					<View>
 						<Text>
 							{progress.toFixed(2) * 100 } %
 						</Text>
@@ -559,7 +559,6 @@ class UpdateFirmwareCentral extends Component{
 				<ActivityIndicator />
 			)
 		}
-
 		return(
 			<View>
 				<View>
@@ -569,13 +568,6 @@ class UpdateFirmwareCentral extends Component{
 				</View>
 				<View>
 					{content}
-				</View>
-				<View>
-					<TouchableHighlight onPress={() => this.restarProcess()}  width={250} height={40} style={{backgroundColor:"green",padding:30,margin:20}}>
-						<Text>
-							Restar Process
-						</Text>
-					</TouchableHighlight>
 				</View>
 			</View>
 		)
@@ -622,8 +614,8 @@ class UpdateFirmwareCentral extends Component{
 
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
-	central_device: {id :"FD:C0:90:D7:05:95"},
-	//central_device: state.configurationScanCentralReducer.central_device,
+	//central_device: {id :"FD:C0:90:D7:05:95"},
+	central_device: state.configurationScanCentralReducer.central_device,
 	firmware_update_state : state.firmwareUpdateReducer.firmware_update_state,
 	progress : state.firmwareUpdateReducer.progress
 });

@@ -161,9 +161,7 @@ export const REVERSE_STRING = str => {
     var joinArray = reverseArray.join(""); 
     return joinArray; 
 }
- 
-
-  
+   
 
 export const GET_HEADERS = {
   'Accept': 'application/json',
@@ -174,10 +172,12 @@ export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_READ_UUID  = "C8BF000C-0EC5-2536-2143-2D155783CE78"
 
-
 export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
 
+export const OLD_SURE_FI_CMD_SERVICE = "98bf000a-0ec5-2536-2143-2d155783ce78"
+export const OLD_SUREFI_CMD_WRITE_UUID = "98bf000c-0ec5-2536-2143-2d155783ce78"
+export const OLD_SUREFI_CMD_READ_UUID = "98bf000b-0ec5-2536-2143-2d155783ce78"
 
 export const COMMAND_START_FIRWMARE_UPDATE = 0x03
 export const COMMAND_START_ROW = 0x04

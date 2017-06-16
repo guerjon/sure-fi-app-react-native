@@ -1,7 +1,16 @@
 import React, { Component } from 'react'
-import {View, Text,Image,TouchableHighlight,ScrollView,  Platform,
-  PermissionsAndroid,
-  NativeAppEventEmitter
+import {
+	View, 
+	Text,
+	Image,
+	TouchableHighlight,
+	ScrollView,  
+	Platform,
+  	PermissionsAndroid,
+  	NativeAppEventEmitter,
+  	NativeModules,
+  	NativeEventEmitter,
+  	Alert
 } from 'react-native'
 import {connect} from 'react-redux'
 import {styles,first_color} from '../styles/index'
@@ -21,51 +30,18 @@ import {
 	ERROR_ON_REMOTE_WROTE,
 	DEVICES_NOT_FOUNDED,
 	ADD_DEVICES,
-	TO_HEX_STRING
+	TO_HEX_STRING,
+	BASE64,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID,
+	HEX_TO_BYTES,
+	OLD_SURE_FI_CMD_SERVICE,
+	OLD_SUREFI_CMD_WRITE_UUID
 } from '../constants'
 import BleManager from 'react-native-ble-manager';
-var base64 = require('base64-js');
-const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-const Base64 = {
-  btoa: (input:string = '')  => {
-    let str = input;
-    let output = '';
 
-    for (let block = 0, charCode, i = 0, map = chars;
-    str.charAt(i | 0) || (map = '=', i % 1);
-    output += map.charAt(63 & block >> 8 - i % 1 * 8)) {
+const BleManagerModule = NativeModules.BleManager;
 
-      charCode = str.charCodeAt(i += 3/4);
-
-      if (charCode > 0xFF) {
-        throw new Error("'btoa' failed: The string to be encoded contains characters outside of the Latin1 range.");
-      }
-      
-      block = block << 8 | charCode;
-    }
-    
-    return output;
-  },
-
-  atob: (input:string = '') => {
-    let str = input.replace(/=+$/, '');
-    let output = '';
-
-    if (str.length % 4 == 1) {
-      throw new Error("'atob' failed: The string to be decoded is not correctly encoded.");
-    }
-    for (let bc = 0, bs = 0, buffer, i = 0;
-      buffer = str.charAt(i++);
-
-      ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer,
-        bc++ % 4) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0
-    ) {
-      buffer = chars.indexOf(buffer);
-    }
-
-    return output;
-  }
-};
 
 const myIcon = (<Icon name="check" size={15} color="#00DD00" />)
 const spinner = (<Icon name="spinner" size={15} color="gray" />)
@@ -82,247 +58,67 @@ class WriteBridgeConfiguration extends Component{
 
 	componentDidMount() {
 		var {dispatch,central_device,remote_device} = this.props;
-		dispatch({type: "RESET_STATE"})
-    	BleManager.start({showAlert: false});
-        this.handleDiscoverPeripheral = this.handleDiscoverPeripheral.bind(this);
-
-        NativeAppEventEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral );      
-        this.toggleScanning()
-        
-
-	}
-
-	toggleScanning(){
-		var {dispatch} = this.props;
+		this.manager = this.props.navigation.state.params.manager
 		dispatch({type: SCANNING_UNITS})
-
-		var scanning = setInterval( ()=> this.handleScan(), 3000);  
-
-		setTimeout(() => this.stopScanning(scanning),10000)
+		this.writeCentral()
+		
 	}
 
-  	findId(data, idToLookFor) {
-	    if(data){
-	      for (var i = 0; i < data.length; i++) {
-	          if (data[i].id == idToLookFor) {
-	              return true
-	          }
-	      }      
-	    }
-    	return false;
+  	writeCentral(){
+  		var {central_device,remote_device,dispatch} = this.props
+  		dispatch({type:CONNECTING_CENTRAL_UNIT})
+  		
+  		let data = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
+  		
+  		
+  		
+  		BleManager.retrieveServices(central_device.id).then((peripheralData) => {
+  			dispatch({type: WRITING_CENTRAL_UNIT})	
+          	BleManager.write(central_device.id,OLD_SURE_FI_CMD_SERVICE, OLD_SUREFI_CMD_WRITE_UUID, data).then((reponse) => {
+          			dispatch({type: WROTE_CENTRAL_UNIT})
+          			this.writeRemote()
+          		}).catch((error) => {
+          			console.log('Connection error', error);
+          			Alert.alert("Error")
+        		});
+        });	
   	}
 
-	stopScanning(scanning){
-	    var {dispatch,devices,central_device,remote_device} = this.props;
-	    var new_bridges = this.getManufacturedData(devices)
-	    clearInterval(scanning)
-	    
-	    if(devices.length > 0){
-	      	
-	      	this.connectCentral(central_device.id)
-        	this.connectRemote(remote_device.id)
-	    }
-	    else  
-	      dispatch({type: DEVICES_NOT_FOUNDED})
-    
-  	}
+  	writeRemote(){
+  		var {central_device,remote_device,dispatch} = this.props
+  		dispatch({type:CONNECTING_REMOTE_UNIT})
+  		let data = HEX_TO_BYTES(central_device.manufactured_data.device_id)
 
-	handleDiscoverPeripheral(data){
-		var {devices,dispatch} = this.props;
+  		BleManager.retrieveServices(remote_device.id).then((peripheralData) => {
+  			dispatch({type: WRITING_REMOTE_UNIT})
+          	BleManager.write(remote_device.id,OLD_SURE_FI_CMD_SERVICE, OLD_SUREFI_CMD_WRITE_UUID, data).then((reponse) => {
+          			dispatch({type: WROTE_REMOTE_UNIT})
+          			this.showAlert()
+          			BleManager.disconnect(central_device.id).then(() => {
+          				BleManager.disconnect(remote_device.id).then(() => {
+          					console.log("devices disconnected")
+          				})
+          			})
+          	}).catch((error) => {
+          		console.log('Connection error', error);
+          		Alert.alert("Error")
+        	});
+        });	
 
-		var new_bridges = [];
-
-
-		if(data.name == "SF Bridge"){
-		  
-		  if(!this.findId(devices,data.id)){
-		    devices.push(data)
-		    dispatch({type: ADD_DEVICES, devices : devices})
-
-		  }else{
-		    console.log("repetido",data.id)
-		  }
-		}
-	}
-
-
-	hexToBytes(hex) {
-	  	for (var bytes = [], c = 0; c < hex.length; c += 2){
-		  	var sub = hex.substr(c, 2);
-		  	
-		  	var parse_int = parseInt(sub, 16)
-		  	bytes.push(parse_int);
-	  	}
-	  	return bytes;
-	}
-
-	handleScan() {
-	    BleManager.scan([], 3, true)
-	            .then((results) => {console.log('Scanning...'); });
-	}  	
-
-  	connectCentral(id){
-  		console.log("connect_central id",id)
-  		var {dispatch} = this.props;
-  		dispatch({type : CONNECTING_CENTRAL_UNIT})
-  		this.connect(id,"central");
-  	}
-
-  	connectRemote(id){
-  		console.log("connect_remote id",id)
-  		var {dispatch} = this.props;
-  		dispatch({type : CONNECTING_REMOTE_UNIT})
-  		this.connect(id,"remote");
-  	}
-	
-	uint8ToString(u8a){
-	  var CHUNK_SZ = 0x8000;
-	  var c = [];
-	  for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
-	    c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
-	  }
-	  return c.join("");
-	}
-
-  	write(id,data,kind){
-
- 		var {dispatch} = this.props;
- 		var hex = this.hexToBytes(data)
-	    var u8 = new Uint8Array(hex)
-	    var b64encoded = Base64.btoa(this.uint8ToString(u8));
-	    
-	    BleManager.write(id, '98BF000A-0EC5-2536-2143-2D155783CE78', '98BF000C-0EC5-2536-2143-2D155783CE78', b64encoded)
-	      .then(() => {
-	        // Success code
-	        console.log('Write on:+'+ id + ' ' + b64encoded);
-	        BleManager.disconnect(id)
-	          .then(() => {    
-				if(kind == "central"){
-		  			dispatch({type: WROTE_CENTRAL_UNIT})
-		  		}else{
-		  			dispatch({type: WROTE_REMOTE_UNIT})
-		  		}
-	            console.log('Disconnected' + id);
-	          })
-	          .catch((error) => {
-
-	            console.log(error);
-				if(kind == "central"){
-		  			dispatch({type: ERROR_ON_CENTRAL_WROTE})
-		  		}else{
-		  			dispatch({type: ERROR_ON_REMOTE_WROTE})
-		  		}
-	          });
-	      })
-	      .catch((error) => {
-	        console.log(error);
-	      });
-  	}
-
-  	sureWrite(id,kind){
-  		var {central_device,remote_device,dispatch} = this.props;
-  		  if(kind == "central"){
-		  	dispatch({type: WRITING_CENTRAL_UNIT})
-		  	this.write(id,remote_device.manufactured_data.device_id,kind)
-		  }else{
-		  	dispatch({type: WRITING_REMOTE_UNIT})
-		  	this.write(id,central_device.manufactured_data.device_id,kind)
-		  }
   	}
  
-	connect(id,kind){
-		var {central_device,remote_device,dispatch} = this.props;
-		BleManager.connect(id)
-		.then((peripheralInfo) => {
-		  // Success code
-			setTimeout(() => this.sureWrite(id,kind),2000)
-		  console.log('Connected to' + id);
-		  
-		})
-		.catch((error) => {
-			if(kind == "central")
-		  		dispatch({type: ERROR_ON_CENTRAL_SCANNING})
-		  	else{
-		  		dispatch({type: ERROR_ON_REMOTE_SCANNING})
-		  	}
-		  console.log(error);
-		});
-	}
-
-	bluetoothResult(result){
-		
-		var {dispatch,central_device,remote_device} = this.props;
-
-		if(result == "901"){
-			InitiateCentralWrite.write(
-				central_device.manufactured_data.address,
-				remote_device.manufactured_data.device_id,
-				(central_connection_result) => this.centralConnectionResult(central_connection_result),
-				(error) => this.deviceError(error),
-			);
-
-			InitiateRemoteWrite.write(
-				remote_device.manufactured_data.address,
-				central_device.manufactured_data.device_id,
-				(remote_connection_result) => this.remoteConnectionResult(remote_connection_result),
-				(error) => this.deviceError(error),
-			);
-
-		}else{
-			dispatch({type: WRITE_BRIDGE_BLUETOOTH_ERROR})
-		}
-	}
-
-	
-
-	deviceError(error){
-		Alert.alert(error);
-	}
-
-	getManufacturedData(devices){
-		if(devices){
-			var new_devices = [];
-			for (var i = 0; i < devices.length; i++) {
-			  var device = devices[i];
-			  
-			  device.manufactured_data = this.divideManufacturedData(device.new_representation,device.address);
-			  delete device.manufacturerData;
-			  new_devices.push(device);
-			}
-			return new_devices;
-		}
-	}
-
-	/*
-	* manufacturedData its an string 
-	*/
-	divideManufacturedData(manufacturedData,address){
-
-		var divide_manufactured_data = {}
-		manufacturedData = TO_HEX_STRING(manufacturedData)
-		divide_manufactured_data.hardware_type = manufacturedData.substr(0,2) // 01 or 02
-		divide_manufactured_data.firmware_version = manufacturedData.substr(2,2) //all four bytes combinations
-		divide_manufactured_data.device_state = manufacturedData.substr(4,4)
-		divide_manufactured_data.device_id = manufacturedData.substr(8,6);
-		divide_manufactured_data.paired_id = manufacturedData.substr(14,6)
-		divide_manufactured_data.address = address;
-		/*
-			console.log("device info ----------------------")
-			console.log("hardware_type: ", divide_manufactured_data.hardware_type)
-			console.log("firmware_version",divide_manufactured_data.firmware_version)
-			console.log("device_state",divide_manufactured_data.device_state)
-			console.log("device_id",divide_manufactured_data.device_id)
-			console.log("paired_id",divide_manufactured_data.paired_id)
-			console.log("address",divide_manufactured_data.address)
-			console.log("device_state ----------------------")
-		*/
-		return divide_manufactured_data;
-	}   
+ 	showAlert(){
+ 		Alert.alert(
+			"Success",
+			"The paring was made correclty.",
+			[
+				{text: "Continue",onPress : () => this.props.navigation.goBack("Bridges")}
+			]
+		);
+ 	}
 
 	smartBack(){
-
 		this.props.navigation.goBack()
-
 	}
 
 	render(){
@@ -445,17 +241,6 @@ class WriteBridgeConfiguration extends Component{
 							</View>
 						</View>
 					</View>
-					{ (wrote_remote_unit && wrote_central_unit) &&
-						<View style={{alignItems:"center",justifyContent:"center"}}>
-							<Text>Success!</Text>
-
-							<TouchableHighlight style={{backgroundColor:"#00DD00",padding:10,borderRadius:10}} onPress={() => this.smartBack() }>
-								<Text style={{color:"white",fontSize:16}}>
-									Continiue
-								</Text>
-							</TouchableHighlight>
-						</View>							
-					}
 				</Image>
 			</ScrollView> 
 		)
