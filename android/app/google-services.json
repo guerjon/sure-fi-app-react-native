@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1058882721683",
+    "firebase_url": "https://sure-fi-android.firebaseio.com",
+    "project_id": "sure-fi-android",
+    "storage_bucket": "sure-fi-android.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058882721683:android:392afc296fbbadc4",
+        "android_client_info": {
+          "package_name": "com.surefi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058882721683-6aqaal9ag9uo94naoh7n7ne2k07ajj8s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.surefi",
+            "certificate_hash": "d32a3aa33e3ca508dd70a3c641b2e610b606726d"
+          }
+        },
+        {
+          "client_id": "1058882721683-u5dv5l7v9v9t5c568knn3m8187b8r5ao.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-W5sMmbYfAq2kh37W-KmvpK9Vhpu7qFw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1058882721683-u5dv5l7v9v9t5c568knn3m8187b8r5ao.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

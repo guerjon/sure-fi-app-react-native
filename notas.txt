@@ -245,3 +245,46 @@ despues en el componente mas alto vamos a declarar el estado de la navegacion y 
 a todos los hijos como cualquier prop
 
 
+-------------------------------------------------------------------- Java ---------------------------------------------------------------------------------------
+
+Singleton
+
+El patron de construccion singleton asegura que solo se pueda crear una instancia de alguna clase, esto lo logramos poniendo el cosntructor en privado,
+
+despues de esto tenemos que crear algun metodo estatico que nos regrese una instancia de esta clase, si la clase se instancea a si misma
+
+public class SingletonClass {
+
+    public static SingletonClass singletonClass;
+
+    private SingletonClass() {
+    }
+
+    public static SingletonClass getInstance() {
+        if(singletonClass == null) {
+            singletonClass = new SingletonClass();
+        }
+        return singletonClass;
+    }
+}
+
+
+-------------------------------------------------------------------- PUSH NOTIFICATIONS ---------------------------------------------------------------------------------------
+
+Cuando registramos un celular en el servicio, este devuelve un token para el celular, este token lo usa amazon sns para para crear un mobile endpoint, este mobile endpoint nos sirve para enviar directamente las notificaciones es decir amazon envia las notificaciones a este endpoint
+
+SFTP Server	dar.amazon-digital-ftp.com
+Port	22
+Username	VMXYF20DWG1H8Y
+Password	mwu98AsMbl
+
+apk_release/apk/outputs/build/app/android  --< direccioin inversa de apk
+
+
+en firebase tenemos dos tipos de mensajes
+los que pueden ser mostrados como un aviso  (2K)
+los que pueden ser manejados por la app (4K y posible payload)
+
+
+
+

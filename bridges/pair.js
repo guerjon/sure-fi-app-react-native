@@ -8,9 +8,11 @@ import {
   	ActivityIndicator,
   	FlatList,
   	Alert,
-  	NativeModules
+  	NativeModules,
+  	NativeEventEmitter,
+  	StyleSheet
 } from 'react-native'
-import {styles,first_color} from '../styles/index.js'
+import {styles,first_color,success_green} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -22,14 +24,14 @@ import {
 	SCANNING_REMOTE_UNITS,
 	RESET_QR_CENTRAL_STATE,
 	RESET_QR_REMOTE_STATE,
-	IS_EMPTY
+	IS_EMPTY,
+	FIND_ID,
+	DIVIDE_MANUFACTURED_DATA
 } from '../constants'
 import modules from '../CustomModules.js'
 import { NavigationActions } from 'react-navigation'
+import BleManager from 'react-native-ble-manager'
 const BleManagerModule = NativeModules.BleManager;
-
-var ScanCentral = modules.ScanCentral
-var ConnectDevice = modules.ConnectDevice
 
 
 class PairBridge extends Component{
@@ -46,10 +48,54 @@ class PairBridge extends Component{
 		var {dispatch} = this.props;
 		this.manager = BleManagerModule
 		dispatch({type: "RESET_PAIR_REDUCER"})
-        this.manager.start({
-            showAlert: false
-        },(info) => console.log("staring bluetooth manager",info));
+		var bleManagerEmitter = new NativeEventEmitter(this.manager)
+		this.devices = this.props.devices;
+		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        BleManager.start().then(() => {
+        	this.searchDevices()
+        });
 	}
+
+
+	searchDevices(){
+		this.scanning = setInterval(() => {
+			BleManager.scan([], 3, true).then(() => {
+            	console.log('handleScan()');
+        	})
+		} , 1000)
+        this.devices = []
+        setTimeout(() => {
+        	if(this.scanning)
+          	clearInterval(this.scanning)
+        },60000)
+	}
+
+	handleDiscoverPeripheral(data) {
+      
+      var devices = this.devices;
+        //console.log(devices)
+        //if(data.name == "SF Bridge"){
+        if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
+        	
+            if (!FIND_ID(devices, data.id)) {              
+            	
+              	var data = this.getManufacturedData(data)
+                devices.push(data)
+                this.devices = devices
+                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
+            }
+        }
+    }
+
+    getManufacturedData(device) {
+        if (device) {
+            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.new_representation, device.id);
+            delete device.manufacturerData;
+        }else{
+          console.log("error on getManufacturedData device is null or 0")
+        }
+        return device;
+    }
 
 	scanRemoteDevices(){
 		var {dispatch,navigation} = this.props;
@@ -58,17 +104,18 @@ class PairBridge extends Component{
 
 	scanCentralDevices(){
 		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanCentralUnits",{manager : this.manager})
+		this.props.navigation.navigate("ScanCentralUnits",{manager : this.manager,scan : this.scanning})
 	}
 
 	renderDevice(device){
+		device = device.item
 		return(
-			<View style={{backgroundColor:"white",marginVertical: 5}}>
+			<View style={{backgroundColor:"white",borderBottomWidth: StyleSheet.hairlineWidth}}>
 				<View style={{padding: 10}}>
-					<Text>Name: {device.name}</Text>
-					<Text>Address: {device.address} </Text>
-					<Text>Manufactured data : {TO_HEX_STRING(device.manufacturerData)}</Text>
-					<Text>Uuid : {device.uuids} </Text>
+					<Text style={styles.title}>{device.name}</Text>
+					<Text style={{fontSize:12}}>
+						Rx: {device.manufactured_data.device_id} Tx : {device.manufactured_data.tx} Tp: {device.manufactured_data.hardware_type} VER: {device.manufactured_data.firmware_version} STAT: {device.manufactured_data.device_state.substring(2,4)}
+					</Text>
 				</View>
 			</View>
 		);
@@ -92,172 +139,45 @@ class PairBridge extends Component{
 	}
 
 	render(){
-		
-		var {devices,central_device,remote_device} = this.props;
-		
-		if(!IS_EMPTY(central_device)){
-			if(!IS_EMPTY(remote_device)){
-				return(
-					<ScrollView style={styles.pairContainer}>
-						<Image  
-							source={require('../images/temp_background.imageset/temp_background.png')} 
-							style={styles.image_complete_container}
-						>	
-							<View style={styles.pairSectionsContainer}>
-								<View style={styles.titleContainer}>
-									<Text style={styles.title}>
-										Central Unit
-									</Text>
-								</View>
-								<View style={styles.touchableSectionContainer}>
-									<View style={styles.touchableSection}>
-										<View style={styles.touchableSectionInner}>
-											<Image 
-												source={require('../images/hardware_bridge.imageset/hardware_bridge.png')} 
-												style={styles.touchableSectionInnerImage}
-											>
-											</Image>
-											<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-												<Text >
-													Sure-Fi Bridge Central
-												</Text>
-												<Text style={{fontSize:22}}>
-													{central_device.manufactured_data.device_id.toUpperCase()}
-												</Text>
-											</View>
-										</View>
-									</View>
-								</View>
-							</View>
-							<View style={styles.pairSectionsContainer}>
-								<View style={styles.titleContainer}>
-									<Text style={styles.title}>
-										Remote Unit
-									</Text>
-								</View>
-								<View style={styles.touchableSectionContainer}>
-									<View style={styles.touchableSection}>
-										<View style={styles.touchableSectionInner}>
-											<Image 
-												source={require('../images/hardware_bridge.imageset/hardware_bridge.png')} 
-												style={styles.touchableSectionInnerImage}
-											>
-											</Image>
-											<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-												<Text >
-													Sure-Fi Bridge Remote
-												</Text>
-												<Text style={{fontSize:22}}>
-													{remote_device.manufactured_data.device_id.toUpperCase()}
-												</Text>
-											</View>
-										</View>
-									</View>
-								</View>
-							</View>	
-							<View style={styles.bigButtonContainer}>
-								<TouchableHighlight onPress={() => this.resetState()} style={styles.bigRedButton}>
-									<Text style={styles.bigGreenButtonText}>
-										Reset Units
-									</Text>
-								</TouchableHighlight>
-								<TouchableHighlight onPress={() => this.showAlert()} style={styles.bigGreenButton}>
-									<Text style={styles.bigGreenButtonText}>
-										Initiate Configuration
-									</Text>
-								</TouchableHighlight>
-
-							</View>
-						</Image>
-					</ScrollView>
-				);
-			}else{
-				return(
-					<ScrollView style={styles.pairContainer}>
-						<Image  
-							source={require('../images/temp_background.imageset/temp_background.png')} 
-							style={styles.image_complete_container}
-						>	
-							<View style={styles.pairSectionsContainer}>
-								<View style={styles.titleContainer}>
-									<Text style={styles.title}>
-										Central Unit
-									</Text>
-								</View>
-								<View style={styles.touchableSectionContainer}>
-									<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-										<View style={styles.touchableSectionInner}>
-											<Image 
-												source={require('../images/hardware_bridge.imageset/hardware_bridge.png')} 
-												style={styles.touchableSectionInnerImage}
-											>
-											</Image>
-											<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-												<Text >
-													Sure-Fi Bridge Central
-												</Text>
-												<Text style={{fontSize:22}}>
-													{central_device.manufactured_data.device_id.toUpperCase()}
-												</Text>
-											</View>
-										</View>
-									</TouchableHighlight>
-								</View>					
-								<View style={{margin:5}}>
-								</View>
-								<View style={styles.touchableSectionContainer}>
-									<TouchableHighlight onPress={()=> this.scanRemoteDevices()} style={styles.touchableSection}>
-										<View style={styles.touchableSectionInner}>
-											<Image 
-												source={require('../images/hardware_select.imageset/hardware_select.png')} 
-												style={styles.touchableSectionInnerImage}
-											>
-											</Image>
-											<Text style={styles.touchableSectionInnerText}>
-												Select Remote Unit
-											</Text>
-										</View>
-									</TouchableHighlight>								
-								</View>		
-								
-							</View>
-						</Image>
-					</ScrollView>
-				);
-			}
+		if(this.props.devices.length > 0)
+			var devices_content = (
+				<ScrollView>
+					<FlatList data={this.props.devices} renderItem={(item) => this.renderDevice(item)} keyExtractor={(item,index) => item.id } />	
+				</ScrollView>
+			)
+		else{
+			var devices_content = <ActivityIndicator />
 		}
-		
 		return(
-			<ScrollView style={styles.pairContainer}>
-				<Image  
-					source={require('../images/temp_background.imageset/temp_background.png')} 
-					style={styles.image_complete_container}
-				>	
-					<View style={styles.pairSectionsContainer}>
-						<View style={styles.titleContainer}>
-							<Text style={styles.title}>
-								Central Unit
-							</Text>
-						</View>
-						<View style={styles.touchableSectionContainer}>
-							<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-								<View style={styles.touchableSectionInner}>
-									<Image 
-										source={require('../images/hardware_select.imageset/hardware_select.png')} 
-										style={styles.touchableSectionInnerImage}
-									>
-									</Image>
-									<Text style={styles.touchableSectionInnerText}>
-										Select Central Unit
-									</Text>
-								</View>
-							</TouchableHighlight>
-						</View>							
+			<View style={{flex:1}}>
+				<ScrollView style={{flexDirection:"column"}}>
+					<View style={{flex:1,alignItems:"center",justifyContent:"center",marginHorizontal:10}}>
+						<Text style={{fontSize: 22,marginVertical: 10}}>
+							Prepare for Paring 
+						</Text>
+						<Text style={{fontSize: 16,marginVertical:20}}> 
+							1. Make sure both Central and Remote devices are set up, powered on and the QR Codes are clearly visible.
+						</Text>
+						<Text style={{fontSize: 16, marginBottom:20}}>
+							2. Make sure that Bluetooth is enabled on this phone
+						</Text>
 					</View>
-				</Image>
-			</ScrollView>
-		);	
-		
+					<View style={{flex:1,marginHorizontal:10}}>
+						<TouchableHighlight style={{backgroundColor:success_green,padding:10,alignItems:"center",justifyContent:"center"}} onPress={() => this.scanCentralDevices()} >
+							<Text style={{fontSize:18,color:"white"}}>
+								Start
+							</Text>
+						</TouchableHighlight>
+					</View>
+					<View style={{marginVertical:20}}>
+						<Text style={{fontSize: 16,margin:10}}>
+							SURE-FI DEVICES
+						</Text>
+						{devices_content}
+					</View>
+				</ScrollView>	
+			</View>
+		)
 	}
 }
 
@@ -265,7 +185,8 @@ const mapStateToProps = state => ({
   	central_matched : state.scanCentralReducer.central_device_matched,
   	central_device: state.scanCentralReducer.central_device,
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
-  	remote_device : state.scanRemoteReducer.remote_device
+  	remote_device : state.scanRemoteReducer.remote_device,
+  	devices : state.pairReducer.devices
 });
 
 export default connect(mapStateToProps)(PairBridge);

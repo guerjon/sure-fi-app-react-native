@@ -124,7 +124,7 @@ class UpdateFirmwareCentral extends Component{
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
 	central_update_mode : state.updateFirmwareCentralReducer.central_update_mode,
-	central_device: {id :"FD:C0:90:D7:05:95"}, //state.configurationScanCentralReducer.central_device,
+	central_device: state.scanCentralReducer.central_device,
 });
 
 

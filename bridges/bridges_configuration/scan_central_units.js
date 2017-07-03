@@ -33,9 +33,9 @@ import {
     first_color
 } from '../../styles/index'
 import Camera from 'react-native-camera';
-import BleManager from 'react-native-ble-manager';
+import BleManager from 'react-native-ble-manager'
 const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+const RTCamera = NativeModules.RCTCameraModule
 
 var md5 = require('md5');
 //md5 = require('js-md5');
@@ -61,97 +61,26 @@ class ScanCentralUnits extends Component {
         var {
             dispatch
         } = this.props;
-        dispatch({
-            type: "CONFIGURATION_RESET_CENTRAL_REDUCER"
+       dispatch({
+            type: "RESET_CENTRAL_REDUCER"
         })
-        dispatch({
-            type: " "
-        })
-
-        BleManager.start({
-            showAlert: false
-        });
-
-        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-
-        this.scanning = this.startScanning()
-        	this.devices = []
-        //dispatch({type: "CONFIGURATION_SCANNING_CENTRAL_UNITS"})
-
-        setTimeout(() => this.stopScanning(),60000) 
+        this.manager = this.props.navigation.state.params.manager
+        var bleManagerEmitter = new NativeEventEmitter(this.manager)
+        bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.handleDisconnectedPeripheral(data) )
+        this.connected = false;
     }
 
-
-    hexToBytes(hex) {
-        for (var bytes = [], c = 0; c < hex.length; c += 2) {
-            var sub = hex.substr(c, 2);
-
-            var parse_int = parseInt(sub, 16)
-            bytes.push(parse_int);
-        }
-        return bytes;
+    handleDisconnectedPeripheral(data){
+        //this.props.dispatch({type : "DISCONNECT_CENTRAL_DEVICE"})
     }
 
-    uint8ToString(u8a) {
-        var CHUNK_SZ = 0x8000;
-        var c = [];
-        for (var i = 0; i < u8a.length; i += CHUNK_SZ) {
-            c.push(String.fromCharCode.apply(null, u8a.subarray(i, i + CHUNK_SZ)));
-        }
-        return c.join("");
-    }
-
-    findId(data, idToLookFor) {
-        if (data) {
-            for (var i = 0; i < data.length; i++) {
-                if (data[i].id == idToLookFor) {
-                    return true
-                }
-            }
-        }
-        return false;
-    }
-
-
-    getManufacturedData(device) {
-        if (device) {
-            device.manufactured_data = this.divideManufacturedData(device.new_representation, device.id);
-            delete device.manufacturerData;
-        }else{
-        	console.log("error on getManufacturedData device is null or 0")
-        }
-        return device;
-    }
-
-    /*
-     * manufacturedData its an string 
-     */
-    divideManufacturedData(manufacturedData, address) {
-        var divide_manufactured_data = {}
-        //manufacturedData = constants.TO_HEX_STRING(manufacturedData)
-        console.log("manufacturedData",manufacturedData)
-        divide_manufactured_data.hardware_type = manufacturedData.substr(0, 2) // 01 or 02
-        divide_manufactured_data.firmware_version = manufacturedData.substr(2, 2) //all four bytes combinations
-        divide_manufactured_data.device_state = manufacturedData.substr(4, 4)
-        divide_manufactured_data.device_id = manufacturedData.substr(8, 6);
-        divide_manufactured_data.address = address;
-        divide_manufactured_data.security_string = this.getSecurityString(manufacturedData.substr(8, 6),manufacturedData.substr(14, 6))
-        return divide_manufactured_data;
-    }
-
-    startScanning() {
-        var {
-            dispatch
-        } = this.props;
-        var scanning = setInterval(() => this.handleScan(), 1000);
-        return scanning
-    }
 
     stopScanning() {
-    	var scanning = this.scanning
-
-    	if(scanning)
-        	clearInterval(scanning)
+        //console.log(this.props.navigation.state.params.scan)
+    	if(this.props.navigation.state.params.scan)
+        	clearInterval(this.props.navigation.state.params.scan)
+        
+        this.tryToConnect()
     }
 
     handleDiscoverPeripheral(data) {
@@ -193,99 +122,67 @@ class ScanCentralUnits extends Component {
             navigation
         } = this.props;
 
-        var devices = this.devices
+        var devices = this.props.devices
         var matched_device = []
         
-        //console.log("devuce 0",devices)
-        if(devices){
+        if(devices){// the scanner should found some devices at this moment, if not just keep looking 
+        
+            var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
+            if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
+        
+                matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+                
+                if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
+        
+                    matched_devices = constants.GET_DEVICES_ON_CONFIGURE_MODE(matched_devices) // now we need check the state of the device
+                    if(matched_devices.length > 0){
+        
+                        var matched_device = matched_devices[0]
+                        dispatch({
+                            type: "CENTRAL_DEVICE_MATCHED",
+                            central_device: matched_devices[0]
+                        });
 
-	        var central_devices = devices.filter(function(device) {
-	            
-	            if (!device.manufactured_data)
-	                return false
-	            return device.manufactured_data.hardware_type == "01"
-	        });
-	        //console.log("devuce 2",devices)
-
-	        var matched_device = central_devices.filter(function(device) {
-
-	            if (!device)
-	                return false
-	            if (!device.manufactured_data)
-	                return false
-	            if (!device.manufactured_data.device_id)
-	                return false
-
-	            var data_upper_case = device.manufactured_data.device_id.toUpperCase()
-	            device_id = device_id.toUpperCase()
-	            return data_upper_case == device_id;
-	        });
-		}
-
-        if (matched_device.length > 0) {
-            var flag = false;
-
-            if (navigation)
-                if (navigation.state)
-                    if (navigation.state.params)
-                        if (navigation.state.params.screenBefore == "configure-bridge") {
-                            flag = true;
-                        }
-
-            var state = matched_device[0].manufactured_data.device_state
-            
-            if (flag) {
-                if ((state == '0203') || (state == '0003')) {
-                	this.stopScanning()
-                    dispatch({
-                        type: "CONFIGURATION_CENTRAL_DEVICE_MATCHED",
-                        central_device: matched_device[0]
-                    });
-                } else {
-                    dispatch({
-                        type: "CONFIGURATION_CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE"
-                    })
-                }
-
-            } else {
-            	this.stopScanning()
-                dispatch({
-                    type: "CONFIGURATION_CENTRAL_DEVICE_MATCHED",
-                    central_device: matched_device[0]
-                });
-            }
-
-        } else {
-            dispatch({
-                type: "CONFIGURATION_CENTRAL_DEVICE_NOT_MATCHED",
-            })
-        }
-
-    }
-
-    smartGoBack() {
-        var {
-            navigation
-        } = this.props;
-
-        if (navigation)
-            if (navigation.state)
-                if (navigation.state.params)
-                    if (navigation.state.params.screenBefore == "configure-bridge") {
-                        this.connect()
+                    }else{
+        
+                        dispatch({
+                            type: "CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE"
+                        })                        
+                    
                     }
+                }else{
+        
+                    dispatch({
+                        type : "IS_NOT_CENTRAL_DEVICE"
+                    })
 
-        this. stopScanning()
-        navigation.goBack()
+                }
+            }else{
+                
+                dispatch({
+                    type: "CENTRAL_DEVICE_NOT_MATCHED",
+                })
+
+            }
+        }
     }
 
     writeSecondService(data){
-        var {central_device} = this.props
-        console.log("before_write")
-        BleManagerModule.retrieveServices(central_device.id,() => {
-            BleManagerModule.specialWrite(central_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20)
-        })
-        console.log("after_write")
+        
+        var {central_device,dispatch} = this.props
+        if(!this.connected){
+            BleManagerModule.retrieveServices(central_device.id,() => {
+                BleManager.write(central_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20).then((response) => {
+                    if(this.interval){
+                        clearInterval(this.interval)
+                        this.connected = true;
+                    }
+                    dispatch({
+                        type: "CONNECTED_CENTRAL_DEVICE"
+                    })
+                }).catch(error => console.log("Error",error));
+            })
+        }
     }
 
     connect() {
@@ -296,21 +193,28 @@ class ScanCentralUnits extends Component {
         dispatch({
             type: "CONNECTING_CENTRAL_DEVICE"
         })
-        console.log("central_device",central_device)
 
         BleManager.connect(central_device.id)
             .then((peripheralInfo) => {
-                dispatch({
-                    type: "CONNECTED_CENTRAL_DEVICE"
-                })
+
                 this.writeSecondService(central_device.manufactured_data.security_string)
+                               
             })
             .catch((error) => {
                 console.log(error)
                 //Alert.alert("Error",error)
             });
-
     }
+
+    tryToConnect(){
+        var {
+            navigation
+        } = this.props;
+        
+        this.interval = setInterval(() => this.connect(),3000);
+        navigation.goBack()
+    }
+
 
     clearQr(){
     	this.props.dispatch({type: "CONFIGURATION_RESET_CENTRAL_REDUCER"})
@@ -356,7 +260,7 @@ class ScanCentralUnits extends Component {
 		  				Clear
 					</Text>
 	  			</TouchableHighlight>
-				<TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center"}} onPress={() => this.smartGoBack()}>
+				<TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center"}} onPress={() => this.stopScanning()}>
 				  <Text style={{color: "white",fontSize:16}}>
 					Confirm
 				  </Text>
@@ -389,6 +293,9 @@ class ScanCentralUnits extends Component {
                 var message = <Text style={{fontSize:16, color:"red"}}>Device is not on pairing mode</Text>
                 return this.renderCamera(message,clear_button)
                 break
+            case "is_not_central_device":
+                var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a central device.</Text>
+                return this.renderCamera(message,clear_button)
             default:
                 return (
                     <View style={{flex:1,alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
@@ -408,9 +315,10 @@ class ScanCentralUnits extends Component {
 
 
 const mapStateToProps = state => ({
-    central_device: state.configurationScanCentralReducer.central_device,
-    manufactured_data: state.configurationScanCentralReducer.manufactured_data,
-    scanning_status: state.configurationScanCentralReducer.scanning_status
+    central_device: state.scanCentralReducer.central_device,
+    manufactured_data: state.scanCentralReducer.manufactured_data,
+    scanning_status: state.scanCentralReducer.scanning_status,
+    devices : state.pairReducer.devices
 })
 
 export default connect(mapStateToProps)(ScanCentralUnits);

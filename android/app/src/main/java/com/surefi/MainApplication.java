@@ -1,7 +1,6 @@
 package com.surefi;
 
 import android.app.Application;
-
 import com.facebook.react.ReactApplication;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.cboy.rn.splashscreen.SplashScreenReactPackage;
@@ -27,12 +26,13 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
-          new MainReactPackage(),
-            new VectorIconsPackage(),
-            new SplashScreenReactPackage(),
-            new RNFetchBlobPackage(),
-            new RCTCameraPackage(),
-            new BleManagerPackage()
+              new MainReactPackage(),
+              new VectorIconsPackage(),
+              new SplashScreenReactPackage(),
+              new RNFetchBlobPackage(),
+              new RCTCameraPackage(),
+              new BleManagerPackage(),
+              new PushNotificationsPackage()
       );
     }
   };

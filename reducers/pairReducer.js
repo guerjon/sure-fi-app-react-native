@@ -16,7 +16,8 @@ const initialState = {
   devices : [],
   central_paired : false,
   scanning_central_units :true,
-  scanning_remote_units : true
+  scanning_remote_units : true,
+  manager : null
 }
 
 export default function pairReducer (state = initialState, action) {
@@ -55,7 +56,7 @@ export default function pairReducer (state = initialState, action) {
         ...state,
         remote_paired
       }
-    case ADD_DEVICES : 
+    case "UPDATE_DEVICES" : 
       return {
         ...state,
         devices: action.devices
@@ -73,7 +74,8 @@ export default function pairReducer (state = initialState, action) {
         devices : [],
         central_paired : false,
         scanning_central_units :true,
-        scanning_remote_units : true      
+        scanning_remote_units : true,
+        manager : action.manager
       }
     default:
       return state

@@ -17,10 +17,8 @@ import {styles,success_green} from '../../styles/index.js'
 import {
 	GET_HEADERS,
 	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_SERVICE_UUIDD,
 	SUREFI_CMD_WRITE_UUID,
 	SUREFI_CMD_READ_UUID,
-	SUREFI_CMD_READ_UUIDD,
 	UINT8TOSTRING,
 	HEX_TO_BYTES,
 	BYTES_TO_HEX
@@ -359,8 +357,6 @@ class UpdateFirmwareCentral extends Component{
 		var {dispatch} = this.props
 
 		dispatch({type:"START_FETCH"})
-
-		console.log("fetchFirmwareFile()")
 		
 		var {firmware_file} = this.props
 		let path = firmware_file.firmware_path
@@ -624,7 +620,7 @@ class UpdateFirmwareCentral extends Component{
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
 	//central_device: {id :"FD:C0:90:D7:05:95"},
-	central_device: state.configurationScanCentralReducer.central_device,
+	central_device: state.scanCentralReducer.central_device,
 	firmware_update_state : state.firmwareUpdateReducer.firmware_update_state,
 	progress : state.firmwareUpdateReducer.progress
 });

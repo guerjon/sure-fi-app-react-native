@@ -5,7 +5,7 @@ import {View,ActivityIndicator} from 'react-native'
 export default class CenterActivityIndicator extends Component{
 	render(){
 		return(
-			<View>
+			<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
 				<ActivityIndicator />
 			</View>
 		)		

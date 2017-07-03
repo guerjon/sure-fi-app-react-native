@@ -16,25 +16,42 @@ import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmwa
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
 import FirmwareUpdate from './bridges/bridges_configuration/firmware_update'
 import ConfigureRadioCentral from './bridges/bridges_configuration/configure_radio_central'
+import SetupCentral from './bridges/setup_central'
+import SetupCentralExamples from './bridges/setup_central_examples'
+import SetupRemote from './bridges/setup_remote'
+import BridgeDetails from './bridges/bridge_details'
+import Register from './bridges/register'
 
 const mapStateToProps = state => ({
   nav: state.nav,
 });
 
 export const AppNavigator = StackNavigator({
-	Main: {screen: MainScreen,headerMode: 'screen'},
+	BridgesConfiguration : {screen : BridgesConfiguration},
+	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
+	
+	Bridges: {screen: Bridges},	
 	PairBridge: {screen: PairBridge},
 	
-	BridgesConfiguration : {screen : BridgesConfiguration},
+	Main: {screen: MainScreen,headerMode: 'screen'},
+	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
+	
+	BridgeDetails : {screen : BridgeDetails},
+	SetupRemote: {screen : SetupRemote},
+	
 	UpdateFirmwareCentral : {screen : UpdateFirmwareCentral},
 	SelectFirmwareCentral : {screen : SelectFirmwareCentral},
-	Bridges: {screen: Bridges},	
+	
 	ScanRemoteUnits: { screen: ScanRemoteUnits},	
 	ScanCentralUnits: { screen: ScanCentralUnits},
-	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
+	
 	FirmwareUpdate : {screen : FirmwareUpdate},
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
-	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
+	
+	SetupCentral : {screen : SetupCentral},
+	SetupCentralExamples : {screen : SetupCentralExamples},
+	Register : {screen : Register}
+	
 });
 
 

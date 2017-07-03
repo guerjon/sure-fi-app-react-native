@@ -8,7 +8,8 @@ export const success_green = "#00DD00"
 const medium_font_size = 18
 const cancel_red = "red"
 export const first_color = "#2a323d"
- 
+export const option_blue = "#5AB0E3"
+export const link_color  = "#000099" 
 
 export  const styles = StyleSheet.create({
   	mainContainer: {
@@ -112,16 +113,19 @@ export  const styles = StyleSheet.create({
     title:{
       fontSize: 18,
     },
+    bigTitle:{
+      fontSize: 22
+    },
     preview: {
       flex: 1,
       justifyContent: 'flex-end',
       alignItems: 'center'
     },
     bigButtonContainer:{
-      flex:1,
       alignItems:"center",
       justifyContent: "center",      
       flexDirection: "row",
+      margin:20
     },
     bigGreenButton:{
       backgroundColor: success_green,

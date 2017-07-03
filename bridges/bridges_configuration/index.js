@@ -10,7 +10,9 @@ import {
     ActivityIndicator,
     Alert,
     NativeModules,
-    NativeEventEmitter
+    NativeEventEmitter,
+    FlatList,
+    StyleSheet
 } from 'react-native'
 import {
     styles,
@@ -23,7 +25,11 @@ import {
     TO_HEX_STRING,
     SUREFI_CMD_SERVICE_UUID,
     SUREFI_CMD_WRITE_UUID,
-    IS_EMPTY
+    IS_EMPTY,
+    FIND_ID,
+    DIVIDE_MANUFACTURED_DATA,
+    PAIR_SUREFI_SERVICE, 
+    PAIR_SUREFI_WRITE_UUID
 } from '../../constants'
 import modules from '../../CustomModules.js'
 import {
@@ -52,45 +58,65 @@ class BridgesConfiguration extends Component {
     }
 
     componentDidMount() {
-        var {
-            dispatch
-        } = this.props
-        dispatch({
-            type: "RESET_CENTRAL_REDUCER"
-        })
-        this.handlerDisconnect = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.handleDisconnectedPeripheral(data) );
+       	var {dispatch} = this.props;
+		this.manager = BleManagerModule
+		this.resetStatus()
+		var bleManagerEmitter = new NativeEventEmitter(this.manager)
+		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        BleManager.start().then(() => {
+        	this.searchDevices()
+        });
     }
 
-    scanCentralDevices() {
-        var {
-            navigation
-        } = this.props;
+	searchDevices(){
+		this.scanning = setInterval(() => {
+			BleManager.scan([], 3, true).then(() => {
+            	
+        	})
+		} , 1000)
+        this.devices = []
+        setTimeout(() => {
+        	if(this.scanning)
+          	clearInterval(this.scanning)
+        },60000)
+	}
 
-        this.props.navigation.navigate("ConfigurationScanCentralUnits", {
-            screenBefore: "configure-bridge"
-        })
+	handleDiscoverPeripheral(data) {
+      
+      var devices = this.devices;
+        
+        //if(data.name == "SF Bridge"){
+        if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
+        	
+            if (!FIND_ID(devices, data.id)) {              
+            	
+              	var data = this.getManufacturedData(data)
+                devices.push(data)
+                this.devices = devices
+                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
+            }
+        }
     }
 
-    handleDisconnectedPeripheral(data){
-    	var {central_device,dispatch} = this.props
-    	BleManagerModule.disconnect(central_device.id, () => dispatch({
-            type: "DISCONNECT_CENTRAL_DEVICE"
-        }));
-    	Alert.alert("Disconnected","The device " + central_device.manufactured_data.device_id.toUpperCase() + " has been disconnected.")	
+    getManufacturedData(device) {
+        if (device) {
+            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.new_representation, device.id);
+            delete device.manufacturerData;
+        }else{
+          console.log("error on getManufacturedData device is null or 0")
+        }
+        return device;
     }
 
-    renderDevice(device) {
-        return (
-            <View style={{backgroundColor:"white",marginVertical: 5}}>
-				<View style={{padding: 10}}>
-					<Text>Name: {device.name}</Text>
-					<Text>Address: {device.address} </Text>
-					<Text>Manufactured data : {TO_HEX_STRING(device.manufacturerData)}</Text>
-					<Text>Uuid : {device.uuids} </Text>
-				</View>
-			</View>
-        );
-    }
+	scanRemoteDevices(){
+		var {dispatch,navigation} = this.props;
+		this.props.navigation.navigate("ScanRemoteUnits",{manager: this.manager})
+	}
+
+	scanCentralDevices(){
+		var {dispatch,navigation} = this.props;
+		this.props.navigation.navigate("ConfigurationScanCentralUnits",{manager : this.manager,scan : this.scanning})
+	}
 
     showAlert() {
         Alert.alert(
@@ -112,9 +138,10 @@ class BridgesConfiguration extends Component {
             central_device,
             dispatch
         } = this.props
-        BleManagerModule.disconnect(central_device.id, () => dispatch({
-            type: "DISCONNECT_CENTRAL_DEVICE"
-        }));
+        BleManagerModule.disconnect(central_device.id, (data) => {
+        	this.resetStatus()
+        	this.props.navigation.goBack()
+        });
     }
 
     connect() {
@@ -128,7 +155,7 @@ class BridgesConfiguration extends Component {
                 dispatch({
                     type: "CONNECTED_CENTRAL_DEVICE"
                 })
-                console.log(peripheralInfo)
+                
             })
             .catch((error) => {
                 dispatch({
@@ -136,17 +163,25 @@ class BridgesConfiguration extends Component {
                 })
                 console.log(error);
             });
+    }
 
+    resetStatus(){
+    	this.props.dispatch({
+    		type: "RESET_CENTRAL_REDUCER"
+    	})
+    	this.props.dispatch({
+    		type: "RESET_PAIR_REDUCER"
+    	})
     }
 
     unPair() {
     	var {central_device} = this.props
     	BleManagerModule.retrieveServices(central_device.id, () => {
-            BleManager.write(central_device.id, SUREFI_CMD_SERVICE_UUID, SUREFI_CMD_WRITE_UUID, [0x000000], 20).then((response) => {
-	    		console.log(response)
+            BleManagerModule.unPair(central_device.id, PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID, 20,(response) => {
+	    		
 	    		Alert.alert("Success", "Un-Pair successfully sent")
-	    	}).catch((error) => {
-	    		console.error("Error","Error on UnPair")
+	    		this.disconnect()
+	    		
 	    	})      
         })  
     }
@@ -160,12 +195,27 @@ class BridgesConfiguration extends Component {
         })
     }
 
+	renderDevice(device){
+		device = device.item
+		return(
+			<View style={{backgroundColor:"white",borderBottomWidth: StyleSheet.hairlineWidth}}>
+				<View style={{padding: 10}}>
+					<Text style={styles.title}>{device.name}</Text>
+					<Text style={{fontSize:12}}>
+						Rx: {device.manufactured_data.device_id} Tx : {device.manufactured_data.tx} Tp: {device.manufactured_data.hardware_type} VER: {device.manufactured_data.firmware_version} STAT: {device.manufactured_data.device_state.substring(2,4)}
+					</Text>
+				</View>
+			</View>
+		);
+	}
+
     renderStatusDevice(){
     	var {central_device_status} = this.props
-    	
+
+
     	switch(central_device_status){
 			case "connecting":
-				var status = "Connecting"
+				var status = "Hold the test button by"
 	            var central_status_text_style = {
 	                color: "orange",
 	                padding: 10,
@@ -178,9 +228,11 @@ class BridgesConfiguration extends Component {
 								<Text style={{padding: 10,margin:5}}>
 									Status
 								</Text >
-								<Text style={central_status_text_style}>
-									{status}
-								</Text>
+								<View style={{width:180}}>
+									<Text style={{fontSize:15}}>
+										Hold the Test button on the Bridge for 5 seconds
+									</Text>
+								</View>
 							</View>
 							<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
 								<ActivityIndicator />
@@ -308,17 +360,22 @@ class BridgesConfiguration extends Component {
             central_device,
         } = this.props;
 
-       
+    	if(this.props.devices.length > 0)
+			var devices_content = (
+
+				<ScrollView style={{marginTop:20}}>
+					<FlatList data={this.props.devices} renderItem={(item) => this.renderDevice(item)} keyExtractor={(item,index) => item.id } />	
+				</ScrollView>
+			)
+		else{
+			var devices_content = <ActivityIndicator />
+		}
 
         var status = this.renderStatusDevice()
-        console.log(central_device)
+        
         if (!IS_EMPTY(central_device)) {
             return (
                 <ScrollView style={styles.pairContainer}>
-					<Image  
-						source={require('../../images/temp_background.imageset/temp_background.png')} 
-						style={styles.image_complete_container}
-					>	
 						<View style={styles.pairSectionsContainer}>
 							<View style={styles.titleContainer}>
 								<Text style={styles.title}>
@@ -348,17 +405,14 @@ class BridgesConfiguration extends Component {
 								{status}
 							</View>
 						</View>
-					</Image>
+					
 				</ScrollView>
             );
 
         } else {
             return (
                 <ScrollView style={styles.pairContainer}>
-					<Image  
-						source={require('../../images/temp_background.imageset/temp_background.png')} 
-						style={styles.image_complete_container}
-					>	
+
 						<View style={styles.pairSectionsContainer}>
 							<View style={styles.titleContainer}>
 								<Text style={styles.title}>
@@ -378,9 +432,10 @@ class BridgesConfiguration extends Component {
 										</Text>
 									</View>
 								</TouchableHighlight>
-							</View>							
+							</View>
+							{devices_content}
 						</View>
-					</Image>
+					
 				</ScrollView>
             );
         }
@@ -388,9 +443,30 @@ class BridgesConfiguration extends Component {
 }
 
 const mapStateToProps = state => ({
-    central_device: state.configurationScanCentralReducer.central_device,
+    central_device: state.scanCentralReducer.central_device,
     central_device_status: state.configurationScanCentralReducer.central_device_status,
-
+    /*	 central_device : { 
+    	new_representation: '01020603FF0FF0FF1FF1',
+		rssi: -63,
+		name: 'Sure-Fi Brid',
+		id: 'DB:CB:B5:8E:33:9A',
+		advertising: 
+		{ CDVType: 'ArrayBuffer',
+		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
+		manufactured_data: 
+		{ hardware_type: '01',
+		firmware_version: '02',
+		device_state: '0603',
+		device_id: 'FF0FF0',
+		tx: 'FF1FF1',
+		address: 'DB:CB:B5:8E:33:9A',
+		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
+    },*/
+    //central_device_status: "connected",
+    central_matched : state.scanCentralReducer.central_device_matched,
+  	remote_matched : state.scanRemoteReducer.remote_device_matched,
+  	remote_device : state.scanRemoteReducer.remote_device,
+  	devices : state.pairReducer.devices
 });
 
 export default connect(mapStateToProps)(BridgesConfiguration);

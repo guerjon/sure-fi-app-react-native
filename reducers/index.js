@@ -10,6 +10,13 @@ import updateFirmwareCentralReducer from './bridges_configuration/updateFirmware
 import selectFirmwareCentralReducer from './bridges_configuration/selectFirmwareCentralReducer'
 import firmwareUpdateReducer from './bridges_configuration/firmwareUpdateReducer'
 import configureRadioCentralReducer from './bridges_configuration/configureRadioCentralReducer'
+import scannedDevicesListReducer from './scannedDevicesListReducer'
+import setupCentralReducer from './setupCentralReducer'
+import setupCentralExampleReducer from './setupCentralExampleReducer'
+import setupRemoteReducer from './setupRemoteReducer'
+import bridgeDetailsReducer from './bridgeDetailsReducer'
+import registerReducer from './registerReducer'
+import mainScreenReducer from './mainScreenReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -22,7 +29,14 @@ const rootReducer = combineReducers({
     updateFirmwareCentralReducer,
     selectFirmwareCentralReducer,
     firmwareUpdateReducer,
-    configureRadioCentralReducer
+    configureRadioCentralReducer,
+    scannedDevicesListReducer,
+    setupCentralReducer,
+    setupCentralExampleReducer,
+    setupRemoteReducer,
+    bridgeDetailsReducer,
+    registerReducer,
+    mainScreenReducer
 })
 
 export default rootReducer

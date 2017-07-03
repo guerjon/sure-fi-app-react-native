@@ -44,11 +44,23 @@ export default function scanRemoteReducer (state = initialState, action) {
 
     case "REMOTE_DEVICE_IS_NOT_ON_PAIRING_MODE":
       return {
+        ...state,
         scanning_status : "device_is_not_on_paring_mode"
       }
     case "START_SCANNING":
       return {
-         remote_device : {}
+        ...state,
+        remote_device : {}
+      }
+    case "CLEAN_REMOTE_CAMERA":
+      return{
+        ...state,
+        scanning_status : "clean_camera"
+      }
+    case "IS_NOT_REMOTE_DEVICE":
+      return {
+        ...state,
+        scanning_status : "is_not_remote_device"
       }
     default:
       return state

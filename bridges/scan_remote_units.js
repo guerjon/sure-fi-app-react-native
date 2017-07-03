@@ -63,132 +63,17 @@ class ScanRemoteUnits extends Component {
         dispatch({
             type: "RESET_REMOTE_REDUCER"
         })
-        dispatch({
-            type: "RESET_PAIR_REDUCER"
-        })
         
         this.manager = this.props.navigation.state.params.manager
         var bleManagerEmitter = new NativeEventEmitter(this.manager)
 
-
-        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-
-        this.scanning = this.startScanning()
-        this.devices = []
-
-        setTimeout(() => this.stopScanning(),60000) 
     }
 
-
-    hexToBytes(hex) {
-        for (var bytes = [], c = 0; c < hex.length; c += 2) {
-            var sub = hex.substr(c, 2);
-
-            var parse_int = parseInt(sub, 16)
-            bytes.push(parse_int);
-        }
-        return bytes;
-    }
-
-    uint8ToString(u8a) {
-        var CHUNK_SZ = 0x8000;
-        var c = [];
-        for (var i = 0; i < u8a.length; i += CHUNK_SZ) {
-            c.push(String.fromCharCode.apply(null, u8a.subarray(i, i + CHUNK_SZ)));
-        }
-        return c.join("");
-    }
-
-    findId(data, idToLookFor) {
-        if (data) {
-            for (var i = 0; i < data.length; i++) {
-                if (data[i].id == idToLookFor) {
-                    return true
-                }
-            }
-        }
-        return false;
-    }
-
-
-    getManufacturedData(device) {
-        if (device) {
-            device.manufactured_data = this.divideManufacturedData(device.new_representation, device.id);
-            delete device.manufacturerData;
-        }else{
-          console.log("error on getManufacturedData device is null or 0")
-        }
-        return device;
-    }
-
-    /*
-     * manufacturedData its an string 
-     */
-    divideManufacturedData(manufacturedData, address) {
-        var divide_manufactured_data = {}
-        //manufacturedData = constants.TO_HEX_STRING(manufacturedData)
-        console.log("manufacturedData",manufacturedData)
-        divide_manufactured_data.hardware_type = manufacturedData.substr(0, 2) // 01 or 02
-        divide_manufactured_data.firmware_version = manufacturedData.substr(2, 2) //all four bytes combinations
-        divide_manufactured_data.device_state = manufacturedData.substr(4, 4)
-        divide_manufactured_data.device_id = manufacturedData.substr(8, 6);
-        divide_manufactured_data.address = address;
-        divide_manufactured_data.security_string = this.getSecurityString(manufacturedData.substr(8, 6),manufacturedData.substr(14, 6))
-        return divide_manufactured_data;
-    }
-
-    startScanning() {
-        var {
-            dispatch
-        } = this.props;
-        var scanning = setInterval(() => this.handleScan(), 1000);
-        return scanning
-    }
-
-    stopScanning() {
-      var scanning = this.scanning
-
-      if(scanning)
-          clearInterval(scanning)
-    }
-
-    handleDiscoverPeripheral(data) {
-      var devices = this.devices;
-        
-        //if(data.name == "SF Bridge"){
-        if (data.name == "Sure-Fi Brid") {
-            if (!this.findId(devices, data.id)) {
-              
-              var data = this.getManufacturedData(data)
-                devices.push(data)
-                this.devices = devices
-            }
-        }
-    }
-
-
-    handleScan() {
-        this.manager.scan([], 3, true,{numberOfMatches : 3,matchMode:1,scanMode:0},() => {
-            console.log('handleScan()');
-        })
-    }
-
- 
-
-
-    getSecurityString(peripheralRXUUID,peripheralTXUUID){
-
-        peripheralRXUUID = constants.REVERSE_STRING(peripheralRXUUID.toUpperCase())
-        peripheralTXUUID = peripheralTXUUID.toUpperCase() + "x~sW5-C\"6fu>!!~X"
-        let string = peripheralRXUUID + peripheralTXUUID
-        let md5_string  = md5(string)
-        let hex_string = constants.HEX_TO_BYTES(md5_string)
-        return hex_string
-    }
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
-        console.log("scan_Result",scan_result)
+        //Vibration.vibrate()
+
+
 
         var device_id = scan_result.data;
         this.scan_result_id = device_id
@@ -197,136 +82,89 @@ class ScanRemoteUnits extends Component {
             navigation
         } = this.props;
 
-        var devices = this.devices
+        var devices = this.props.devices
         var matched_device = []
         
-        console.log("devuce 0",devices)
-        if(devices){
-
-          var remote_device = devices.filter(function(device) {
-              
-              if (!device.manufactured_data)
-                  return false
-              return device.manufactured_data.hardware_type == "02"
-          });
-          console.log("devuce 2",devices)
-
-          var matched_device = remote_device.filter(function(device) {
-
-              if (!device)
-                  return false
-              if (!device.manufactured_data)
-                  return false
-              if (!device.manufactured_data.device_id)
-                  return false
-
-              var data_upper_case = device.manufactured_data.device_id.toUpperCase()
-              device_id = device_id.toUpperCase()
-              return data_upper_case == device_id;
-          });
-
-        }
-        console.log(matched_device)
-
-        if (matched_device.length > 0) {
-            var flag = false;
-
-            if (navigation)
-                if (navigation.state)
-                    if (navigation.state.params)
-                        if (navigation.state.params.screenBefore == "configure-bridge") {
-                            flag = true;
-                        }
-
-            var state = matched_device[0].manufactured_data.device_state
+        if(devices){// the scanner should found some devices at this moment, if not just keep looking 
             
-            if (flag) {
-                if ((state == '0203') || (state == '0003')) {
-                  this.stopScanning()
+            var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
+            if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are remote i.e hardware_type == 01 return true
+                matched_devices = constants.GET_REMOTE_DEVICES(matched_devices)
+                
+                if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a remote _device
+                    
+                    matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
+                    
+                    if(matched_devices.length > 0){
+                        var matched_device = matched_devices[0]
+                        dispatch({
+                            type: "REMOTE_DEVICE_MATCHED",
+                            remote_device: matched_devices[0]
+                        });
+
+                    }else{
+                    
+                        dispatch({
+                            type: "REMOTE_DEVICE_IS_NOT_ON_PAIRING_MODE"
+                        })                        
+                    
+                    }
+                }else{
+                    
                     dispatch({
-                        type: "REMOTE_DEVICE_MATCHED",
-                        remote_device: matched_device[0]
-                    });
-                } else {
-                    dispatch({
-                        type: "REMOTE_DEVICE_IS_NOT_ON_PAIRING_MODE"
+                        type : "IS_NOT_REMOTE_DEVICE"
                     })
+
                 }
-
-            } else {
-              this.stopScanning()
+            }else{
+                
                 dispatch({
-                    type: "REMOTE_DEVICE_MATCHED",
-                    remote_device: matched_device[0]
-                });
-            }
+                    type: "REMOTE_DEVICE_NOT_MATCHED",
+                })
 
-        } else {
-            dispatch({
-                type: "REMOTE_DEVICE_NOT_MATCHED",
-            })
+            }
         }
 
     }
 
     smartGoBack() {
         var {
-            navigation
-        } = this.props;
-
-        this.connect()
-        this. stopScanning()
-        navigation.goBack()
-    }
-
-    writeSecondService(data){
-        var {remote_device} = this.props
-        console.log("before_write")
-        this.manager.retrieveServices(remote_device.id,() => {
-            this.manager.specialWrite(remote_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20)
-        })
-        console.log("after_write")
-    }
-
-    connect() {
-        var {
-            remote_device,
+            navigation,
             dispatch
-        } = this.props
-        dispatch({
-            type: "LOADING"
-        })
-        console.log("remote_device",remote_device)
-
-        this.manager.connect(remote_device.id,(peripheralInfo) => {
-            console.log("connected to:",peripheralInfo)
-            //this.writeSecondService(remote_device.manufactured_data.security_string)
-        })
+        } = this.props;
+        
+        
+        /*if(this.camera)
+            this.camera.release()
+        */
+        dispatch({type: "CLEAN_REMOTE_CAMERA"})
+        navigation.navigate("SetupRemote",{scan : this.props.navigation.state.params.scan})
     }
 
     clearQr(){
       this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
     }
 
-    renderCamera(message,button) {
 
-        return (
+    renderCamera(message,button) {
+        return(
             <View style={styles.mainContainer}>
-        <View style={{margin:5}}>{message}</View>
-          <Camera
-            ref={(cam) => {
-            this.camera = cam;
-            }}
-            style={styles.preview}
-            aspect={Camera.constants.Aspect.fill}
-            onBarCodeRead={(e) => this.onSuccess(e)}
-            >
-              <View/>
-          </Camera>
-        <View style={{flexDirection:"row",height:40}}>
-          {button}
-        </View>                    
-        </View>
+                <View style={{margin:5}}>{message}</View>
+                <Camera
+                    style={styles.preview}
+                    aspect={Camera.constants.Aspect.fill}
+                    ref={(cam) => {
+                        this.camera = cam;
+                    }}
+                    onBarCodeRead={(e) => this.onSuccess(e)}
+                >
+                    <View/>
+                </Camera>
+                <View style={{flexDirection:"row",height:40}}>
+                    {button}
+                </View>                    
+            </View>
+
         )
     }
 
@@ -349,9 +187,9 @@ class ScanRemoteUnits extends Component {
           </Text>
           </TouchableHighlight>
         <TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center"}} onPress={() => this.smartGoBack()}>
-          <Text style={{color: "white",fontSize:16}}>
-          Confirm
-          </Text>
+            <Text style={{color: "white",fontSize:16}}>
+                Confirm
+            </Text>
         </TouchableHighlight>
       </View>
       )
@@ -376,11 +214,14 @@ class ScanRemoteUnits extends Component {
             case "device_scanned_and_matched":
                 var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({remote_device.manufactured_data.device_id.toUpperCase()})</Text>
                 return this.renderCamera(message,confirm_buttons)
-                break
             case "device_is_not_on_paring_mode":
                 var message = <Text style={{fontSize:16, color:"red"}}>Device is not on pairing mode</Text>
                 return this.renderCamera(message,clear_button)
-                break
+            case "is_not_remote_device":
+                var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a remote device</Text>
+                return this.renderCamera(message,clear_button)
+            case "clean_camera":
+                return (<View><Text>Chargin ...</Text></View>)
             default:
                 return (
                     <View style={{flex:1,alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
@@ -402,7 +243,8 @@ class ScanRemoteUnits extends Component {
 const mapStateToProps = state => ({
     remote_device: state.scanRemoteReducer.remote_device,
     manufactured_data: state.scanRemoteReducer.manufactured_data,
-    scanning_status: state.scanRemoteReducer.scanning_status
+    scanning_status: state.scanRemoteReducer.scanning_status,
+    devices : state.pairReducer.devices
 })
 
 export default connect(mapStateToProps)(ScanRemoteUnits);

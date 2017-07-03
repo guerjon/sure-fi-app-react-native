@@ -16,6 +16,7 @@ const initialState = {
   scanning_status: "no_device_found",
 }
 
+
 export default function scanCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_CENTRAL_REDUCER":
@@ -48,7 +49,18 @@ export default function scanCentralReducer (state = initialState, action) {
       }
     case "START_SCANNING":
       return {
-         central_device : {}
+        ...state,
+        central_device : {}
+      }
+    case "CLEAN_CAMERA":
+      return{
+        ...state,
+        scanning_status : "clean_camera"
+      }
+    case "IS_NOT_CENTRAL_DEVICE":
+      return {
+        ...state,
+        scanning_status : "is_not_central_device"
       }
     default:
       return state
