@@ -59,7 +59,7 @@ class Bridges extends Component{
 			},
 			{
 				image : require('../images/troubleshooting_icon.imageset/troubleshooting_icon.png'),
-				route : ()=> console.log("to do troubleshooting"),
+				route : ()=> this.props.navigation.navigate("RadioConfiguration"),
 				text : "Troubleshoot Bridge"
 			},
 			{

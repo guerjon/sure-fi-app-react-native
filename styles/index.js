@@ -5,6 +5,7 @@ var {width, height} = Dimensions.get('window');
 const margin = 20
 const title_margin  = 15
 export const success_green = "#00DD00"
+const small_font_size = 12
 const medium_font_size = 18
 const cancel_red = "red"
 export const first_color = "#2a323d"
@@ -141,6 +142,17 @@ export  const styles = StyleSheet.create({
     bigGreenButtonText:{
       color: "white",
       fontSize:medium_font_size
+    },
+    greenButton: {
+      backgroundColor: success_green,
+      marginHorizontal:10,
+      padding: 10,
+      borderRadius: 10
+
+    },
+    greenButtonText:{
+      color: "white",
+      fontSize:small_font_size      
     },
     rowContainer:{
       marginVertical: 10

@@ -34,6 +34,7 @@ export default function writeBridgeConfigurationReducer (state = initialState, a
       return {
         scanning_units :false,
         connecting_central_unit: false,
+        connected_central_unit : false,
         writing_central_unit: false,
         wrote_central_unit: false,
         connecting_remote_unit: false,

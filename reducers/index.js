@@ -6,10 +6,14 @@ import scanRemoteReducer from './scanRemoteReducer'
 import scanCentralReducer from './scanCentralReducer'
 import writeBridgeConfigurationReducer from './writeBridgeConfigurationReducer'
 import configurationScanCentralReducer from './configurationScanCentralReducer'
+import configurationScanRemoteReducer from './configurationScanRemoteReducer'
+
 import updateFirmwareCentralReducer from './bridges_configuration/updateFirmwareCentralReducer'
 import selectFirmwareCentralReducer from './bridges_configuration/selectFirmwareCentralReducer'
 import firmwareUpdateReducer from './bridges_configuration/firmwareUpdateReducer'
 import configureRadioCentralReducer from './bridges_configuration/configureRadioCentralReducer'
+
+
 import scannedDevicesListReducer from './scannedDevicesListReducer'
 import setupCentralReducer from './setupCentralReducer'
 import setupCentralExampleReducer from './setupCentralExampleReducer'
@@ -26,6 +30,7 @@ const rootReducer = combineReducers({
     scanRemoteReducer,
     writeBridgeConfigurationReducer,
     configurationScanCentralReducer,
+    configurationScanRemoteReducer,
     updateFirmwareCentralReducer,
     selectFirmwareCentralReducer,
     firmwareUpdateReducer,

@@ -12,6 +12,8 @@ import ScanRemoteUnits from './bridges/scan_remote_units'
 import WriteBridgeConfiguration from './bridges/write_bridge_configuration'
 import BridgesConfiguration from './bridges/bridges_configuration/index'
 import ConfigurationScanCentralUnits from './bridges/bridges_configuration/scan_central_units'
+import ConfigurationScanRemoteUnits from './bridges/bridges_configuration/scan_remote_units'
+
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
 import FirmwareUpdate from './bridges/bridges_configuration/firmware_update'
@@ -21,19 +23,21 @@ import SetupCentralExamples from './bridges/setup_central_examples'
 import SetupRemote from './bridges/setup_remote'
 import BridgeDetails from './bridges/bridge_details'
 import Register from './bridges/register'
+import RadioConfiguration from './bridges/radio/index'
+
 
 const mapStateToProps = state => ({
   nav: state.nav,
 });
 
 export const AppNavigator = StackNavigator({
+	Main: {screen: MainScreen,headerMode: 'screen'},
 	BridgesConfiguration : {screen : BridgesConfiguration},
 	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
-	
+	RadioConfiguration : {screen : RadioConfiguration},
 	Bridges: {screen: Bridges},	
 	PairBridge: {screen: PairBridge},
-	
-	Main: {screen: MainScreen,headerMode: 'screen'},
+		
 	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
 	
 	BridgeDetails : {screen : BridgeDetails},
@@ -47,6 +51,7 @@ export const AppNavigator = StackNavigator({
 	
 	FirmwareUpdate : {screen : FirmwareUpdate},
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
+	ConfigurationScanRemoteUnits : {screen : ConfigurationScanRemoteUnits},
 	
 	SetupCentral : {screen : SetupCentral},
 	SetupCentralExamples : {screen : SetupCentralExamples},

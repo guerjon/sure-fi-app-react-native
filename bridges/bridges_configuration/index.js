@@ -93,7 +93,8 @@ class BridgesConfiguration extends Component {
               	var data = this.getManufacturedData(data)
                 devices.push(data)
                 this.devices = devices
-                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
+                this.remote_devices = this.filterRemoteDevices(devices)
+                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
             }
         }
     }
@@ -110,7 +111,7 @@ class BridgesConfiguration extends Component {
 
 	scanRemoteDevices(){
 		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanRemoteUnits",{manager: this.manager})
+		this.props.navigation.navigate("ConfigurationScanRemoteUnits",{manager: this.manager,scan : this.scanning})
 	}
 
 	scanCentralDevices(){
@@ -144,6 +145,16 @@ class BridgesConfiguration extends Component {
         });
     }
 
+    disconnectRemote(){
+    	var {
+    		remote_device,
+    		dispatch
+    	} = this.props
+    	BleManagerModule.disconnect(remote_device.id,(data) => {
+    		this.resetRemoteStatus()
+    	})
+    }
+
     connect() {
         var {
             central_device,
@@ -174,6 +185,13 @@ class BridgesConfiguration extends Component {
     	})
     }
 
+    resetRemoteStatus(){
+    	this.props.dispatch({
+    		type: "CONFIGURATION_RESET_REMOTE_REDUCER"
+    	})
+
+    }
+
     unPair() {
     	var {central_device} = this.props
     	BleManagerModule.retrieveServices(central_device.id, () => {
@@ -195,6 +213,22 @@ class BridgesConfiguration extends Component {
         })
     }
 
+    componentWillUnmount() {
+    	var {central_device,remote_device} = this.props
+    	if(central_device)
+    		if(central_device.id)
+    			BleManager.disconnect(central_device.id)
+    				.then(info => console.log("disconnect:" + info ))
+    				.catch(error => console.log(error) )
+
+    	if(remote_device)
+    		if(remote_device.id)
+    			BleManager.disconnect(remote_device.id)
+    				.then(info => console.log("disconnect:" + info ))
+    				.catch(error => console.log(error) )    				
+    }
+
+
 	renderDevice(device){
 		device = device.item
 		return(
@@ -209,79 +243,203 @@ class BridgesConfiguration extends Component {
 		);
 	}
 
-    renderStatusDevice(){
-    	var {central_device_status} = this.props
-
-
-    	switch(central_device_status){
-			case "connecting":
-				var status = "Hold the test button by"
-	            var central_status_text_style = {
-	                color: "orange",
-	                padding: 10,
-	                margin: 5
-	            }	
-				return(
-					<View>
-			            <View style={{flexDirection: "row",backgroundColor: "white"}}>
-							<View style={{flexDirection:"row"}}>
-								<Text style={{padding: 10,margin:5}}>
-									Status
-								</Text >
-								<View style={{width:180}}>
-									<Text style={{fontSize:15}}>
-										Hold the Test button on the Bridge for 5 seconds
-									</Text>
-								</View>
-							</View>
-							<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
-								<ActivityIndicator />
-							</View>							
+	renderConnectingBox(){
+		return (
+			<View>
+	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
+					<View style={{flexDirection:"row"}}>
+						<Text style={{padding: 10,margin:5}}>
+							Status
+						</Text >
+						<View style={{width:180}}>
+							<Text style={{fontSize:15}}>
+								Hold the Test button on the Bridge for 5 seconds
+							</Text>
 						</View>
-						
 					</View>
-				)
-			case "disconnected":
-				var status = "Disconnected"
-	            var central_status_text_style = {
-	                color: "red",
-	                padding: 10,
-	                margin: 5
-	            }	
+					<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+						<ActivityIndicator />
+					</View>							
+				</View>
+			</View>
+		)
+	}
 
-	            return(
-					<View>
-			            <View style={{flexDirection: "row",backgroundColor: "white"}}>
-							<View style={{flexDirection:"row"}}>
+	renderDisconnectingBox(callback){
+		return (
+			<View>
+	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
+					<View style={{flexDirection:"row"}}>
+						<Text style={{padding: 10,margin:5}}>
+							Status
+						</Text >
+						<Text style={{color: "red",padding: 10,margin: 5}}>
+							"Disconnected"
+						</Text>
+					</View>
+					<View style={{flex:1}}>
+						<TouchableHighlight 
+							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+							onPress={()=> callback()}
+						>
+							<Text style={styles.bigGreenButtonText}>
+								Connect
+							</Text>
+						</TouchableHighlight>
+					</View>							
+				</View>
+			</View>
+		)
+	}
+
+	renderRemoteStatusDevice(){
+		var {remote_device_status,remote_device} = this.props
+
+		if(this.props.remote_devices.length > 0){
+    		var remote_devices = this.renderDevicesList(this.props.remote_devices)
+    	}else{
+    		var remote_devices = <ActivityIndicator style={{marginTop:40}}/>	
+    	}
+
+		switch(remote_device_status){
+			case "connecting":
+			var content = this.renderConnectingBox()
+			break
+			case "disconnected":
+			var content = this.renderDisconnectingBox(this.scanRemoteDevices)
+			break
+			case "connected":
+			var content = (
+				<View>
+					<View style={{backgroundColor:"white"}}>
+			            <View style={{flexDirection: "row",margin:10}}>
+							<View style={{flex:1,flexDirection:"row"}}>
 								<Text style={{padding: 10,margin:5}}>
 									Status
 								</Text >
-								<Text style={central_status_text_style}>
-									{status}
+								<Text style={{color: "#00DD00",padding: 10,margin: 5}}> 
+									Connected
 								</Text>
 							</View>
 							<View style={{flex:1}}>
 								<TouchableHighlight 
-									style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-									onPress={()=> this.scanCentralDevices()}
+									style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+									onPress={() => this.disconnectRemote()}
 								>
 									<Text style={styles.bigGreenButtonText}>
-										Connect
+										Disconnect
 									</Text>
 								</TouchableHighlight>
-							</View>							
+							</View>
 						</View>
-						
 					</View>
-	            )		
+					<View style={{marginTop: 10}}>
+						<View style={{padding:10}}>
+							<Text style={styles.title}>
+								CONFIGURATION OPTIONS
+							</Text>
+						</View>
+						<View style={{backgroundColor:"white"}}>
+							<View>
+								<TouchableHighlight 
+									style={styles.white_row} 
+									onPress={() => this.props.navigation.navigate("UpdateFirmwareCentral")}
+								>
+									<Text style={styles.white_row_text}>
+										Update Firmware - Application
+									</Text>
+								</TouchableHighlight>
+								<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("FirmwareUpdateRadio")}>
+									<Text style={styles.white_row_text}> 
+										Update Firmware - Radio
+									</Text>
+								</TouchableHighlight>
+							</View>
+						</View>
+					</View>		
+				</View>
+
+			)
+			break
+			default:
+				var content = null
+			break
+			
+		}
+
+		if(!IS_EMPTY(remote_device)){
+
+			return (
+				<View>
+					<View style={styles.titleContainer}>
+						<Text style={styles.title}>
+							Remote Unit
+						</Text>
+					</View>
+					<View style={styles.touchableSectionContainer}>
+						<TouchableHighlight onPress={()=> this.scanRemoteDevices()} style={styles.touchableSection}>
+							<View style={styles.touchableSectionInner}>
+								<Image 
+									source={require('../../images/hardware_select.imageset/hardware_select.png')} 
+									style={styles.touchableSectionInnerImage}
+								>
+								</Image>
+								<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+									<Text >
+										Sure-Fi Bridge Central
+									</Text>
+									<Text style={{fontSize:22}}>
+										{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
+									</Text>
+								</View>
+							</View>
+						</TouchableHighlight>
+					</View>
+					<View style={{borderTopWidth:0.5}}>
+						{content}
+					</View>
+				</View>
+			)
+		}else{
+			
+			return (
+					<View>
+						<View style={styles.titleContainer}>
+							<Text style={styles.title}>
+								Remote Unit
+							</Text>
+						</View>
+						<View style={styles.touchableSectionContainer}>
+							<TouchableHighlight onPress={()=> this.scanRemoteDevices()} style={styles.touchableSection}>
+								<View style={styles.touchableSectionInner}>
+									<Image 
+										source={require('../../images/hardware_select.imageset/hardware_select.png')} 
+										style={styles.touchableSectionInnerImage}
+									>
+									</Image>
+									<Text style={styles.touchableSectionInnerText}>
+										Scan Remote Unit
+									</Text>
+								</View>
+							</TouchableHighlight>
+						</View>
+						<View>
+							{remote_devices}
+						</View>
+					</View>
+			)			
+		}
+	}
+
+    renderStatusDevice(){
+    	var {central_device_status,remote_devices,remote_device_status} = this.props
+
+    	switch(central_device_status){
+			case "connecting":
+				return this.renderConnectingBox()
+			case "disconnected":
+	            return this.renderDisconnectingBox(this.scanCentralDevices);
 			case "connected":
-				var status = "Connected"
-	            var central_status_text_style = {
-	                color: "#00DD00",
-	                padding: 10,
-	                margin: 5
-	            }
-	            
  				return(
 					<View>
 						<View style={{backgroundColor:"white"}}>
@@ -290,8 +448,8 @@ class BridgesConfiguration extends Component {
 									<Text style={{padding: 10,margin:5}}>
 										Status
 									</Text >
-									<Text style={central_status_text_style}> 
-										{status}
+									<Text style={{color: "#00DD00",padding: 10,margin: 5}}> 
+										Connected
 									</Text>
 								</View>
 								<View style={{flex:1}}>
@@ -336,16 +494,19 @@ class BridgesConfiguration extends Component {
 										onPress={() => this.props.navigation.navigate("UpdateFirmwareCentral")}
 									>
 										<Text style={styles.white_row_text}>
-											Update Firmware - Central
+											Update Firmware - Application
 										</Text>
 									</TouchableHighlight>
-									<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("ConfigureRadioCentral")}>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("FirmwareUpdateRadio")}>
 										<Text style={styles.white_row_text}> 
-											Configure Radio - Central
+											Update Firmware - Radio
 										</Text>
 									</TouchableHighlight>
 								</View>
 							</View>
+							<View>
+								{this.renderRemoteStatusDevice()}
+							</View>							
 						</View>							
 					</View>	            	
 	            )
@@ -354,21 +515,31 @@ class BridgesConfiguration extends Component {
     	}
     }
 
+    renderDevicesList(devices){
+    	return (
+			<ScrollView style={{marginTop:20}}>
+				<FlatList data={this.props.devices} renderItem={(item) => this.renderDevice(item)} keyExtractor={(item,index) => item.id } />	
+			</ScrollView>
+    	)
+    }
+
+    filterRemoteDevices(devices){
+    	let remote_revices = devices.filter(device => {
+    		return device.manufactured_data.hardware_type == "02"
+    	})
+    	return remote_revices
+    }
+
     render() {
         var {
             devices,
             central_device,
         } = this.props;
 
-    	if(this.props.devices.length > 0)
-			var devices_content = (
-
-				<ScrollView style={{marginTop:20}}>
-					<FlatList data={this.props.devices} renderItem={(item) => this.renderDevice(item)} keyExtractor={(item,index) => item.id } />	
-				</ScrollView>
-			)
-		else{
-			var devices_content = <ActivityIndicator />
+    	if(this.props.devices.length > 0){
+			var devices_content = this.renderDevicesList(this.props.devices)
+		}else{
+			var devices_content = <ActivityIndicator style={{marginTop:40}}/>
 		}
 
         var status = this.renderStatusDevice()
@@ -404,6 +575,8 @@ class BridgesConfiguration extends Component {
 							<View style={{borderTopWidth:0.5}}>
 								{status}
 							</View>
+
+
 						</View>
 					
 				</ScrollView>
@@ -434,6 +607,7 @@ class BridgesConfiguration extends Component {
 								</TouchableHighlight>
 							</View>
 							{devices_content}
+
 						</View>
 					
 				</ScrollView>
@@ -466,7 +640,9 @@ const mapStateToProps = state => ({
     central_matched : state.scanCentralReducer.central_device_matched,
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,
-  	devices : state.pairReducer.devices
+  	devices : state.pairReducer.devices,
+  	remote_devices : state.pairReducer.remote_devices,
+  	remote_device_status : state.configurationScanRemoteReducer.remote_device_status
 });
 
 export default connect(mapStateToProps)(BridgesConfiguration);

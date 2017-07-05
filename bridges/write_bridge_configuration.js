@@ -66,7 +66,7 @@ class WriteBridgeConfiguration extends Component{
 
 	componentDidMount() {
 		var {dispatch,central_device,remote_device} = this.props;
-  		
+  		dispatch({type: "RESET_STATE"})
 		bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
 		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.disconnectDevice(data) );
 		dispatch({type: SCANNING_UNITS})

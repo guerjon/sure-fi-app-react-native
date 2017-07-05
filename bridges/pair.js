@@ -56,6 +56,20 @@ class PairBridge extends Component{
         });
 	}
 
+    componentWillUnmount() {
+    	var {central_device,remote_device} = this.props
+    	if(central_device)
+    		if(central_device.id)
+    			BleManager.disconnect(central_device.id)
+    				.then(info => console.log("disconnect:" + info ))
+    				.catch(error => console.log(error) )
+    	if(remote_device)
+    		if(remote_device.id)
+    			BleManager.disconnect(remote_device.id)
+    				.then(info => console.log("disconnect:" + info ))
+    				.catch(error => console.log(error) )    	    				
+    }
+
 
 	searchDevices(){
 		this.scanning = setInterval(() => {

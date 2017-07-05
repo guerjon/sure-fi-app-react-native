@@ -77,6 +77,9 @@ class ScanCentralUnits extends Component {
 
     stopScanning() {
         //console.log(this.props.navigation.state.params.scan)
+        this.props.dispatch({
+            type: "CONNECTING_CENTRAL_DEVICE"
+        })
     	if(this.props.navigation.state.params.scan)
         	clearInterval(this.props.navigation.state.params.scan)
         

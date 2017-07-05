@@ -227,6 +227,13 @@ class ConfigureRadio extends Component {
 		return(
 			
 			<ScrollView>
+				<View style={{alignItems:"center"}}>
+					<TouchableHighlight onPress = {() => this.update()} style={styles.greenButton}>
+						<Text style={styles.greenButtonText}>
+							UPDATE
+						</Text>
+					</TouchableHighlight>
+				</View>
 				<View style={{marginVertical:20}}>
 					{this.getRow("Power", power_selected ? power_selected : "Unknown")}
 					{(options_selected == "power_options") ? this.renderOptions(powerOptions) : null}
@@ -253,12 +260,12 @@ class ConfigureRadio extends Component {
 				</View>
 
 				<View style={{alignItems:"center"}}>
-					<TouchableHighlight onPress = {() => this.update()} style={styles.bigGreenButton}>
-							<Text style={styles.bigGreenButtonText}>
+					<TouchableHighlight onPress = {() => this.update()} style={styles.greenButton}>
+							<Text style={styles.greenButtonText}>
 								UPDATE
 							</Text>
 						</TouchableHighlight>
-					</View>
+				</View>
 			</ScrollView>
 			
 		)
