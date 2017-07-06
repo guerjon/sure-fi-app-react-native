@@ -26,6 +26,7 @@ import {
 import {connect} from 'react-redux'
 import RNFetchBlob from 'react-native-fetch-blob'
 import ProgressBar from 'react-native-progress/Bar';
+import BleManager from 'react-native-ble-manager';
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const window = Dimensions.get('window');
@@ -39,13 +40,21 @@ class UpdateFirmwareCentral extends Component{
 	}
 
 	componentDidMount() {
-		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this);
-		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', this.handleDisconnectedPeripheral );
-    	bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification );
+		
+		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',() =>  this.handleDisconnectedPeripheral() );
+		if(this.props.kind_firmware == "application"){
+			bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
+		}else{
+			bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicRadioNotification(data) );
+		}
+    	
+
 		this.fetchFirmwareFile()
 		this.row_number = [0,0]
 		this.current_row = {}
 		this.write_status = 0
+		this.kind_firmware = this.props.kind_firmware;
+
 	}
 
 	startNotification(){
@@ -69,11 +78,11 @@ class UpdateFirmwareCentral extends Component{
 		var {central_device,dispatch} = this.props
 	    dispatch({type: "LOADING"})
 	    BleManagerModule.connect(central_device.id,() => this.startNotification())
-	    
 	}
 
 	handleCharacteristicNotification(data){
 		var {dispatch} = this.props
+
 		var response = data.value[0]
 
 		switch(response){
@@ -107,9 +116,7 @@ class UpdateFirmwareCentral extends Component{
 			case 7:
 				console.log("BleRsp_BootloaderInfo")
 				this.findProgramingNumber(data)
-				return
-			
-				
+				return	
 			case 224:
 				console.log("BleRsp_SecurityError")
 				return
@@ -124,6 +131,7 @@ class UpdateFirmwareCentral extends Component{
 				return
 			case 228:
 				console.log("BleRsp_InvalidNumBytesError")
+
 				Alert.alert("Error","Error on firmware update")
 				//this.errorProcessRows()
 				return
@@ -141,8 +149,80 @@ class UpdateFirmwareCentral extends Component{
 	}
 
 
-	startRow(){
-		
+
+
+	handleCharacteristicRadioNotification(data){
+		var {dispatch} = this.props
+		var response = data.value[0]
+		console.log("notification",data)
+		switch(response){
+			case 1:
+				console.log("BleRsp_FirmwareVersion")
+				return
+			case 2:
+				console.log("BleRsp_QosConfig")
+				return
+			case 0x0A:
+				console.log("BleRsp_UpdateStartSuccess")
+				this.startRadioRow()
+				return								
+			case 0x0E: 
+				console.log("BleRsp_PageSuccess")
+				this.write_status = 0
+				this.calculateProgress()
+				if(this.new_rows.length > 0)
+					this.processRows()
+				else{
+					this.write([7])
+				}
+				return
+			case 0x05:
+				console.log("BleRsp_GenericOk")
+				this.calculateProgress()
+				this.writeRadioPiece()
+				return
+			case 0x10:
+				console.log("BleRsp_UpdateFinishSuccess")
+				
+				return
+			case 11: 
+				console.log("BleRsp_BootloaderInfo")
+				this.processRadioRows()
+				return
+			case 224:
+				console.log("BleRsp_SecurityError")
+				return
+			case 225:
+				console.log("BleRsp_StartUpdateError")
+				return
+			case 226:
+				console.log("BleRsp_AlreadyStartedError")
+				return
+			case 227:
+				console.log("BleRsp_NotStartedError")
+				return
+			case 228:
+				console.log("BleRsp_InvalidNumBytesError")
+				this.errorHandleRow()
+				return
+			case 229:
+				console.log("BleRsp_PageFailure")
+
+				return
+			case 230:
+				console.log("BleRsp_ImageCrcFailureError") //BleRsp_ImageCrcFailureError
+				return
+			default:
+				console.log("No " + response + " option found")
+			return
+		}		
+	}
+
+	errorHandleRow(){
+		this.processRadioRow(this.new_current_row)
+	}
+
+	startRadioRow(){
 		var {dispatch} = this.props
 		dispatch({type: "STAR_ROW"})
 
@@ -150,27 +230,66 @@ class UpdateFirmwareCentral extends Component{
 			let rows = this.bytes_file
 			new_rows = []
 			rows.map(row => {
-				new_rows.push(this.cutRowToPages(row))
+				let pages = this.cutRadioRowToPages(row)
+				new_rows.push(this.cutRadioRowToPages(row))						
+			})  
+
+			this.new_rows = new_rows
+			rows_to_write = this.new_rows.length
+			this.processRadioRows()
+		}else{
+			console.log("There are not bytes_file")	
+		}
+	}
+					
+				
+	startRow(){
+		console.log("startRow()")
+		var {dispatch} = this.props
+		dispatch({type: "STAR_ROW"})
+
+		if(this.bytes_file){
+			let rows = this.bytes_file
+			new_rows = []
+			rows.map(row => {
+					let pages = this.cutRowToPages(row)
+					new_rows.push(this.cutRowToPages(row))	
+					
 			})  
 
 			this.new_rows = new_rows
 
 			rows_to_write = this.new_rows.length
+			
 			this.processRows()
 		}else{
 			console.log("There are not bytes_file")	
 		}
 	}
-
-	processRows(){
+	
+	processRadioRows(){
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
-				this.processRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow
-
+				this.processRadioRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
+				this.new_rows = null;
+				console.log("write 0x11")
+				this.write([0x11]) //finish the rows sending
+			}
+		}else{
+			console.log("there is not rows array on processRows")
+		}
+	}
 
-				console.log("the new_rows varibale is empty")
+	processRows(){
+		
+		if(this.new_rows){
+			if(this.new_rows.length > 0){
+				this.new_current_row = this.new_rows.shift()
+				this.processRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
+			}else{
+				
 				this.new_rows = null;
 				this.write([7]) //finish the rows sending
 			}
@@ -196,7 +315,8 @@ class UpdateFirmwareCentral extends Component{
 
 	processRow(row){
 		this.current_row = row.row
-		console.log(this.current_row)
+		console.log("row.length",row.row_length)	
+
 		this.write(
 			[
 				4,
@@ -210,16 +330,52 @@ class UpdateFirmwareCentral extends Component{
 		)
 	}
 
+	processRadioRow(row){ // init the radio row
+		this.current_row = row.row
+		console.log("row.length",row )
+
+		this.write(
+			[
+				0x0E, //you should expect a 0x05 if all its ok
+				row.number.first,
+				row.number.second,
+				row.crc.first,
+				row.crc.second,
+				row.row_length.first,
+				row.row_length.second
+			]
+		)
+	}
+
 	writeFirstPiece(){
 		var sum = 0
+			var command = [5]
+		
 		while(this.current_row.length > 0){
 			let page = this.current_row.splice(0,19)
-			command = [5]
+			
 			data = command.concat(page)
 			this.writeWithoutResponse(data)
 		}
+
 		this.write([6])
-		//console.log("after write 6")
+		
+	}
+
+	writeRadioPiece(){
+		console.log("writeRadioPiece()")
+		var sum = 0
+		var command = [0x0F]
+
+		while(this.current_row.length > 0){
+			let page = this.current_row.splice(0,19)	
+			data = command.concat(page)
+			console.log("Write 0x0f with data")
+			this.writeWithoutResponse(data) // no response to this commando
+		}
+	
+		this.write([0x10])  // you should wait a 11 if all is ok 
+
 	}
 
 	sumRow(){
@@ -295,6 +451,40 @@ class UpdateFirmwareCentral extends Component{
 		return crc;		
 	}
 
+	cutRadioRowToPages(row){
+		var {dispatch,row_number} = this.props
+		var row_number = this.row_number
+		var first_number = row_number[0]
+		var second_number = row_number[1]
+		var hex_lenght = this.dec2hex(row.length)
+		var byte_lenght = HEX_TO_BYTES(this.dec2hex(row.length))
+		var row_length = byte_lenght
+		let curt_pages = []
+		let crc = HEX_TO_BYTES(this.dec2hex(this.crc16(row)))
+
+		var json = 
+			{
+				command: 0x0E,
+				crc : {
+					first:  crc[0],
+					second: crc[1]
+				},
+				number : {
+					first :  first_number,
+					second : second_number
+				},
+				row_length: {
+					first : row_length[0],
+					second: row_length[1] ? row_length[1] : 0
+				},
+				row: row
+			}
+
+		this.sumRow()
+		return json
+
+	}
+
 	cutRowToPages(row){
 
 		var {dispatch,row_number} = this.props
@@ -335,6 +525,7 @@ class UpdateFirmwareCentral extends Component{
 		return json
 	}
 
+
 	writeWithoutResponse(data){
 		var {central_device} = this.props
 		
@@ -359,38 +550,49 @@ class UpdateFirmwareCentral extends Component{
 		dispatch({type:"START_FETCH"})
 		
 		var {firmware_file} = this.props
+
 		let path = firmware_file.firmware_path
+		
 		// send http request in a new thread (using native code) 
 		
 		RNFetchBlob.fetch('GET', path,GET_HEADERS)
-		  // when response status code is 200 
-		  .then((res) => {
+		.then((res) => {
 		  	var byteCharacters = res.text()
 		  	var byteArrays = [];
 		  	var sliceSize = 2048
-		  	var command = 0x03
+		  	//var command = 0x03
 		  	
-		for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-		    const slice = byteCharacters.slice(offset, offset + sliceSize);
-		    
-		    const byteNumbers = new Array(slice.length);
-		    for (let i = 0; i < slice.length; i++) {
-		      byteNumbers[i] = slice.charCodeAt(i);
-		    }
-		    
-		    byteArrays.push(byteNumbers);
+			for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+			    const slice = byteCharacters.slice(offset, offset + sliceSize);
+			    
+			    const byteNumbers = new Array(slice.length);
+			    for (let i = 0; i < slice.length; i++) {
+			      byteNumbers[i] = slice.charCodeAt(i);
+			    }
+			    
+			    byteArrays.push(byteNumbers);
 
-		}	
+			}	
 			this.bytes_file = byteArrays;
 			
 			this.temporalyConnect()
 		 	dispatch({type: "STARING_FIRMWARE_UPDATE"})
 		  })
-		  // Status code is not 200 
-		  .catch((errorMessage, statusCode) => {
-		    console.log(errorMessage)
+		 .catch((errorMessage, statusCode) => {
+		    console.log("ERROR",errorMessage)
+		    //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
 		    // error handling 
 		  })
+	}
+
+	writeStartRadioUpdate(){
+		let {central_device,dispatch} = this.props
+		let callback = () => dispatch({type:"STARED_FIRMWARE_UPDATE"})
+		if(this.new_rows.length > 0)
+			this.processRadioRows()
+		else{
+			this.write([7])
+		}
 	}
 
 	writeStartUpdate(){
@@ -398,10 +600,17 @@ class UpdateFirmwareCentral extends Component{
 		let {central_device,dispatch} = this.props
 		let callback = () => dispatch({type:"STARED_FIRMWARE_UPDATE"})
 		this.write([3])
+		
 	}
 
 	requestBootloaderInfo(){
-		this.write([8])
+		console.log("requestBootloaderInfo()")
+		if(this.props.kind_firmware == "application"){
+			this.write([8])	
+		}else{
+			this.write([0x0D])
+		}
+		
 	}
 
 	uint8ToString(u8a){
@@ -619,10 +828,28 @@ class UpdateFirmwareCentral extends Component{
 
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
-	//central_device: {id :"FD:C0:90:D7:05:95"},
-	central_device: state.scanCentralReducer.central_device,
+	
+	//central_device: state.scanCentralReducer.central_device,
+	central_device : { 
+    	new_representation: '01020C03FF0FF0FF1FF1',
+		rssi: -63,
+		name: 'Sure-Fi Brid',
+		id: 'C1:BC:40:D9:93:B9',
+		advertising: 
+		{ CDVType: 'ArrayBuffer',
+		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
+		manufactured_data: 
+		{ hardware_type: '01',
+		firmware_version: '02',
+		device_state: '0C03',
+		device_id: 'FF0FF0',
+		tx: 'FF1FF1',
+		address: 'C1:BC:40:D9:93:B9',
+		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
+    },
 	firmware_update_state : state.firmwareUpdateReducer.firmware_update_state,
-	progress : state.firmwareUpdateReducer.progress
+	progress : state.firmwareUpdateReducer.progress,
+	kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
 });
 
 export default connect(mapStateToProps)(UpdateFirmwareCentral)

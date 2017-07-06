@@ -13,6 +13,7 @@ import WriteBridgeConfiguration from './bridges/write_bridge_configuration'
 import BridgesConfiguration from './bridges/bridges_configuration/index'
 import ConfigurationScanCentralUnits from './bridges/bridges_configuration/scan_central_units'
 import ConfigurationScanRemoteUnits from './bridges/bridges_configuration/scan_remote_units'
+import BluetoothFirmwareUpdate from './bridges/bridges_configuration/bluetooth_firmware_update'
 
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
@@ -31,8 +32,8 @@ const mapStateToProps = state => ({
 });
 
 export const AppNavigator = StackNavigator({
-	Main: {screen: MainScreen,headerMode: 'screen'},
 	BridgesConfiguration : {screen : BridgesConfiguration},
+	Main: {screen: MainScreen,headerMode: 'screen'},
 	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
 	RadioConfiguration : {screen : RadioConfiguration},
 	Bridges: {screen: Bridges},	
@@ -55,7 +56,8 @@ export const AppNavigator = StackNavigator({
 	
 	SetupCentral : {screen : SetupCentral},
 	SetupCentralExamples : {screen : SetupCentralExamples},
-	Register : {screen : Register}
+	Register : {screen : Register},
+	BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate}
 	
 });
 

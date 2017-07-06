@@ -39,21 +39,29 @@ class UpdateFirmwareCentral extends Component{
 		this.dispatch({type: "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER"})
 	}
 
+	navigateToFirmwareUpdate(kind){
+		if(kind == "application" || kind == "radio")
+			this.navigate("FirmwareUpdate")
+		else
+			this.navigate("BluetoothFirmwareUpdate")
+
+	}
+
 	render(){
 		var {firmware_update_state} = this.props
 		if(!IS_EMPTY(this.props.firmware_file)){
 			if(this.props.central_update_mode){
 				var content = (
-					<View style={{flexDirection:"row"}}>
-						<View style={{flex:1}}>
-							<TouchableHighlight style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:20}} onPress={() => this.props.dispatch({type: "DELETE_FIRMWARE_SELECTED"})}>
+					<View style={{flexDirection:"row",flex:1,alignItems:"center",justifyContent:"center"}}>
+						<View style={{width:140,height:60}}>
+							<TouchableHighlight style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:20,borderRadius:10}} onPress={() => this.props.dispatch({type: "DELETE_FIRMWARE_SELECTED"})}>
 								<Text style={styles.bigGreenButtonText}>
 									Cancel
 								</Text>
 							</TouchableHighlight>
 						</View>
-						<View style={{flex:1}}>
-							<TouchableHighlight onPress={() => this.navigate("FirmwareUpdate")} style={{backgroundColor: success_green,alignItems:"center",justifyContent:"center",padding:20}}>
+						<View style={{width:140,height:60}}>
+							<TouchableHighlight onPress={() => this.navigateToFirmwareUpdate(this.props.kind_firmware) } style={{backgroundColor: success_green,alignItems:"center",justifyContent:"center",padding:20,borderRadius:10}}>
 								<Text style={styles.bigGreenButtonText}>
 									Start
 								</Text>
@@ -124,7 +132,25 @@ class UpdateFirmwareCentral extends Component{
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
 	central_update_mode : state.updateFirmwareCentralReducer.central_update_mode,
-	central_device: state.scanCentralReducer.central_device,
+	//central_device: state.scanCentralReducer.central_device,
+	central_device : { 
+    	new_representation: '01020C03FF0FF0FF1FF1',
+		rssi: -63,
+		name: 'Sure-Fi Brid',
+		id: 'C1:BC:40:D9:93:B9',
+		advertising: 
+		{ CDVType: 'ArrayBuffer',
+		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
+		manufactured_data: 
+		{ hardware_type: '01',
+		firmware_version: '02',
+		device_state: '0C03',
+		device_id: 'FF0FF0',
+		tx: 'FF1FF1',
+		address: 'C1:BC:40:D9:93:B9',
+		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
+    },
+    kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
 });
 
 

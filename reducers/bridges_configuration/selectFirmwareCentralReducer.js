@@ -1,7 +1,8 @@
 const initialState = {
 	download_firmware_files: "inactive",
 	central_firmware_files : [],
-	central_firmware_file_selected : {}
+	central_firmware_file_selected : {},
+	kind_firmware : null
 }
 
 export default function selectFirmwareCentralReducer (state = initialState, action) {
@@ -26,6 +27,11 @@ export default function selectFirmwareCentralReducer (state = initialState, acti
 			return {
 				...state,
 				central_firmware_file_selected : {}
+			}
+		case "SET_KIND_FIRMWARE":
+			return {
+				...state,
+				kind_firmware : action.kind_firmware
 			}
 		default:
 			return state

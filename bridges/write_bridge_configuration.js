@@ -183,7 +183,7 @@ class WriteBridgeConfiguration extends Component{
 				const navigation_reset = NavigationActions.reset({
 					index : 0,
 					actions: [
-						NavigationActions.navigate({routeName: "Main"})
+						NavigationActions.navigate({routeName: "BridgesConfiguration"})
 					]
 				})
 				this.props.navigation.dispatch(navigation_reset)

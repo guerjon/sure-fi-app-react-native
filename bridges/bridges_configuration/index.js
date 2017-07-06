@@ -65,6 +65,7 @@ class BridgesConfiguration extends Component {
 		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
         BleManager.start().then(() => {
         	this.searchDevices()
+        	//this.connect()
         });
     }
 
@@ -83,13 +84,19 @@ class BridgesConfiguration extends Component {
 
 	handleDiscoverPeripheral(data) {
       
-      var devices = this.devices;
+      var devices = this.devices || [];
         
         //if(data.name == "SF Bridge"){
         if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
-        	
-            if (!FIND_ID(devices, data.id)) {              
-            	
+        	//useless code just for test pourpose
+        	/*if(data.id == this.props.central_device.id){
+        		clearInterval(this.scanning)
+        		this.connect()
+        	}
+        	*/
+        	//useless code just for test pourpose
+
+            if (!FIND_ID(devices, data.id)) {		
               	var data = this.getManufacturedData(data)
                 devices.push(data)
                 this.devices = devices
@@ -119,20 +126,6 @@ class BridgesConfiguration extends Component {
 		this.props.navigation.navigate("ConfigurationScanCentralUnits",{manager : this.manager,scan : this.scanning})
 	}
 
-    showAlert() {
-        Alert.alert(
-            "Initiate Bridge Configuration",
-            "Are you sure you are ready to initiate configuration of this Sure-Fi Bridge?", [{
-                    text: "Cancel",
-                    onPress: () => null
-                },
-                {
-                    text: "Continue",
-                    onPress: () => this.props.navigation.navigate("WriteBridgeConfiguration")
-                }
-            ]
-        );
-    }
 
     disconnect() {
         var {
@@ -161,16 +154,15 @@ class BridgesConfiguration extends Component {
             dispatch
         } = this.props
 
-        BleManagerModule.connect(central_device.id)
+        BleManager.connect(central_device.id)
             .then((peripheralInfo) => {
                 dispatch({
                     type: "CONNECTED_CENTRAL_DEVICE"
                 })
-                
             })
             .catch((error) => {
                 dispatch({
-                    type: ERROR_ON_CENTRAL_SCANNING
+                    type: "ERROR_ON_CENTRAL_SCANNING"
                 })
                 console.log(error);
             });
@@ -292,8 +284,23 @@ class BridgesConfiguration extends Component {
 		)
 	}
 
+	goToUpdateApp(){
+		this.props.dispatch({type: "SET_KIND_FIRMWARE",kind_firmware : "application"})
+		this.props.navigation.navigate("UpdateFirmwareCentral")
+	}
+
+	goToUpdateRadio(){
+		this.props.dispatch({type: "SET_KIND_FIRMWARE",kind_firmware : "radio"})
+		this.props.navigation.navigate("UpdateFirmwareCentral")
+	}
+
+	goToUpdateBluetooth(){
+		this.props.dispatch({type: "SET_KIND_FIRMWARE",kind_firmware : "bluetooth"})
+		this.props.navigation.navigate("UpdateFirmwareCentral")
+	}
+
 	renderRemoteStatusDevice(){
-		var {remote_device_status,remote_device} = this.props
+		var {remote_device_status,remote_devices,remote_device} = this.props
 
 		if(this.props.remote_devices.length > 0){
     		var remote_devices = this.renderDevicesList(this.props.remote_devices)
@@ -343,15 +350,20 @@ class BridgesConfiguration extends Component {
 							<View>
 								<TouchableHighlight 
 									style={styles.white_row} 
-									onPress={() => this.props.navigation.navigate("UpdateFirmwareCentral")}
+									onPress={() => this.goToUpdateApp()}
 								>
 									<Text style={styles.white_row_text}>
 										Update Firmware - Application
 									</Text>
 								</TouchableHighlight>
-								<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("FirmwareUpdateRadio")}>
+								<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateRadio()}>
 									<Text style={styles.white_row_text}> 
 										Update Firmware - Radio
+									</Text>
+								</TouchableHighlight>
+								<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateBluetooth()}>
+									<Text style={styles.white_row_text}> 
+										Update Firmware - Bluetooth
 									</Text>
 								</TouchableHighlight>
 							</View>
@@ -491,17 +503,22 @@ class BridgesConfiguration extends Component {
 									</TouchableHighlight>
 									<TouchableHighlight 
 										style={styles.white_row} 
-										onPress={() => this.props.navigation.navigate("UpdateFirmwareCentral")}
+										onPress={() => this.goToUpdateApp()}
 									>
 										<Text style={styles.white_row_text}>
 											Update Firmware - Application
 										</Text>
 									</TouchableHighlight>
-									<TouchableHighlight style={styles.white_row} onPress={() => this.props.navigation.navigate("FirmwareUpdateRadio")}>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateRadio()}>
 										<Text style={styles.white_row_text}> 
 											Update Firmware - Radio
 										</Text>
 									</TouchableHighlight>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateBluetooth()}>
+										<Text style={styles.white_row_text}> 
+											Update Firmware - Bluetooth
+										</Text>
+									</TouchableHighlight>									
 								</View>
 							</View>
 							<View>
@@ -619,24 +636,25 @@ class BridgesConfiguration extends Component {
 const mapStateToProps = state => ({
     central_device: state.scanCentralReducer.central_device,
     central_device_status: state.configurationScanCentralReducer.central_device_status,
-    /*	 central_device : { 
-    	new_representation: '01020603FF0FF0FF1FF1',
+    /*central_device : { 
+    	new_representation: '01020C03FF0FF0FF1FF1',
 		rssi: -63,
 		name: 'Sure-Fi Brid',
-		id: 'DB:CB:B5:8E:33:9A',
+		id: 'C1:BC:40:D9:93:B9',
 		advertising: 
 		{ CDVType: 'ArrayBuffer',
 		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
 		manufactured_data: 
 		{ hardware_type: '01',
 		firmware_version: '02',
-		device_state: '0603',
+		device_state: '0C03',
 		device_id: 'FF0FF0',
 		tx: 'FF1FF1',
-		address: 'DB:CB:B5:8E:33:9A',
+		address: 'C1:BC:40:D9:93:B9',
 		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
-    },*/
-    //central_device_status: "connected",
+    },
+    central_device_status: "connected",
+    */
     central_matched : state.scanCentralReducer.central_device_matched,
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,

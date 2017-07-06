@@ -79,22 +79,30 @@ class selectFirmwareFile extends Component{
 		var dispatch = this.dispatch;
 
 		dispatch({type:"DOWNLOADING_FIRMWARE_FILES"})
-		var headers = new Headers({
-						'Accept': 'application/json',
-						'Content-Type': 'application/x-www-form-urlencoded',
-					})
+
 		dispatch({type: "FETCH_STATUS_LOADING"})
-		
+
+		var body = JSON.stringify({
+			hardware_type_key : "eaa4c810-e477-489c-8ae8-c86387b1c62e",
+			firmware_type : this.props.kind_firmware
+		})
 
 		fetch(FIRMWARE_CENTRAL_ROUTE, {
-			  method: 'GET',
-			  headers: headers,
-		  	})
+			headers: {
+			    'Accept': 'application/json',
+			    'Content-Type': 'application/json',				
+			},
+			method: 'POST',
+			body : body
+		})
 		.then((response) => response.json())
       	.then((responseJson) => {
+      		
+
 	        if(responseJson.status == "success"){
-		        dispatch({type: "DOWNLOADED_FIRMWARE_FILES",central_firmware_files : responseJson.data.files})
-		        
+	        	let files = responseJson.data.files.sort()
+	        	
+		        dispatch({type: "DOWNLOADED_FIRMWARE_FILES",central_firmware_files : files })
 	        }else{
 	        	console.log(responseJson)
 	        }
@@ -157,7 +165,7 @@ class selectFirmwareFile extends Component{
 			"Are you sure to select this firmware to update?",
 			[
 				{text: "Cancel",onPress : () => this.deleteFiles() },
-				{text: "Continue",onPress : () => this.props.navigation.navigate("UpdateFirmwareCentral")}
+				{text: "Continue",onPress : () => this.props.navigation.goBack()}
 			]
 		)
 	}
@@ -197,7 +205,8 @@ class selectFirmwareFile extends Component{
 const mapStateToProps = state => ({
 	download_firmware_files : state.selectFirmwareCentralReducer.download_firmware_files,
 	central_firmware_files : state.selectFirmwareCentralReducer.central_firmware_files,
-	central_firmware_file_selected : state.selectFirmwareCentralReducer.central_firmware_file_selected
+	central_firmware_file_selected : state.selectFirmwareCentralReducer.central_firmware_file_selected,
+	kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
 });
 
 export default connect(mapStateToProps)(selectFirmwareFile)

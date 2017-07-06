@@ -32,7 +32,8 @@ public class MainApplication extends Application implements ReactApplication {
               new RNFetchBlobPackage(),
               new RCTCameraPackage(),
               new BleManagerPackage(),
-              new PushNotificationsPackage()
+              new PushNotificationsPackage(),
+              new BluetoothPackage()
       );
     }
   };

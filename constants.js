@@ -1,7 +1,7 @@
 var md5 = require('md5');
 
 export const BASE_URL = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/"
-export const FIRMWARE_CENTRAL_ROUTE = "http://admin.sure-fi.com/mobile/api/firmware/get_available_firmware/eaa4c810-e477-489c-8ae8-c86387b1c62e"
+export const FIRMWARE_CENTRAL_ROUTE = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/firmware/get_available_firmware"
 export const API_REGISTERING_LINK = BASE_URL +   "systems/register_bridge_system"
 export const UPLOAD_IMAGE_LINK = "https://admin.sure-fi.com/mobile_api/upload_system_images"
 export const UNPAIR_LINK = BASE_URL + "systems/unpair_bridge_system"
