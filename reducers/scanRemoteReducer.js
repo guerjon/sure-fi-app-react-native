@@ -14,7 +14,9 @@ const initialState = {
   manufactured_data : [],
   remote_device : {},
   scanning_status: "no_device_found",
+  camera_status : "hidden"
 }
+
 
 export default function scanRemoteReducer (state = initialState, action) {
   switch (action.type) {
@@ -44,7 +46,6 @@ export default function scanRemoteReducer (state = initialState, action) {
 
     case "REMOTE_DEVICE_IS_NOT_ON_PAIRING_MODE":
       return {
-        ...state,
         scanning_status : "device_is_not_on_paring_mode"
       }
     case "START_SCANNING":
@@ -52,7 +53,7 @@ export default function scanRemoteReducer (state = initialState, action) {
         ...state,
         remote_device : {}
       }
-    case "CLEAN_REMOTE_CAMERA":
+    case "CLEAN_CAMERA":
       return{
         ...state,
         scanning_status : "clean_camera"
@@ -61,6 +62,21 @@ export default function scanRemoteReducer (state = initialState, action) {
       return {
         ...state,
         scanning_status : "is_not_remote_device"
+      }
+    case "HIDE_CAMERA":
+      return {
+        ...state,
+        camera_status : "hidden"
+      }
+    case "SHOW_CAMERA":
+      return {
+        ...state,
+        camera_status : "showed"
+      }
+    case "UPDATE_DEVICE":
+      return {
+        ...state,
+        remote_device : action.device
       }
     default:
       return state

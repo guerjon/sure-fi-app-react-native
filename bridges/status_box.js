@@ -5,14 +5,24 @@ import {
   	Image,
   	ScrollView,
   	TouchableHighlight,
-  	ActivityIndicator
+  	ActivityIndicator,
+  	NativeModules,
+  	NativeEventEmitter
 } from 'react-native'
 import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+import BleManager from 'react-native-ble-manager'
 import { 
 	LOADING,
-	IS_EMPTY
+	IS_EMPTY,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID
 } from '../constants'
+
+import {IS_CONNECTED} from '../action_creators/'
 
 class StatusBox extends Component{
 
@@ -39,10 +49,15 @@ class StatusBox extends Component{
 	}
 
 	disconnect(){
-
+		BleManager.disconnect(this.props.device.id)
+		.then(response => {
+			this.props.dispatch({
+				type : "DISCONNECT_CENTRAL_DEVICE"
+			})
+		}).catch(error => console.log("error",error))
 	}
 
-	renderDisconnectingBox(callback){
+	renderDisconnectingBox(){
 		return (
 			<View>
 	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
@@ -57,7 +72,7 @@ class StatusBox extends Component{
 					<View style={{flex:1}}>
 						<TouchableHighlight 
 							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-							onPress={()=> callback()}
+							onPress={()=> this.tryToConnect(this.props.device)}
 						>
 							<Text style={styles.bigGreenButtonText}>
 								Connect
@@ -69,6 +84,64 @@ class StatusBox extends Component{
 		)
 	}
 
+
+    tryToConnect(device){
+        var {
+            navigation
+        } = this.props;
+        this.interval = setInterval(() => this.connect(device),3000);
+    }
+
+    connect(device) {
+        var {
+            dispatch
+        } = this.props
+        
+        dispatch({
+            type: "CONNECTING_CENTRAL_DEVICE"
+        })
+        
+        IS_CONNECTED(device.id).then(response => {
+        	console.log("response",response)
+        	if(!response){
+	            BleManager.connect(device.id)
+	            	.then((peripheralInfo) => {
+	                this.writeSecondService(device)
+	            })
+	            .catch((error) => {
+	            	console.log("error",error)
+	                //Alert.alert("Error",error)
+	            });
+        	}else{ //IF IS ALREADY CONNECTED
+        		if(this.interval){
+        			clearInterval(this.interval)
+        			this.connected = true
+        		}
+        		this.props.dispatch({
+        			type: "CONNECTED_CENTRAL_DEVICE"
+        		})
+        	}
+        }).catch(error => console.log(error))
+    }
+
+    writeSecondService(device){       
+        if(!this.connected){
+            BleManagerModule.retrieveServices(device.id,() => {
+                BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,device.manufactured_data.security_string,20).then((response) => {
+       	
+                    if(this.interval){
+                        clearInterval(this.interval)
+                        this.connected = true;
+                    }
+                    this.props.dispatch({
+                        type: "CONNECTED_CENTRAL_DEVICE"
+                    })
+
+                }).catch(error => console.log("Error",error));
+            })
+        }
+    }	
+
     renderStatusDevice(){
     	var {device_status,remote_devices,remote_device_status,device} = this.props
 
@@ -76,7 +149,7 @@ class StatusBox extends Component{
 			case "connecting":
 				return this.renderConnectingBox()
 			case "disconnected":
-	            return this.renderDisconnectingBox(this.scanCentralDevices);
+	            return this.renderDisconnectingBox();
 			case "connected":
  				return(
 					<View>
@@ -179,5 +252,8 @@ class StatusBox extends Component{
         }
 	}
 }
+
+
+
 
 export default connect()(StatusBox);

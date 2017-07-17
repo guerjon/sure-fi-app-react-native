@@ -64,22 +64,22 @@ class ScanCentralUnits extends Component {
         var matched_device = []
 
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
-            
+            console.log("mames 1")
             var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
+                console.log("mames 2")
                 matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
-                    
-                    matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
+                    console.log("mames 3")
                     
                     if(matched_devices.length > 0){
+                        console.log("mames 4")
                         var matched_device = matched_devices[0]
                         dispatch({
                             type: "CENTRAL_DEVICE_MATCHED",
                             central_device: matched_devices[0]
                         });
-
                     }else{
                     
                         dispatch({

@@ -18,17 +18,16 @@ class Background extends Component{
 	render(){	
 		return(
 			<View style={{flex:1}}>
-			<Image source={
-				require('../images/temp_background.imageset/temp_background.png')} 
-				style={{
-					flex:1,
-					width:undefined,
-					height: undefined,
-					backgroundColor:'transparent',
-					justifyContent: 'center',alignItems: 'center'
-				}}>
-				{this.props.children}
-			</Image>
+				<Image source={
+					require('../images/temp_background.imageset/temp_background.png')} 
+					style={{
+						flex:1,
+						width:undefined,
+						height: undefined,
+						backgroundColor:'transparent',
+					}}>
+					{this.props.children}
+				</Image>
 			</View>
 		);	
 	}

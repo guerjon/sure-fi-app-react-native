@@ -129,11 +129,17 @@ export  const styles = StyleSheet.create({
       fontSize: 22
     },
     preview: {
-      
       justifyContent: 'flex-end',
       alignItems: 'center',
       width:width-20,
       height: 200
+    },
+    preview_remote : {
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      width:100,
+      height: 100,
+      marginHorizontal: 20,
     },
     bigButtonContainer:{
       alignItems:"center",

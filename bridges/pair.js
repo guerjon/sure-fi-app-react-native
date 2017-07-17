@@ -26,62 +26,44 @@ import {
 	RESET_QR_REMOTE_STATE,
 	IS_EMPTY,
 	FIND_ID,
-	DIVIDE_MANUFACTURED_DATA
+	DIVIDE_MANUFACTURED_DATA,
+	GET_REMOTE_DEVICES,
+	PAIR_SUREFI_SERVICE,
+	PAIR_SUREFI_WRITE_UUID,
+	HEX_TO_BYTES,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID
 } from '../constants'
 import modules from '../CustomModules.js'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
+import ScanRemoteUnits from './scan_remote_units'
+import Background from '../helpers/background'
 const BleManagerModule = NativeModules.BleManager;
-
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class PairBridge extends Component{
 	
 	static navigationOptions ={
-		title : "Pair New Sure-Fi Bridge",
+		title : "Pair Sure-Fi Bridge",
 		headerStyle: {backgroundColor: first_color},
 		headerTitleStyle : {color :"white"},
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
 	}
-
-	componentDidMount() {
-		var {dispatch} = this.props;
-		this.manager = BleManagerModule
-		dispatch({type: "RESET_PAIR_REDUCER"})
-		var bleManagerEmitter = new NativeEventEmitter(this.manager)
-		this.devices = this.props.devices;
+	constructor(props) {
+		super(props);
+		this.devices =  this.props.devices ? this.props.devices : []
 		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-        BleManager.start().then(() => {
-        	this.searchDevices()
-        });
+		BleManager.start().then(response => {
+			this.searchDevices()
+		}).catch(error => console.log(error))
+		
 	}
 
-    componentWillUnmount() {
-    	var {central_device,remote_device} = this.props
-    	if(central_device)
-    		if(central_device.id)
-    			BleManager.disconnect(central_device.id)
-    				.then(info => console.log("disconnect:" + info ))
-    				.catch(error => console.log(error) )
-    	if(remote_device)
-    		if(remote_device.id)
-    			BleManager.disconnect(remote_device.id)
-    				.then(info => console.log("disconnect:" + info ))
-    				.catch(error => console.log(error) )    	    				
-    }
-
-
-	searchDevices(){
-		this.scanning = setInterval(() => {
-			BleManager.scan([], 3, true).then(() => {
-            	console.log('handleScan()');
-        	})
-		} , 1000)
-        this.devices = []
-        setTimeout(() => {
-        	if(this.scanning)
-          	clearInterval(this.scanning)
-        },60000)
+	handleDisconnectedPeripheral(){
+		Alert.alert("Bridge Desconnected","The bridge has been disconnected.")
+		this.props.navigation.goBack();
 	}
 
 	handleDiscoverPeripheral(data) {
@@ -92,14 +74,37 @@ class PairBridge extends Component{
         if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
         	
             if (!FIND_ID(devices, data.id)) {              
-            	
+
               	var data = this.getManufacturedData(data)
-                devices.push(data)
-                this.devices = devices
-                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
+              	
+          		devices.push(data)
+          		
+            	this.devices = devices
+            	this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
+              	
             }
         }
     }
+
+    searchDevices(){
+
+		this.scanning = setInterval(() => {
+			BleManager.scan([], 3, true).then(() => {
+            	console.log('handleScan()');
+        	})
+		} , 1000)
+        
+        setTimeout(() => {
+        	if(this.scanning)
+          	clearInterval(this.scanning)
+        },60000)
+	}
+
+	stopScanner(){
+		if(this.scanning){
+			clearInterval(this.scanning)
+		}
+	}
 
     getManufacturedData(device) {
         if (device) {
@@ -111,96 +116,153 @@ class PairBridge extends Component{
         return device;
     }
 
-	scanRemoteDevices(){
-		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanRemoteUnits",{manager: this.manager})
-	}
+    showAlertConfirmation(){
+    	Alert.alert(
+    		"Continue Pairing",
+    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + this.props.central_device.manufactured_data.device_id + "\n\n" + " Remote : " + this.props.remote_device.manufactured_data.device_id,
+    		[
+    		 	
+    		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
+    		 	{text : "PAIR", onPress: () => this.pair() },
+    		]
+    	)
+    }
 
-	scanCentralDevices(){
-		var {dispatch,navigation} = this.props;
-		this.props.navigation.navigate("ScanCentralUnits",{manager : this.manager,scan : this.scanning})
-	}
 
-	renderDevice(device){
-		device = device.item
-		return(
-			<View style={{backgroundColor:"white",borderBottomWidth: StyleSheet.hairlineWidth}}>
-				<View style={{padding: 10}}>
-					<Text style={styles.title}>{device.name}</Text>
-					<Text style={{fontSize:12}}>
-						Rx: {device.manufactured_data.device_id} Tx : {device.manufactured_data.tx} Tp: {device.manufactured_data.hardware_type} VER: {device.manufactured_data.firmware_version} STAT: {device.manufactured_data.device_state.substring(2,4)}
-					</Text>
-				</View>
-			</View>
-		);
-	}
-
-	showAlert(){
-		Alert.alert(
-			"Initiate Bridge Configuration",
-			"Are you sure you are ready to initiate configuration of this Sure-Fi Bridge?",
-			[
-				{text: "Cancel",onPress : () => null},
-				{text: "Continue",onPress : () => this.props.navigation.navigate("WriteBridgeConfiguration",{manager: this.manager})}
-			]
-		);
-	}
-
-	resetState(){
-		var {dispatch} = this.props;
-		dispatch({type : RESET_QR_CENTRAL_STATE});
-		dispatch({type : RESET_QR_REMOTE_STATE});
-	}
+    pair(){
+		var {central_device,remote_device,dispatch} = this.props
+		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
+		let central_id_bytes = HEX_TO_BYTES(central_device.manufactured_data.device_id)
+		
+			BleManagerModule.retrieveServices(central_device.id,() => {
+				BleManager.write(central_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,remote_id_bytes,20).then(() => {
+					BleManagerModule.retrieveServices(remote_device.id,() => {
+						BleManager.write(remote_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,central_id_bytes,20).then(() =>{
+							Alert.alert(
+								"Pairing Complete",
+								"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
+								[
+									{text : "Ok",onPress: () => this.props.navigation.goBack()}
+								]
+							)
+						}).catch(error => console.log("error","error on write remote_Device"))
+					}).catch(error => console.log("error","error on retrive services remote_Device"))
+				}).catch(error => console.log("error","error on write central_Device"))
+			})    					
+    }
 
 	render(){
-		if(this.props.devices.length > 0)
-			var devices_content = (
-				<ScrollView>
-					<FlatList data={this.props.devices} renderItem={(item) => this.renderDevice(item)} keyExtractor={(item,index) => item.id } />	
-				</ScrollView>
+		let central_device = this.props.central_device
+		let remote_device = this.props.remote_device
+		if(IS_EMPTY(remote_device))
+			var remote_content = (
+				<View style={{flexDirection: "row"}}>
+					<ScanRemoteUnits navigation={this.props.navigation} />
+					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+						<Text >
+							Remote Unit
+						</Text>
+						<Text style={{fontSize:22}}>
+							Scan Remote Unit
+						</Text>
+					</View>
+				</View>
 			)
 		else{
-			var devices_content = <ActivityIndicator />
-		}
-		return(
-			<View style={{flex:1}}>
-				<ScrollView style={{flexDirection:"column"}}>
-					<View style={{flex:1,alignItems:"center",justifyContent:"center",marginHorizontal:10}}>
-						<Text style={{fontSize: 22,marginVertical: 10}}>
-							Prepare for Paring 
-						</Text>
-						<Text style={{fontSize: 16,marginVertical:20}}> 
-							1. Make sure both Central and Remote devices are set up, powered on and the QR Codes are clearly visible.
-						</Text>
-						<Text style={{fontSize: 16, marginBottom:20}}>
-							2. Make sure that Bluetooth is enabled on this phone
-						</Text>
-					</View>
-					<View style={{flex:1,marginHorizontal:10}}>
-						<TouchableHighlight style={{backgroundColor:success_green,padding:10,alignItems:"center",justifyContent:"center"}} onPress={() => this.scanCentralDevices()} >
-							<Text style={{fontSize:18,color:"white"}}>
-								Start
+				this.stopScanner()
+				var remote_content = (
+					<View style={{flexDirection: "row"}}>
+						<Image 
+							source={require('../images/remote_unit_icon.imageset/remote_unit_icon.png')} 
+							style={styles.touchableSectionInnerImage}
+						>
+						</Image>
+						<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+							<Text >
+								Remote Unit
 							</Text>
-						</TouchableHighlight>
+							<Text style={{fontSize:22}}>
+								{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : "UNKNOWN" ) : "UNKNOWN"}
+							</Text>
+
+							<Text style={{fontSize:18}}>
+								Remote Unit {this.props.central_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
+							</Text>
+						</View>					
 					</View>
-					<View style={{marginVertical:20}}>
-						<Text style={{fontSize: 16,margin:10}}>
-							SURE-FI DEVICES
-						</Text>
-						{devices_content}
-					</View>
-				</ScrollView>	
-			</View>
+				)
+			}
+
+		return(
+			<Background>
+				<View style={{marginVertical:20}}>
+					<View style={styles.touchableSectionContainer}>
+						<View  style={styles.touchableSection}>
+							<View style={styles.touchableSectionInner}>
+								<Image 
+									source={require('../images/central_unit_icon.imageset/central_unit_icon.png')} 
+									style={styles.touchableSectionInnerImage}
+								>
+								</Image>
+								<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+									<Text >
+										Sure-Fi Bridge Central
+									</Text>
+									<Text style={{fontSize:22}}>
+										{central_device.manufactured_data ? (central_device.manufactured_data.device_id ? central_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
+									</Text>
+
+									<Text style={{fontSize:18}}>
+										Central Unit  {this.props.central_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
+									</Text>
+								</View>
+							</View>
+						</View>
+					</View>					
+				</View>
+				<View style={{marginVertical:20}}>
+					<View style={styles.touchableSectionContainer}>
+						<View style={styles.touchableSection}>
+							<View style={styles.touchableSectionInner}>
+								{remote_content}
+							</View>
+						</View>
+					</View>					
+				</View>			
+				{!IS_EMPTY(central_device) && !IS_EMPTY(remote_device) &&
+					(	
+				        <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
+				            <TouchableHighlight 
+				            	style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}} 
+				            	onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
+				            >
+				                <Text style={{color:"white",fontSize:16}}>
+				                    Reset
+				                </Text>
+				            </TouchableHighlight>
+				            <TouchableHighlight 
+				            	style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:10,height:50}} 
+				            	onPress={() => this.showAlertConfirmation()}
+				            >
+				                <Text style={{color: "white",fontSize:16}}>
+				                    Continue
+				                </Text>
+				            </TouchableHighlight>
+				        </View>							
+						
+					)
+				}								
+			</Background>
 		)
 	}
 }
 
 const mapStateToProps = state => ({
-  	central_matched : state.scanCentralReducer.central_device_matched,
   	central_device: state.scanCentralReducer.central_device,
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,
-  	devices : state.pairReducer.devices
+  	devices : state.pairReducer.devices,
+
 });
 
 export default connect(mapStateToProps)(PairBridge);

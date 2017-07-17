@@ -166,7 +166,6 @@ class WriteBridgeConfiguration extends Component{
 
 
 	writeRemote(){
-		
 		var {remote_device,central_device,dispatch} = this.props
 		BleManagerModule.retrieveServices(remote_device.id, () => {
 			BleManager.write(remote_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,this.central_id_bytes,20).then(() => {		

@@ -141,6 +141,7 @@ class SetupCentral extends Component{
         })
         
         IS_CONNECTED(device.id).then(response => {
+        	console.log("response",response)
         	if(!response){
 	            BleManager.connect(device.id)
 	            	.then((peripheralInfo) => {
@@ -269,11 +270,11 @@ class SetupCentral extends Component{
 
 		switch(value){
 			case 1 : //app firmware version
-				let version = "v" + data.value[1].toString() +"." + data.value[2].toString()
-
-				console.log("version 1",version)
-				this.props.dispatch({type: "UPDATE_APP_VERSION",version : version })
-				this.getRadioFirmwareVersion(this.device)
+				if(data.value[1]){
+					let version = "v" + data.value[1].toString() +"." + data.value[2].toString()	
+					this.props.dispatch({type: "UPDATE_APP_VERSION",version : version })
+					this.getRadioFirmwareVersion(this.device)
+				}
 				break
 			case 9 : // radio firmware version
 				this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : "v" + data.value[1].toString() +"." + data.value[2].toString()})
@@ -307,8 +308,48 @@ class SetupCentral extends Component{
 		})
 	}
 
+	renderInfo(){
+
+		if(this.props.central_device_status == "connected"){
+			return (
+				<View style={{alignItems:"center"}}>
+					<View>
+						<Text style={styles.device_control_title}>
+							CURRENT VERSION
+						</Text>
+						<WhiteRow name="Application" value={this.props.app_version}/>
+						<WhiteRow name="Radio" value={this.props.radio_version}/>
+						<WhiteRow name="Bluetooth" value ={this.props.bluetooth_version}/>
+					</View>
+					<View>
+						<Text style={styles.device_control_title}>
+							CURRENT RADIO SETTINGS
+						</Text>
+						<WhiteRow name="Spreading Factor" value ={this.props.spreading_factor}/>
+						<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
+						<WhiteRow name="Power" value ={this.props.power}/>
+					</View>
+					<View style={{marginBottom:80}}>
+						<Text style={styles.device_control_title}>
+							CURRENT POWER VALUES
+						</Text>
+						<WhiteRow name="Power Voltage" value={this.props.power_voltage}/>
+						<WhiteRow name="Battery Voltage" value={this.props.battery_voltage}/>
+					</View>
+				</View>	
+			)
+		}
+		return null
+	}
+
+	renderOptions(){
+		if(this.props.central_device_status == "connected"){
+			return <Options device={this.device} device_status = {this.props.central_device_status} navigation={this.props.navigation}/>
+		}
+		return null
+	}
+
 	render(){
-		
 		return (
 			<Background>
 				<ScrollView>
@@ -316,34 +357,9 @@ class SetupCentral extends Component{
 						<StatusBox device = {this.device} device_status = {this.props.central_device_status}/>
 					</View>
 					<View>
-						<Options device={this.device} device_status = {this.props.central_device_status} />
+						{this.renderOptions()}
 					</View>
-					<View style={{alignItems:"center"}}>
-						<View>
-							<Text style={styles.device_control_title}>
-								CURRENT VERSION
-							</Text>
-							<WhiteRow name="Application" value={this.props.app_version}/>
-							<WhiteRow name="Radio" value={this.props.radio_version}/>
-							<WhiteRow name="Bluetooth" value ={this.props.bluetooth_version}/>
-						</View>
-						<View>
-							<Text style={styles.device_control_title}>
-								CURRENT RADIO SETTINGS
-							</Text>
-							<WhiteRow name="Spreading Factor" value ={this.props.spreading_factor}/>
-							<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
-							<WhiteRow name="Power" value ={this.props.power}/>
-						</View>
-						<View style={{marginBottom:80}}>
-							<Text style={styles.device_control_title}>
-								CURRENT POWER VALUES
-							</Text>
-							<WhiteRow name="Power Voltage" value={this.props.power_voltage}/>
-							<WhiteRow name="Battery Voltage" value={this.props.battery_voltage}/>
-						</View>
-
-					</View>					
+					{this.renderInfo()}
 				</ScrollView>
 			</Background>
 		)
@@ -364,7 +380,8 @@ const mapStateToProps = state => ({
   	band_width : state.setupCentralReducer.band_width,
   	power : state.setupCentralReducer.power,
   	battery_voltage : state.setupCentralReducer.battery_voltage,
-  	power_voltage : state.setupCentralReducer.power_voltage
+  	power_voltage : state.setupCentralReducer.power_voltage,
+  	device_status : state.setupCentralReducer.device_status
 });
 
 
