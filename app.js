@@ -14,12 +14,13 @@ import BridgesConfiguration from './bridges/bridges_configuration/index'
 import ConfigurationScanCentralUnits from './bridges/bridges_configuration/scan_central_units'
 import ConfigurationScanRemoteUnits from './bridges/bridges_configuration/scan_remote_units'
 import BluetoothFirmwareUpdate from './bridges/bridges_configuration/bluetooth_firmware_update'
+import BatteryLevel from './bridges/bridges_configuration/battery_level'
 
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
 import FirmwareUpdate from './bridges/bridges_configuration/firmware_update'
 import ConfigureRadioCentral from './bridges/bridges_configuration/configure_radio_central'
-import SetupCentral from './bridges/setup_central'
+import DeviceControlPanel from './bridges/device_control_panel'
 import SetupCentralExamples from './bridges/setup_central_examples'
 import SetupRemote from './bridges/setup_remote'
 import BridgeDetails from './bridges/bridge_details'
@@ -32,12 +33,16 @@ const mapStateToProps = state => ({
 });
 
 export const AppNavigator = StackNavigator({
-	BridgesConfiguration : {screen : BridgesConfiguration},
+	Bridges: {screen: Bridges},	
+	DeviceControlPanel : {screen : DeviceControlPanel},
+
 	Main: {screen: MainScreen,headerMode: 'screen'},
+	
+	PairBridge: {screen: PairBridge},
+	BridgesConfiguration : {screen : BridgesConfiguration},
 	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
 	RadioConfiguration : {screen : RadioConfiguration},
-	Bridges: {screen: Bridges},	
-	PairBridge: {screen: PairBridge},
+
 		
 	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
 	
@@ -54,10 +59,11 @@ export const AppNavigator = StackNavigator({
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
 	ConfigurationScanRemoteUnits : {screen : ConfigurationScanRemoteUnits},
 	
-	SetupCentral : {screen : SetupCentral},
+	
 	SetupCentralExamples : {screen : SetupCentralExamples},
 	Register : {screen : Register},
-	BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate}
+	BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate},
+	BatteryLevel : {screen : BatteryLevel}
 	
 });
 

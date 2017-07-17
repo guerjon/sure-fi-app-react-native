@@ -132,8 +132,8 @@ class UpdateFirmwareCentral extends Component{
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
 	central_update_mode : state.updateFirmwareCentralReducer.central_update_mode,
-	//central_device: state.scanCentralReducer.central_device,
-	central_device : { 
+	central_device: state.scanCentralReducer.central_device,
+	/*central_device : { 
     	new_representation: '01020C03FF0FF0FF1FF1',
 		rssi: -63,
 		name: 'Sure-Fi Brid',
@@ -150,6 +150,7 @@ const mapStateToProps = state => ({
 		address: 'C1:BC:40:D9:93:B9',
 		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
     },
+    */
     kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
 });
 

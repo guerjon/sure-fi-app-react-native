@@ -3,12 +3,12 @@ const initialState = {
   central_update_mode : false
 }
 
-export default function dataReducer (state = initialState, action) {
+export default function updateFirmwareCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER":
       return {
         ...state,
-        //firmware_file: null       
+        firmware_file: null       
       }
     case "SET_CENTRAL_FIRMWARE_FILE":
       return {  

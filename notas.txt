@@ -78,6 +78,8 @@ app
 	actions
 
 
+A pure function only depents of his parameters and never modify the value of the params, insted of this  return a new array o value object.  
+
 -----------------+--------------------------redux-----------------+--------------------------
 
 
@@ -284,6 +286,37 @@ apk_release/apk/outputs/build/app/android  --< direccioin inversa de apk
 en firebase tenemos dos tipos de mensajes
 los que pueden ser mostrados como un aviso  (2K)
 los que pueden ser manejados por la app (4K y posible payload)
+
+-------------------------------------------------------------------- Javascript ---------------------------------------------------------------------------------------
+
+Object.keys(obj)  return an array with the ordered keys of the object 
+	var anObj = { 100: 'a', 2: 'b', 7: 'c' }; 
+
+	console.log(Object.keys(anObj)); // ['2', '7', '100']
+
+
+array.reduce The function reduce apply a function to all the elements in the array and accumulate it from left to righ
+
+
+-------------------------------------------------------------------- Javascript ---------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------- Build my own software company ---------------------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------- Build my own software company ---------------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------- Material Design ---------------------------------------------------------------------------------------
+
+change the balls on the init menu, put shawdows around the circle or just show one at the time, don't put one over the other
+
+On Sure-Fi bridges you need put some kind of elevation on the menus.
+
+
+
+-------------------------------------------------------------------- Material Design ---------------------------------------------------------------------------------------
 
 
 

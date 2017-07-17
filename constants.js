@@ -114,6 +114,14 @@ export const longToByteArray = (long) => {
 	return byteArray;
 }
 
+export const byteArrayToLong = (byteArray) => {
+    var value = 0;
+    for ( var i = 0; i < byteArray.length; i++) {
+        value = (value * 256) + byteArray[i];
+    }
+    return value;
+};
+
 export const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 export const BASE64 = {
 	btoa: (input: string = '') => {
@@ -179,20 +187,16 @@ export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_CMD_READ_UUID = "C8BF000C-0EC5-2536-2143-2D155783CE78"
 
+
 export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
 export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
 
 export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
-//export const PAIR_SUREFI_WRITE_UUIDD = "98BF000B-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
 
 
-export const COMMAND_START_FIRWMARE_UPDATE = 0x03
-export const COMMAND_START_ROW = 0x04
-export const COMMAND_ROW_PIECE = 0x05
-export const COMMAND_END_ROW = 0x06
-export const COMMAND_FINISH_FIRMWARE_UPDATE = 0x07
+
 
 export const DIVIDE_MANUFACTURED_DATA = (manufacturedData, address) => {
 	var divide_manufactured_data = {}
@@ -251,16 +255,17 @@ export const MATCH_DEVICE = (devices, device_id) => {
 
 
 export const GET_CENTRAL_DEVICES = (devices) => {
+	//console.log("first",devices)
 	devices = devices.filter(function(device) {
 		if (!device.manufactured_data)
 			return false
 		return device.manufactured_data.hardware_type == "01"
 	})
+	//console.log("after",devices)
 	return devices
 }
 
 export const GET_REMOTE_DEVICES = (devices) => {
-
 	devices = devices.filter(function(device) {
 		if (!device.manufactured_data)
 			return false
@@ -275,8 +280,6 @@ export const GET_DEVICES_ON_PAIRING_MODE = devices => {
 	devices = devices.filter(device => {
 		if(!device.manufactured_data)
 			return false
-		
-		console.log("device.manufactured_data.device_state",device.manufactured_data.device_state)
 		var state = device.manufactured_data.device_state.substring(2,4)
 
 		if(state == "01"){
@@ -300,5 +303,11 @@ export const GET_DEVICES_ON_CONFIGURE_MODE = devices => {
 		return false
 	})
 	return devices
+}
+
+
+export const CALCULATE_VOLTAGE = x => {
+	let voltage = (x / 4095) * 16.5
+	return voltage
 }
 

@@ -81,12 +81,17 @@ class selectFirmwareFile extends Component{
 		dispatch({type:"DOWNLOADING_FIRMWARE_FILES"})
 
 		dispatch({type: "FETCH_STATUS_LOADING"})
-
-		var body = JSON.stringify({
-			hardware_type_key : "eaa4c810-e477-489c-8ae8-c86387b1c62e",
-			firmware_type : this.props.kind_firmware
-		})
-
+		if(this.props.central_device.manufactured_data.hardware_type == "01")
+			var body = JSON.stringify({
+				hardware_type_key : "eaa4c810-e477-489c-8ae8-c86387b1c62e",
+				firmware_type : this.props.kind_firmware
+			})
+		else
+			var body = JSON.stringify({
+				hardware_type_key : "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf",
+				firmware_type : this.props.kind_firmware
+			})
+		
 		fetch(FIRMWARE_CENTRAL_ROUTE, {
 			headers: {
 			    'Accept': 'application/json',
@@ -100,9 +105,9 @@ class selectFirmwareFile extends Component{
       		
 
 	        if(responseJson.status == "success"){
-	        	let files = responseJson.data.files.sort()
-	        	
+	        	let files = this.sortByFirmwareVersion(responseJson.data.files)
 		        dispatch({type: "DOWNLOADED_FIRMWARE_FILES",central_firmware_files : files })
+
 	        }else{
 	        	console.log(responseJson)
 	        }
@@ -112,6 +117,11 @@ class selectFirmwareFile extends Component{
 		});
 
 
+	}
+
+	sortByFirmwareVersion(files){
+		var order_files = files.sort((a,b) => b.firmware_version.localeCompare(a.firmware_version))
+		return order_files;
 	}
 
 	getFirmwareList(central_firmware_files,dispatch,central_firmware_file_selected){
@@ -180,8 +190,8 @@ class selectFirmwareFile extends Component{
 		var {central_firmware_file_selected,dispatch,download_firmware_files,central_firmware_files} = this.props;
 		
 
-		if(download_firmware_files == "inactive" || download_firmware_files == "downloaded"){
-			var content = <View style={{flex:1,alignItems:"center",justifyContent:"center"}} ><ActivityIndicator /></View>
+		if(download_firmware_files == "inactive" || download_firmware_files == "active"){
+			var content = <View style={{flex:1,alignItems:"center",justifyContent:"center",marginVertical:50}} ><ActivityIndicator /></View>
 		}
 
 		if(download_firmware_files == "downloaded"){
@@ -206,6 +216,7 @@ const mapStateToProps = state => ({
 	download_firmware_files : state.selectFirmwareCentralReducer.download_firmware_files,
 	central_firmware_files : state.selectFirmwareCentralReducer.central_firmware_files,
 	central_firmware_file_selected : state.selectFirmwareCentralReducer.central_firmware_file_selected,
+	central_device: state.scanCentralReducer.central_device,
 	kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
 });
 

@@ -180,7 +180,6 @@ class ConfigureRadio extends Component {
 	handleCharacteristicNotification(data){
 		var {dispatch} = this.props
 		var values = data.value
-		console.log("values",values)
 		var band_width = bandWidth.get(values[1])
 		var spreading_factor = spreadingFactor.get(values[2])
 		var power =  powerOptions.get(values[3])

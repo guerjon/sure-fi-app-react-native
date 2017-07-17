@@ -13,8 +13,9 @@ import selectFirmwareCentralReducer from './bridges_configuration/selectFirmware
 import firmwareUpdateReducer from './bridges_configuration/firmwareUpdateReducer'
 import configureRadioCentralReducer from './bridges_configuration/configureRadioCentralReducer'
 import bluetoothFirmwareUpdateReducer from './bridges_configuration/bluetoothFirmwareUpdateReducer'
+import batteryLevelReducer from './bridges_configuration/batteryLevelReducer'
 
-import scannedDevicesListReducer from './scannedDevicesListReducer'
+import scannedDevicesListReducer from './helpers/scannedDevicesListReducer'
 import setupCentralReducer from './setupCentralReducer'
 import setupCentralExampleReducer from './setupCentralExampleReducer'
 import setupRemoteReducer from './setupRemoteReducer'
@@ -44,7 +45,8 @@ const rootReducer = combineReducers({
     bridgeDetailsReducer,
     registerReducer,
     mainScreenReducer,
-    bluetoothFirmwareUpdateReducer
+    bluetoothFirmwareUpdateReducer,
+    batteryLevelReducer
 })
 
 export default rootReducer

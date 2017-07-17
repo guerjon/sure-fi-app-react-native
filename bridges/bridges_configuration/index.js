@@ -14,6 +14,7 @@ import {
     FlatList,
     StyleSheet
 } from 'react-native'
+
 import {
     styles,
     first_color
@@ -60,13 +61,70 @@ class BridgesConfiguration extends Component {
     componentDidMount() {
        	var {dispatch} = this.props;
 		this.manager = BleManagerModule
-		this.resetStatus()
+		
 		var bleManagerEmitter = new NativeEventEmitter(this.manager)
 		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-        BleManager.start().then(() => {
-        	this.searchDevices()
-        	//this.connect()
-        });
+		this.connected = false;
+		if(this.props.navigation.state.shouldConnect == "yes"){
+			this.tryToConnect()
+		}else{
+			this.resetStatus() //change_this_to_production
+	        BleManager.start().then(() => {
+	        	this.searchDevices()
+	        	//this.connect()
+	        });			
+		}
+    }
+
+    tryToConnect(){
+        var {
+            navigation
+        } = this.props;
+        
+        this.interval = setInterval(() => this.connect(),3000);
+    }
+
+    connect() {
+        var {
+            central_device,
+            dispatch
+        } = this.props
+        dispatch({
+            type: "CONNECTING_CENTRAL_DEVICE"
+        })
+
+        if(!this.isConnectedToCentralDevice()){
+             BleManager.connect(central_device.id)
+            .then((peripheralInfo) => {
+                this.writeSecondService(central_device.manufactured_data.security_string)
+            })
+            .catch((error) => {
+                console.log(error)
+                //Alert.alert("Error",error)
+            });
+        }
+    }    
+
+    writeSecondService(data){
+        
+        var {central_device,dispatch} = this.props
+        
+        if(!this.connected){
+        
+            BleManagerModule.retrieveServices(central_device.id,() => {
+        
+                BleManager.write(central_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20).then((response) => {
+        
+                    if(this.interval){
+                        clearInterval(this.interval)
+                        this.connected = true;
+                    }
+                    dispatch({
+                        type: "CONNECTED_CENTRAL_DEVICE"
+                    })
+                }).catch(error => console.log("Error",error));
+            })
+        }
     }
 
 	searchDevices(){
@@ -299,122 +357,101 @@ class BridgesConfiguration extends Component {
 		this.props.navigation.navigate("UpdateFirmwareCentral")
 	}
 
+	goToShowBatteryLevel(){
+		this.props.navigation.navigate("BatteryLevel")	
+	}
+
+
 	renderRemoteStatusDevice(){
 		var {remote_device_status,remote_devices,remote_device} = this.props
+		if(remote_devices){
 
-		if(this.props.remote_devices.length > 0){
-    		var remote_devices = this.renderDevicesList(this.props.remote_devices)
-    	}else{
-    		var remote_devices = <ActivityIndicator style={{marginTop:40}}/>	
-    	}
+			if(this.props.remote_devices.length > 0){
+	    		var remote_devices = this.renderDevicesList(this.props.remote_devices)
+	    	}else{
+	    		var remote_devices = <ActivityIndicator style={{marginTop:40}}/>	
+	    	}
 
-		switch(remote_device_status){
-			case "connecting":
-			var content = this.renderConnectingBox()
-			break
-			case "disconnected":
-			var content = this.renderDisconnectingBox(this.scanRemoteDevices)
-			break
-			case "connected":
-			var content = (
-				<View>
-					<View style={{backgroundColor:"white"}}>
-			            <View style={{flexDirection: "row",margin:10}}>
-							<View style={{flex:1,flexDirection:"row"}}>
-								<Text style={{padding: 10,margin:5}}>
-									Status
-								</Text >
-								<Text style={{color: "#00DD00",padding: 10,margin: 5}}> 
-									Connected
-								</Text>
-							</View>
-							<View style={{flex:1}}>
-								<TouchableHighlight 
-									style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-									onPress={() => this.disconnectRemote()}
-								>
-									<Text style={styles.bigGreenButtonText}>
-										Disconnect
-									</Text>
-								</TouchableHighlight>
-							</View>
-						</View>
-					</View>
-					<View style={{marginTop: 10}}>
-						<View style={{padding:10}}>
-							<Text style={styles.title}>
-								CONFIGURATION OPTIONS
-							</Text>
-						</View>
+	   
+			switch(remote_device_status){
+				case "connecting":
+				var content = this.renderConnectingBox()
+				break
+				case "disconnected":
+				var content = this.renderDisconnectingBox(this.scanRemoteDevices)
+				break
+				case "connected":
+				var content = (
+					<View>
 						<View style={{backgroundColor:"white"}}>
-							<View>
-								<TouchableHighlight 
-									style={styles.white_row} 
-									onPress={() => this.goToUpdateApp()}
-								>
-									<Text style={styles.white_row_text}>
-										Update Firmware - Application
-									</Text>
-								</TouchableHighlight>
-								<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateRadio()}>
-									<Text style={styles.white_row_text}> 
-										Update Firmware - Radio
-									</Text>
-								</TouchableHighlight>
-								<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateBluetooth()}>
-									<Text style={styles.white_row_text}> 
-										Update Firmware - Bluetooth
-									</Text>
-								</TouchableHighlight>
-							</View>
-						</View>
-					</View>		
-				</View>
-
-			)
-			break
-			default:
-				var content = null
-			break
-			
-		}
-
-		if(!IS_EMPTY(remote_device)){
-
-			return (
-				<View>
-					<View style={styles.titleContainer}>
-						<Text style={styles.title}>
-							Remote Unit
-						</Text>
-					</View>
-					<View style={styles.touchableSectionContainer}>
-						<TouchableHighlight onPress={()=> this.scanRemoteDevices()} style={styles.touchableSection}>
-							<View style={styles.touchableSectionInner}>
-								<Image 
-									source={require('../../images/hardware_select.imageset/hardware_select.png')} 
-									style={styles.touchableSectionInnerImage}
-								>
-								</Image>
-								<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-									<Text >
-										Sure-Fi Bridge Central
-									</Text>
-									<Text style={{fontSize:22}}>
-										{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
+				            <View style={{flexDirection: "row",margin:10}}>
+								<View style={{flex:1,flexDirection:"row"}}>
+									<Text style={{padding: 10,margin:5}}>
+										Status
+									</Text >
+									<Text style={{color: "#00DD00",padding: 10,margin: 5}}> 
+										Connected
 									</Text>
 								</View>
+								<View style={{flex:1}}>
+									<TouchableHighlight 
+										style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+										onPress={() => this.disconnectRemote()}
+									>
+										<Text style={styles.bigGreenButtonText}>
+											Disconnect
+										</Text>
+									</TouchableHighlight>
+								</View>
 							</View>
-						</TouchableHighlight>
+						</View>
+						<View style={{marginTop: 10}}>
+							<View style={{padding:10}}>
+								<Text style={styles.title}>
+									CONFIGURATION OPTIONS
+								</Text>
+							</View>
+							<View style={{backgroundColor:"white"}}>
+								<View>
+									<TouchableHighlight 
+										style={styles.white_row} 
+										onPress={() => this.goToUpdateApp()}
+									>
+										<Text style={styles.white_row_text}>
+											Update Firmware - Application
+										</Text>
+									</TouchableHighlight>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateRadioRemote()}>
+										<Text style={styles.white_row_text}> 
+											Update Firmware - Radio
+										</Text>
+									</TouchableHighlight>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToUpdateBluetoothRemote()}>
+										<Text style={styles.white_row_text}> 
+											Update Firmware - Bluetooth
+										</Text>
+									</TouchableHighlight>
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToShowBatteryLevelRemote()}>
+										<Text style={styles.white_row_text}>
+											Show Battery Level
+										</Text>
+									</TouchableHighlight>
+								</View>
+							</View>
+						</View>		
 					</View>
-					<View style={{borderTopWidth:0.5}}>
-						{content}
-					</View>
-				</View>
-			)
-		}else{
-			
-			return (
+
+				)
+				break
+				default:
+					var content = null
+				break
+				
+			}
+
+			if(!IS_EMPTY(remote_device)){
+
+				return (
 					<View>
 						<View style={styles.titleContainer}>
 							<Text style={styles.title}>
@@ -429,23 +466,58 @@ class BridgesConfiguration extends Component {
 										style={styles.touchableSectionInnerImage}
 									>
 									</Image>
-									<Text style={styles.touchableSectionInnerText}>
-										Scan Remote Unit
-									</Text>
+									<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+										<Text >
+											Sure-Fi Bridge Central
+										</Text>
+										<Text style={{fontSize:22}}>
+											{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
+										</Text>
+									</View>
 								</View>
 							</TouchableHighlight>
 						</View>
-						<View>
-							{remote_devices}
+						<View style={{borderTopWidth:0.5}}>
+							{content}
 						</View>
 					</View>
-			)			
-		}
+				)
+			}else{
+				
+				return (
+						<View>
+							<View style={styles.titleContainer}>
+								<Text style={styles.title}>
+									Remote Unit
+								</Text>
+							</View>
+							<View style={styles.touchableSectionContainer}>
+								<TouchableHighlight onPress={()=> this.scanRemoteDevices()} style={styles.touchableSection}>
+									<View style={styles.touchableSectionInner}>
+										<Image 
+											source={require('../../images/hardware_select.imageset/hardware_select.png')} 
+											style={styles.touchableSectionInnerImage}
+										>
+										</Image>
+										<Text style={styles.touchableSectionInnerText}>
+											Scan Remote Unit
+										</Text>
+									</View>
+								</TouchableHighlight>
+							</View>
+							<View>
+								{remote_devices}
+							</View>
+						</View>
+				)			
+			}
+	    }else{
+	    	Alert.alert("Remote devices","Remote devices not founded.")
+	    }
 	}
 
     renderStatusDevice(){
-    	var {central_device_status,remote_devices,remote_device_status} = this.props
-
+    	var {central_device_status,remote_devices,remote_device_status,central_device} = this.props
     	switch(central_device_status){
 			case "connecting":
 				return this.renderConnectingBox()
@@ -519,6 +591,12 @@ class BridgesConfiguration extends Component {
 											Update Firmware - Bluetooth
 										</Text>
 									</TouchableHighlight>									
+									<TouchableHighlight style={styles.white_row} onPress={() => this.goToShowBatteryLevel()}>
+										<Text style={styles.white_row_text}>
+											Show Battery Level
+										</Text>
+									</TouchableHighlight>
+
 								</View>
 							</View>
 							<View>
@@ -592,10 +670,7 @@ class BridgesConfiguration extends Component {
 							<View style={{borderTopWidth:0.5}}>
 								{status}
 							</View>
-
-
 						</View>
-					
 				</ScrollView>
             );
 
@@ -636,25 +711,6 @@ class BridgesConfiguration extends Component {
 const mapStateToProps = state => ({
     central_device: state.scanCentralReducer.central_device,
     central_device_status: state.configurationScanCentralReducer.central_device_status,
-    /*central_device : { 
-    	new_representation: '01020C03FF0FF0FF1FF1',
-		rssi: -63,
-		name: 'Sure-Fi Brid',
-		id: 'C1:BC:40:D9:93:B9',
-		advertising: 
-		{ CDVType: 'ArrayBuffer',
-		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
-		manufactured_data: 
-		{ hardware_type: '01',
-		firmware_version: '02',
-		device_state: '0C03',
-		device_id: 'FF0FF0',
-		tx: 'FF1FF1',
-		address: 'C1:BC:40:D9:93:B9',
-		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
-    },
-    central_device_status: "connected",
-    */
     central_matched : state.scanCentralReducer.central_device_matched,
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,

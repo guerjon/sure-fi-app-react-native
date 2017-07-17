@@ -5,6 +5,10 @@ const initialState = {
 
 export default function firmwareUpdateReducer (state = initialState, action) {
   switch (action.type) {
+    case "RESET_FIRMWARE_UPDATE_REDUCER":
+      return {
+        initialState
+      }
     case "STARING_FIRMWARE_UPDATE":
       return{
         ...state,

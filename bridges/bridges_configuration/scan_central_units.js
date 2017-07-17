@@ -37,6 +37,8 @@ import BleManager from 'react-native-ble-manager'
 const BleManagerModule = NativeModules.BleManager;
 const RTCamera = NativeModules.RCTCameraModule
 
+
+
 var md5 = require('md5');
 //md5 = require('js-md5');
 
@@ -134,7 +136,7 @@ class ScanCentralUnits extends Component {
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
         
                 matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
-                
+                //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
         
                     matched_devices = constants.GET_DEVICES_ON_CONFIGURE_MODE(matched_devices) // now we need check the state of the device
@@ -173,9 +175,13 @@ class ScanCentralUnits extends Component {
     writeSecondService(data){
         
         var {central_device,dispatch} = this.props
+        
         if(!this.connected){
+        
             BleManagerModule.retrieveServices(central_device.id,() => {
+        
                 BleManager.write(central_device.id,constants.SUREFI_SEC_SERVICE_UUID,constants.SUREFI_SEC_HASH_UUID,data,20).then((response) => {
+        
                     if(this.interval){
                         clearInterval(this.interval)
                         this.connected = true;
@@ -188,6 +194,24 @@ class ScanCentralUnits extends Component {
         }
     }
 
+    isConnectedToCentralDevice(){
+        BleManager.getConnectedPeripherals([constants.SUREFI_CMD_SERVICE_UUID]).then(response =>{
+            if(response.length){ // means its at least one device connected
+                var device = response.filter(connected_device => {
+                    if(connected_device.id == this.props.central_device.id){
+                        return true
+                    }
+                })
+                if(device){ // means is connected to central_device
+                    return true
+                }
+            }else{ 
+                return false
+            }
+        })
+    }
+
+
     connect() {
         var {
             central_device,
@@ -197,16 +221,16 @@ class ScanCentralUnits extends Component {
             type: "CONNECTING_CENTRAL_DEVICE"
         })
 
-        BleManager.connect(central_device.id)
+        if(!this.isConnectedToCentralDevice()){
+             BleManager.connect(central_device.id)
             .then((peripheralInfo) => {
-
                 this.writeSecondService(central_device.manufactured_data.security_string)
-                               
             })
             .catch((error) => {
                 console.log(error)
                 //Alert.alert("Error",error)
             });
+        }
     }
 
     tryToConnect(){
@@ -220,7 +244,7 @@ class ScanCentralUnits extends Component {
 
 
     clearQr(){
-    	this.props.dispatch({type: "CONFIGURATION_RESET_CENTRAL_REDUCER"})
+    	this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
     }
 
     renderCamera(message,button) {

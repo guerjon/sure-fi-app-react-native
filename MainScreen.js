@@ -6,7 +6,7 @@ import {
   	Image,
   	Dimensions,
   	TouchableHighlight,
-  	Linkingm,
+  	Linking,
   	NativeModules,
   	NativeEventEmitter
 } from 'react-native';
@@ -23,28 +23,44 @@ import { connect } from 'react-redux';
 import RNFirebase from 'react-native-firebase'
 import { NavigationActions } from 'react-navigation'
 import ActivityIndicator from './helpers/centerActivityIndicator'
+import Background from './helpers/background'
 const PushNotification = NativeModules.PushNotification
-
-
-
-
-var {width,height} = Dimensions.get("window")
-
+const {width,height} = Dimensions.get("window")
+const image_styles = {
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF'
+  },
+  textStyle: {
+    color: '#FFFFFF'
+  },
+  buttonContainer: {
+    borderRadius: 10,
+    padding: 10,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 3
+    },
+    shadowRadius: 5,
+    shadowOpacity: 1.0
+  }
+}
 
 class MainScreen extends Component {
   
   	constructor(props) {
-		super(props);
-		
+		super(props);	
   	}
-
 
   	componentWillMount() {
 
-  		PushNotification.getBuildInfo(data => { //data is a json
+  		/*PushNotification.getBuildInfo(data => { //data is a json
   			this.sendInformation(data)
   		})
-
+		*/
   	}
 
   	sendInformation(info){
@@ -105,7 +121,6 @@ class MainScreen extends Component {
   		}).catch(e => console.log(e))
   	}
 
-
 	openSureFiPage(url){
 		Linking.canOpenURL(url).then(supported => {
 			if (!supported) {
@@ -122,107 +137,86 @@ class MainScreen extends Component {
   		
   		const { navigate } = this.props.navigation;
   		var {screen_status} = this.props
-  		if(screen_status == "show_main_screen"){
+  		//if(screen_status == "show_main_screen"){ change_this_to_production
+  		if(true){	
 			return (
-		  		<View style={styles.container}>
-					<Image source={require('./images/temp_background.imageset/temp_background.png')} style={styles.image_container}>
-			  			<View style={styles.circleContainer}>
-				  			<View style={styles.launchImage}>
-				  				<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:width-200,height:50,top:-15}}/>
+				<Background>
+			  		<View style={styles.container}>
+				  			<View style={styles.circleContainer}>
+					  			<View style={styles.launchImage}>
+					  				<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:width-200,height:50,top:-15}}/>
+					  			</View>
 				  			</View>
-			  			</View>
-			  			<Coverflow 
-			  				onChange={(index) => null} 
-			  				style={styles.coverflow}
-			  				spacing={200}
-			  				scaleDown={0.7}
-			  				rotation={1}
-			  			>
-							<View>
-								<View>
-									<TouchableHighlight onPress={() => navigate("Bridges") }>
-										<Image source={require('./images/menu_bridge.imageset/menu_bridge.png')} >
+				  			<Coverflow 
+				  				onChange={(index) => null} 
+				  				style={styles.coverflow}
+				  				midRotation={50} //se queda
+				  				initialSelection={0}
+				  				spacing={230}
+				  			>
+								<View style={styles.textViewContainer}>
+									<View style={{alignItems:"center",justifyContent:"center"}}>
+										<TouchableHighlight onPress={() => navigate("Bridges")} >
+											<Image source={require('./images/menu_bridge.imageset/menu_bridge.png')}>
+											</Image>
+										</TouchableHighlight>
+									</View>
+									<View style={styles.textView}>
+										<Text style={styles.text}>
+											Access Controll 
+										</Text>
+										<Text style={styles.text}>
+											Bridges
+										</Text>
+									</View>
+								</View>
+
+								<View style={styles.textViewContainer}>
+									<View>
+										<Image source={require('./images/menu_hvac.imageset/menu_hvac.png')} >
 										</Image>
+									</View>
+									<View>
+									</View>
+									<View style={styles.textView}>
+										<Text style={styles.text}>
+											HVAC Systems
+										</Text>
+									</View>
+								</View>							
+
+								<View style={styles.textViewContainer}>
+									<View>
+										<Image source={require('./images/menu_help.imageset/menu_help.png')} >
+										</Image>
+									</View>
+									<View>
+									</View>
+									<View style={styles.textView}>
+										<Text style={styles.text}>
+											Help / Troubleshooting
+										</Text>
+									</View>
+								</View>
+								<View style={styles.textViewContainer}>
+									<TouchableHighlight onPress={() => this.openSureFiPage("http://sure-fi.com/")}>
+										<View>
+											<View>
+												<Image source={require('./images/menu_web.imageset/menu_web.png')} >
+												</Image>
+											</View>
+											<View style={styles.textView}>
+												
+													<Text style={styles.text}>
+														Visit Sure-Fi.com
+													</Text>
+											</View>
+										</View>
 									</TouchableHighlight>
 								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Access Controll Bridges
-									</Text>
-								</View>
-							</View>
-							<View>
-								<View>
-									<Image source={require('./images/menu_access_control.imageset/menu_access_control.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Access Control Systems (Coming 2018)
-									</Text>
-								</View>
-							</View>
-							<View>
-								<View>
-									<Image source={require('./images/menu_hvac.imageset/menu_hvac.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										HVAC Systems (Coming Q4 2017)
-									</Text>
-								</View>
-							</View>
-							<View>
-								<View>
-									<Image source={require('./images/menu_account.imageset/menu_account.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Account Access
-									</Text>
-								</View>
-							</View>
-							<View>
-								<View>
-									<Image source={require('./images/menu_help.imageset/menu_help.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Help / Troubleshooting
-									</Text>
-								</View>
-							</View>
-							<View>
-								<TouchableHighlight onPress={() => this.openSureFiPage("http://sure-fi.com/")}>
-									<View>
-										<View>
-											<Image source={require('./images/menu_web.imageset/menu_web.png')} >
-											</Image>
-										</View>
-										<View style={styles.textView}>
-											
-												<Text style={styles.text}>
-													Visit Sure-Fi.com
-												</Text>
-										</View>
-									</View>
-								</TouchableHighlight>
-							</View>
-
-			  			</Coverflow>      
-					</Image>
-		  		</View>
+				  			</Coverflow>
+			  		</View>
+			  	</Background>
 			);
 
   		}else{
@@ -235,4 +229,6 @@ class MainScreen extends Component {
 const mapStateToProps = state => ({
 	screen_status : state.mainScreenReducer.screen_status
 })
+
+
 export default connect(mapStateToProps)(MainScreen)

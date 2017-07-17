@@ -47,8 +47,8 @@ class UpdateFirmwareCentral extends Component{
 		}else{
 			bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicRadioNotification(data) );
 		}
-    	
-
+    	this.props.dispatch({type : "RESET_FIRMWARE_UPDATE_REDUCER"})
+		bleManagerEmitter.addListener("BleManagerDidUpdateState",(data) => this.checkBleState(data))
 		this.fetchFirmwareFile()
 		this.row_number = [0,0]
 		this.current_row = {}
@@ -73,11 +73,42 @@ class UpdateFirmwareCentral extends Component{
         )
 	}
 
+
+
+	checkBleState(data){
+		
+		var state = data.state
+		var {central_device,dispatch} = this.props;
+		
+		if(state == "on"){
+			BleManager.getConnectedPeripherals([SUREFI_CMD_SERVICE_UUID]).then(response =>{
+				if(response.length){ // means its at least one device connected
+					var device = response.filter(connected_device => {
+						if(connected_device.id == central_device.id){
+							return true
+						}
+					})
+					if(device){ // means is connected to central_device
+						this.startNotification()
+					}
+				}else{ 
+					BleManagerModule.start({},start => {
+						dispatch({type: "LOADING"})
+						BleManagerModule.connect(central_device.id,() => this.startNotification())
+					})
+				}
+			})
+			//this.startNotification()
+		}else{
+			BleManagerModule.start({},start => {
+				dispatch({type: "LOADING"})
+				BleManagerModule.connect(central_device.id,() => this.startNotification())
+			})
+		}
+	}
+
 	temporalyConnect(){
-		BleManagerModule.start({},start => {})
-		var {central_device,dispatch} = this.props
-	    dispatch({type: "LOADING"})
-	    BleManagerModule.connect(central_device.id,() => this.startNotification())
+		BleManager.checkState()
 	}
 
 	handleCharacteristicNotification(data){
@@ -132,7 +163,7 @@ class UpdateFirmwareCentral extends Component{
 			case 228:
 				console.log("BleRsp_InvalidNumBytesError")
 
-				Alert.alert("Error","Error on firmware update")
+				Alert.alert("Error","Error on firmware update",[{text: "Ok",onPress: () => this.props.navigation.goBack()}])
 				//this.errorProcessRows()
 				return
 			case 229:
@@ -147,9 +178,6 @@ class UpdateFirmwareCentral extends Component{
 			return
 		}
 	}
-
-
-
 
 	handleCharacteristicRadioNotification(data){
 		var {dispatch} = this.props
@@ -241,10 +269,8 @@ class UpdateFirmwareCentral extends Component{
 			console.log("There are not bytes_file")	
 		}
 	}
-					
-				
+								
 	startRow(){
-		console.log("startRow()")
 		var {dispatch} = this.props
 		dispatch({type: "STAR_ROW"})
 
@@ -253,7 +279,7 @@ class UpdateFirmwareCentral extends Component{
 			new_rows = []
 			rows.map(row => {
 					let pages = this.cutRowToPages(row)
-					new_rows.push(this.cutRowToPages(row))	
+					new_rows.push(pages)	
 					
 			})  
 
@@ -304,7 +330,6 @@ class UpdateFirmwareCentral extends Component{
 				this.processRow(this.new_current_row) 
 			}else{
 
-				console.log("the new_rows varibale is empty")
 				this.new_rows = null;
 				this.write([7]) //finish the rows sending
 			}
@@ -315,8 +340,8 @@ class UpdateFirmwareCentral extends Component{
 
 	processRow(row){
 		this.current_row = row.row
-		console.log("row.length",row.row_length)	
-
+		console.log("row.number.first",row.number.first + "row.number.second" + row.number.second)
+		
 		this.write(
 			[
 				4,
@@ -487,8 +512,10 @@ class UpdateFirmwareCentral extends Component{
 
 	cutRowToPages(row){
 
-		var {dispatch,row_number} = this.props
+		var {dispatch} = this.props
+
 		var row_number = this.row_number
+		console.log("this.row_number",row_number)
 		var first_number = row_number[0]
 		var second_number = row_number[1]
 
@@ -528,8 +555,7 @@ class UpdateFirmwareCentral extends Component{
 
 	writeWithoutResponse(data){
 		var {central_device} = this.props
-		
-		BleManagerModule.specialWriteWithoutResponse(central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20,4)		
+		BleManagerModule.specialWriteWithoutResponse(central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20,16)
 	}
 
 	handleDisconnectedPeripheral(evn){
@@ -554,35 +580,39 @@ class UpdateFirmwareCentral extends Component{
 		let path = firmware_file.firmware_path
 		
 		// send http request in a new thread (using native code) 
-		
-		RNFetchBlob.fetch('GET', path,GET_HEADERS)
-		.then((res) => {
-		  	var byteCharacters = res.text()
-		  	var byteArrays = [];
-		  	var sliceSize = 2048
-		  	//var command = 0x03
-		  	
-			for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-			    const slice = byteCharacters.slice(offset, offset + sliceSize);
-			    
-			    const byteNumbers = new Array(slice.length);
-			    for (let i = 0; i < slice.length; i++) {
-			      byteNumbers[i] = slice.charCodeAt(i);
-			    }
-			    
-			    byteArrays.push(byteNumbers);
+		if(path){
+			RNFetchBlob.fetch('GET', path,GET_HEADERS)
+			.then((res) => {
+			  	var byteCharacters = res.text()
+			  	var byteArrays = [];
+			  	var sliceSize = 2048
+			  	console.log("res",res)
+			  	
+				for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+				    const slice = byteCharacters.slice(offset, offset + sliceSize);
+				    
+				    const byteNumbers = new Array(slice.length);
+				    for (let i = 0; i < slice.length; i++) {
+				      byteNumbers[i] = slice.charCodeAt(i);
+				    }
+				    
+				    byteArrays.push(byteNumbers);
 
-			}	
-			this.bytes_file = byteArrays;
-			
-			this.temporalyConnect()
-		 	dispatch({type: "STARING_FIRMWARE_UPDATE"})
-		  })
-		 .catch((errorMessage, statusCode) => {
-		    console.log("ERROR",errorMessage)
-		    //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
-		    // error handling 
-		  })
+				}	
+				this.bytes_file = byteArrays;
+				
+				this.temporalyConnect()
+			 	dispatch({type: "STARING_FIRMWARE_UPDATE"})
+		  	})
+		 	.catch((errorMessage, statusCode) => {
+			    console.log("ERROR",errorMessage)
+			    //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
+			    // error handling 
+		  	})
+		}else{
+			Alert.alert("File not found","The file firmware was not found.")
+		}
+		
 	}
 
 	writeStartRadioUpdate(){
@@ -828,25 +858,7 @@ class UpdateFirmwareCentral extends Component{
 
 const mapStateToProps = state => ({
 	firmware_file : state.updateFirmwareCentralReducer.firmware_file,
-	
-	//central_device: state.scanCentralReducer.central_device,
-	central_device : { 
-    	new_representation: '01020C03FF0FF0FF1FF1',
-		rssi: -63,
-		name: 'Sure-Fi Brid',
-		id: 'C1:BC:40:D9:93:B9',
-		advertising: 
-		{ CDVType: 'ArrayBuffer',
-		data: 'AgEGDf///wECBgP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' },
-		manufactured_data: 
-		{ hardware_type: '01',
-		firmware_version: '02',
-		device_state: '0C03',
-		device_id: 'FF0FF0',
-		tx: 'FF1FF1',
-		address: 'C1:BC:40:D9:93:B9',
-		security_string: [ 178, 206, 206, 71, 196, 39, 44, 165, 158, 178, 226, 19, 111, 234, 113, 180 ] } 
-    },
+	central_device: state.scanCentralReducer.central_device,
 	firmware_update_state : state.firmwareUpdateReducer.firmware_update_state,
 	progress : state.firmwareUpdateReducer.progress,
 	kind_firmware : state.selectFirmwareCentralReducer.kind_firmware

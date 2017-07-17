@@ -33,7 +33,7 @@ import {
     first_color
 } from '../styles/index'
 import Camera from 'react-native-camera';
-
+//import {IS_CONNECTED} from '../action_creators'
 const RTCamera = NativeModules.RCTCameraModule
 
 var md5 = require('md5');
@@ -41,34 +41,18 @@ var md5 = require('md5');
 
 class ScanCentralUnits extends Component {
 
-    static navigationOptions = {
-        title: "Scan Central Unit",
-        headerStyle: {
-            backgroundColor: first_color
-        },
-        headerTitleStyle: {
-            color: "white"
-        },
-        headerBackTitleStyle: {
-            color: "white",
-            alignSelf: "center"
-        },
-        headerTintColor: 'white',
-    }
-
     componentDidMount() {
         var {
             dispatch
         } = this.props;
-       dispatch({
+        dispatch({
             type: "RESET_CENTRAL_REDUCER"
         })
-        this.manager = this.props.navigation.state.params.manager
-        var bleManagerEmitter = new NativeEventEmitter(this.manager)
+        dispatch({type :"SHOW_CAMERA"})
     }
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
+        //Vibration.vibrate()
         var device_id = scan_result.data;
         this.scan_result_id = device_id
         var {
@@ -125,17 +109,15 @@ class ScanCentralUnits extends Component {
             clearInterval(scanning)
     }
 
-    smartGoBack() {
+    goToPanelDevice() {
         var {
             navigation,
             dispatch
         } = this.props;
-        
-        dispatch({
-            type: "CLEAN_CAMERA"
-        })
+        dispatch({type:"HIDE_CAMERA"})
 
-        navigation.navigate("SetupCentral", {scan : this.props.navigation.state.params.scan})
+        this.stopScanning(this.props.scanner)
+        this.props.navigation.navigate("DeviceControlPanel",{device : this.props.central_device,dispatch: dispatch})
     }
 
     clearQr(){
@@ -143,52 +125,56 @@ class ScanCentralUnits extends Component {
     }
 
     renderCamera(message,button) {
-
+        if(this.props.camera_status == "showed")
         return(
-            <View style={styles.mainContainer}>
-                <View style={{margin:5}}>{message}</View>
-                <Camera
-                    style={styles.preview}
-                    aspect={Camera.constants.Aspect.fill}
-                    ref={(cam) => {
-                        this.camera = cam;
-                    }}
-                    onBarCodeRead={(e) => this.onSuccess(e)}
-                >
-                    <View/>
-                </Camera>
+            <View>
+                <View>
+                    <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
+                </View>    
+                <View>
+                    <Camera
+                        style={styles.preview}
+                        aspect={Camera.constants.Aspect.fill}
+                        ref={(cam) => {
+                            this.camera = cam;
+                        }}
+                        onBarCodeRead={(e) => this.onSuccess(e)}
+                    >
+                    </Camera>
+                </View>
                 <View style={{flexDirection:"row",height:40}}>
                     {button}
                 </View>                    
             </View>
-
         )
+        
+        return null
     }
 
     getClearButton(){
-      return (
-        <TouchableHighlight style={{backgroundColor: "red",flex:1,alignItems:"center",justifyContent:"center"}} onPress={() =>  this.clearQr()}>
-        <Text style={{color:"white"}}>
-            Clear
-        </Text>
-        </TouchableHighlight>
+        return (
+            <TouchableHighlight style={{backgroundColor: "red",flex:1,alignItems:"center",justifyContent:"center",borderRadius:10,marginTop:10,height:50}} onPress={() =>  this.clearQr()}>
+                <Text style={{color:"white"}}>
+                    Clear
+                </Text>
+            </TouchableHighlight>
         )
     }
 
     getConfirmButtons(){
       return (
-        <View style={{flex:1,flexDirection:"row",height:50}}>
-          <TouchableHighlight style={{flex:1,backgroundColor: "red",alignItems:"center",justifyContent:"center"}} onPress={() =>  this.clearQr()}>
-          <Text style={{color:"white",fontSize:16}}>
-              Clear
-          </Text>
-          </TouchableHighlight>
-        <TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center"}} onPress={() => this.smartGoBack()}>
-          <Text style={{color: "white",fontSize:16}}>
-          Confirm
-          </Text>
-        </TouchableHighlight>
-      </View>
+        <View style={{flex:1,flexDirection:"row",height:50,marginTop:10}}>
+            <TouchableHighlight style={{flex:1,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10}} onPress={() =>  this.clearQr()}>
+                <Text style={{color:"white",fontSize:16}}>
+                    Clear
+                </Text>
+            </TouchableHighlight>
+            <TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:10}} onPress={() => this.goToPanelDevice()}>
+                <Text style={{color: "white",fontSize:16}}>
+                    Confirm
+                </Text>
+            </TouchableHighlight>
+        </View>
       )
     }
 
@@ -241,7 +227,9 @@ const mapStateToProps = state => ({
     central_device: state.scanCentralReducer.central_device,
     manufactured_data: state.scanCentralReducer.manufactured_data,
     scanning_status: state.scanCentralReducer.scanning_status,
-    devices : state.pairReducer.devices
+    devices : state.pairReducer.devices,
+    camera_status : state.scanCentralReducer.camera_status,
+    scanner : state.pairReducer.scanner
 })
 
 export default connect(mapStateToProps)(ScanCentralUnits);

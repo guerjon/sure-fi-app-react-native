@@ -1,6 +1,8 @@
 import {StyleSheet,Dimensions} from 'react-native'
 
-var {width, height} = Dimensions.get('window'); 
+
+export const width = Dimensions.get('window').width;
+export const height = Dimensions.get('window').height;
 
 const margin = 20
 const title_margin  = 15
@@ -11,6 +13,7 @@ const cancel_red = "red"
 export const first_color = "#2a323d"
 export const option_blue = "#5AB0E3"
 export const link_color  = "#000099" 
+
 
 export  const styles = StyleSheet.create({
   	mainContainer: {
@@ -32,7 +35,7 @@ export  const styles = StyleSheet.create({
     },
   	circleContainer:{
   		width: width,
-  		height: 170,
+  		height: 150,
   		alignItems:"center",
   		top:-930
   	},
@@ -44,7 +47,8 @@ export  const styles = StyleSheet.create({
   	
   	coverflow: {
   		width: width,
-  		height: 350,
+  		height: width + 40,
+      
   	},
   	launchImage:{
   		width: 1000,
@@ -54,12 +58,19 @@ export  const styles = StyleSheet.create({
   		justifyContent:"flex-end",
   		backgroundColor: first_color
   	},
+    textViewContainer: {
+      alignItems:"center",
+      justifyContent:"center"
+    },
   	textView:{ 
+      marginTop:0,
   		alignItems:"center",
+      justifyContent:"center",
+      width:200
   	},
-  	text:{
-  		marginTop:40,
-  		fontSize: 20
+  	text:{		
+  		fontSize: 25,
+      alignItems:"center"
   	},
     bridgeContainer:{
       flex:1
@@ -118,9 +129,11 @@ export  const styles = StyleSheet.create({
       fontSize: 22
     },
     preview: {
-      flex: 1,
+      
       justifyContent: 'flex-end',
-      alignItems: 'center'
+      alignItems: 'center',
+      width:width-20,
+      height: 200
     },
     bigButtonContainer:{
       alignItems:"center",
@@ -180,6 +193,37 @@ export  const styles = StyleSheet.create({
     },
     link : {
       color: "#000099"
+    },
+    white_touchable_highlight: {
+      backgroundColor:"white",
+      flexDirection:"column"
+    },
+    white_touchable_highlight_inner_container: {
+      flexDirection:"row",
+      padding:5,
+      alignItems:"center",
+      borderBottomWidth:0.5
+    },
+    white_touchable_highlight_image_container: {
+      flex:0.5
+    },
+    white_touchable_highlight_image: {
+      width:60,
+      height:60,
+      marginLeft:20
+    },
+    white_touchable_text_container:{
+      flex:1,
+      alignItems:"flex-start"
+    },
+    white_touchable_text: {
+      fontSize: 25
+    },
+    device_control_title: {
+      margin:20,
+      color:"black"
     }
+
+
 });
 

@@ -14,6 +14,7 @@ const initialState = {
   manufactured_data : [],
   central_device : {},
   scanning_status: "no_device_found",
+  camera_status : "hidden"
 }
 
 
@@ -61,6 +62,22 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         scanning_status : "is_not_central_device"
+      }
+    case "HIDE_CAMERA":
+      return {
+        ...state,
+        camera_status : "hidden"
+      }
+    case "SHOW_CAMERA":
+      return {
+        ...state,
+        camera_status : "showed"
+      }
+    case "UPDATE_DEVICE":
+      console.log("new_device",action.device)
+      return {
+        ...state,
+        central_device : action.device
       }
     default:
       return state
