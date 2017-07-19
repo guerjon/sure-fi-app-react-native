@@ -25,7 +25,7 @@ import {
 	RESET_QR_CENTRAL_STATE,
 	RESET_QR_REMOTE_STATE,
 	IS_EMPTY,
-	FIND_ID,
+	
 	DIVIDE_MANUFACTURED_DATA,
 	GET_REMOTE_DEVICES,
 	PAIR_SUREFI_SERVICE,
@@ -50,109 +50,92 @@ class PairBridge extends Component{
 		headerTitleStyle : {color :"white"},
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
-	}
-	constructor(props) {
-		super(props);
-		this.devices =  this.props.devices ? this.props.devices : []
-		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-		BleManager.start().then(response => {
-			this.searchDevices()
-		}).catch(error => console.log(error))
-		
+	}	
+
+	componentWillMount() {
+		this.central_device = this.props.navigation.state.params.central_device
 	}
 
-	handleDisconnectedPeripheral(){
-		Alert.alert("Bridge Desconnected","The bridge has been disconnected.")
-		this.props.navigation.goBack();
+	componentDidMount() {
+		this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
 	}
-
-	handleDiscoverPeripheral(data) {
-      
-      var devices = this.devices;
-        //console.log(devices)
-        //if(data.name == "SF Bridge"){
-        if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
-        	
-            if (!FIND_ID(devices, data.id)) {              
-
-              	var data = this.getManufacturedData(data)
-              	
-          		devices.push(data)
-          		
-            	this.devices = devices
-            	this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices})
-              	
-            }
-        }
-    }
-
-    searchDevices(){
-
-		this.scanning = setInterval(() => {
-			BleManager.scan([], 3, true).then(() => {
-            	console.log('handleScan()');
-        	})
-		} , 1000)
-        
-        setTimeout(() => {
-        	if(this.scanning)
-          	clearInterval(this.scanning)
-        },60000)
-	}
-
-	stopScanner(){
-		if(this.scanning){
-			clearInterval(this.scanning)
-		}
-	}
-
-    getManufacturedData(device) {
-        if (device) {
-            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.new_representation, device.id);
-            delete device.manufacturerData;
-        }else{
-          console.log("error on getManufacturedData device is null or 0")
-        }
-        return device;
-    }
 
     showAlertConfirmation(){
+    	this.props.dispatch({type: "HIDE_REMOTE_CAMERA"})
     	Alert.alert(
     		"Continue Pairing",
-    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + this.props.central_device.manufactured_data.device_id + "\n\n" + " Remote : " + this.props.remote_device.manufactured_data.device_id,
+    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + this.central_device.manufactured_data.device_id + "\n\n" + " Remote : " + this.props.remote_device.manufactured_data.device_id,
     		[
     		 	
     		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
     		 	{text : "PAIR", onPress: () => this.pair() },
     		]
-    	)
+    	)	
     }
 
+    resetStack(){
+    	const resetActions = NavigationActions.reset({
+    		index: 2,
+    		actions : [
+    			NavigationActions.navigate({routeName: "Main"}),
+    			NavigationActions.navigate({routeName : "Bridges"}),
+    			NavigationActions.navigate({routeName: "DeviceControlPanel"})
+    		]
+    	})
+    	this.props.navigation.dispatch(resetActions)
+    }
+
+    tryToConnect(){
+    	let device = this.props.remote_device
+
+        var {
+            navigation
+        } = this.props;
+        this.interval = setInterval(() => this.connect(device),1000);
+    }
+
+    connect(device) {
+        var {
+            dispatch
+        } = this.props
+        
+    	BleManager.connect(device.id)
+            .then((peripheralInfo) => {
+            	if(this.interval){
+            		clearInterval(this.interval)
+            		this.pair()
+            	}
+            })
+        .catch((error) => {
+            console.log(error)
+        });
+        
+    }
 
     pair(){
-		var {central_device,remote_device,dispatch} = this.props
+    	
+		var {remote_device,dispatch} = this.props
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
-		let central_id_bytes = HEX_TO_BYTES(central_device.manufactured_data.device_id)
-		
-			BleManagerModule.retrieveServices(central_device.id,() => {
-				BleManager.write(central_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,remote_id_bytes,20).then(() => {
-					BleManagerModule.retrieveServices(remote_device.id,() => {
-						BleManager.write(remote_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,central_id_bytes,20).then(() =>{
-							Alert.alert(
-								"Pairing Complete",
-								"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
-								[
-									{text : "Ok",onPress: () => this.props.navigation.goBack()}
-								]
-							)
-						}).catch(error => console.log("error","error on write remote_Device"))
-					}).catch(error => console.log("error","error on retrive services remote_Device"))
-				}).catch(error => console.log("error","error on write central_Device"))
-			})    					
+
+    	BleManagerModule.retrieveServices(this.central_device.id,() => {
+    		BleManager.write(this.central_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,remote_id_bytes,20).then(() => {
+    			Alert.alert(
+							"Pairing Complete",
+							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
+							[
+								{text : "Ok",onPress: () => this.resetStack()}
+							],
+							{ cancelable: false }
+						)
+    			dispatch({type:"HIDE_CAMERA"})
+    			this.props.navigation.goBack()
+    		}).catch(error => console.log("error on Write Central",error))
+    	})
     }
 
 	render(){
-		let central_device = this.props.central_device
+		let central_device = this.central_device
+
 		let remote_device = this.props.remote_device
 		if(IS_EMPTY(remote_device))
 			var remote_content = (
@@ -169,7 +152,6 @@ class PairBridge extends Component{
 				</View>
 			)
 		else{
-				this.stopScanner()
 				var remote_content = (
 					<View style={{flexDirection: "row"}}>
 						<Image 
@@ -186,13 +168,13 @@ class PairBridge extends Component{
 							</Text>
 
 							<Text style={{fontSize:18}}>
-								Remote Unit {this.props.central_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
+								Remote Unit {this.props.remote_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
 							</Text>
 						</View>					
 					</View>
 				)
 			}
-
+			
 		return(
 			<Background>
 				<View style={{marginVertical:20}}>
@@ -213,7 +195,7 @@ class PairBridge extends Component{
 									</Text>
 
 									<Text style={{fontSize:18}}>
-										Central Unit  {this.props.central_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
+										Central Unit  {(central_device.manufactured_data ? central_device.manufactured_data.device_state : "Undefined") == "1301" ? "Unpaired" : "Paired"}
 									</Text>
 								</View>
 							</View>
@@ -258,7 +240,43 @@ class PairBridge extends Component{
 }
 
 const mapStateToProps = state => ({
-  	central_device: state.scanCentralReducer.central_device,
+  	/*central_device:{
+        new_representation: '01021303FF0FF0FF1FF1',
+        rssi: -54,
+        name: 'Sure-Fi Brid',
+        id: 'C1:BC:40:D9:93:B9',
+        advertising: {
+          CDVType: 'ArrayBuffer',
+          data: 'AgEGDf///wECEwP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA='
+        },
+        manufactured_data: {
+          hardware_type: '01',
+          firmware_version: '02',
+          device_state: '1303',
+          device_id: 'FF0FF0',
+          tx: 'FF1FF1',
+          address: 'C1:BC:40:D9:93:B9',
+          security_string: [
+            178,
+            206,
+            206,
+            71,
+            196,
+            39,
+            44,
+            165,
+            158,
+            178,
+            226,
+            19,
+            111,
+            234,
+            113,
+            180
+          ]
+        }
+      },
+    */
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,
   	devices : state.pairReducer.devices,

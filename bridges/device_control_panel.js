@@ -110,17 +110,15 @@ class SetupCentral extends Component{
 	constructor(props) {
 		super(props);
 		this.connected = false
-		this.device = this.props.device
-
+		console.log("props",props)
+		this.device = props.navigation.state.device
+		BleManager.start().then(response => {})
 		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',() =>  this.handleDisconnectedPeripheral() );
 		bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
 	}
 
 	componentDidMount() {
 		//this.device = this.props.device
-		this.props.dispatch({
-           type: "CONNECTING_CENTRAL_DEVICE",
-        })
         this.tryToConnect(this.device)
 	}
 
@@ -128,20 +126,19 @@ class SetupCentral extends Component{
         var {
             navigation
         } = this.props;
-        this.interval = setInterval(() => this.connect(device),3000);
+        this.props.dispatch({
+           type: "CONNECTING_CENTRAL_DEVICE",
+        })
+        this.interval = setInterval(() => this.connect(device),500);
     }
 
     connect(device) {
         var {
             dispatch
         } = this.props
-        
-        dispatch({
-            type: "CONNECTING_CENTRAL_DEVICE"
-        })
-        
+                
         IS_CONNECTED(device.id).then(response => {
-        	console.log("response",response)
+        	
         	if(!response){
 	            BleManager.connect(device.id)
 	            	.then((peripheralInfo) => {
@@ -209,7 +206,6 @@ class SetupCentral extends Component{
 	}
 
     getDeviceData(device){
-    	
     	this.readStatusCharacteristic(device)
     }
 
@@ -238,7 +234,6 @@ class SetupCentral extends Component{
     getRadioFirmwareVersion(device){
     	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_RADIO_FIRMWARE_VERSION],20)
     	.then(response => {
-    		console.log("response radio",response)
     	})
     	.catch(error => console.log("error",error))
     }
@@ -247,25 +242,22 @@ class SetupCentral extends Component{
     getBluetoothFirmwareVersion(device){
     	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION],20)
 		.then(response => {
-			console.log("response Bluetooth",response)
 		})
     	.catch(error => console.log("error",error))
     }
 
     getRadioSettings(device){
     	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_RADIO_SETTINGS],20).then(response => {
-    		console.log("response getRadioSettings",response)
     	}).catch(error => console.log("error",error))
     }
 
     getPowerVoltage(device){
     	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_VOLTAGE],20).then(response => {
-    		console.log("response getPowerVoltage",response)
     	}).catch(error => console.log("error",error))
     }
 
 	handleCharacteristicNotification(data){
-		console.log("data notification",data)
+		
 		let value = data.value[0]
 
 		switch(value){
@@ -344,7 +336,11 @@ class SetupCentral extends Component{
 
 	renderOptions(){
 		if(this.props.central_device_status == "connected"){
-			return <Options device={this.device} device_status = {this.props.central_device_status} navigation={this.props.navigation}/>
+			return <Options 
+				device={this.device} 
+				device_status = {this.props.central_device_status} 
+				navigation={this.props.navigation}
+			/>
 		}
 		return null
 	}
@@ -354,7 +350,12 @@ class SetupCentral extends Component{
 			<Background>
 				<ScrollView>
 					<View>
-						<StatusBox device = {this.device} device_status = {this.props.central_device_status}/>
+						<StatusBox 
+							device = {this.device} 
+							device_status = {this.props.central_device_status}
+							readStatusCharacteristic={(device) => this.readStatusCharacteristic(device)}
+							tryToConnect={(device) => this.tryToConnect(device)}
+						/>
 					</View>
 					<View>
 						{this.renderOptions()}
@@ -373,6 +374,43 @@ const mapStateToProps = state => ({
 	central_unit_description : state.setupCentralReducer.central_unit_description,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
 	device: state.scanCentralReducer.central_device,
+	/*device:       {
+        new_representation: '01021303FF0FF0FF1FF1',
+        rssi: -54,
+        name: 'Sure-Fi Brid',
+        id: 'C1:BC:40:D9:93:B9',
+        advertising: {
+          CDVType: 'ArrayBuffer',
+          data: 'AgEGDf///wECEwP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA='
+        },
+        manufactured_data: {
+          hardware_type: '01',
+          firmware_version: '02',
+          device_state: '1303',
+          device_id: 'FF0FF0',
+          tx: 'FF1FF1',
+          address: 'C1:BC:40:D9:93:B9',
+          security_string: [
+            178,
+            206,
+            206,
+            71,
+            196,
+            39,
+            44,
+            165,
+            158,
+            178,
+            226,
+            19,
+            111,
+            234,
+            113,
+            180
+          ]
+        }
+      },
+    */
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,

@@ -19,12 +19,18 @@ import {
 	LOADING,
 	IS_EMPTY,
 	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_WRITE_UUID
+	SUREFI_CMD_WRITE_UUID,
+	PAIR_SUREFI_SERVICE,
+	PAIR_SUREFI_READ_UUID
 } from '../constants'
 
 import {IS_CONNECTED} from '../action_creators/'
 
 class StatusBox extends Component{
+	constructor(props) {
+		super(props);
+		this.connected = false
+	}
 
 	renderConnectingBox(){
 		return (
@@ -49,6 +55,7 @@ class StatusBox extends Component{
 	}
 
 	disconnect(){
+		console.log(this.props.device.id)
 		BleManager.disconnect(this.props.device.id)
 		.then(response => {
 			this.props.dispatch({
@@ -72,7 +79,7 @@ class StatusBox extends Component{
 					<View style={{flex:1}}>
 						<TouchableHighlight 
 							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-							onPress={()=> this.tryToConnect(this.props.device)}
+							onPress={()=> this.props.tryToConnect(this.props.device)}
 						>
 							<Text style={styles.bigGreenButtonText}>
 								Connect
@@ -84,47 +91,7 @@ class StatusBox extends Component{
 		)
 	}
 
-
-    tryToConnect(device){
-        var {
-            navigation
-        } = this.props;
-        this.interval = setInterval(() => this.connect(device),3000);
-    }
-
-    connect(device) {
-        var {
-            dispatch
-        } = this.props
-        
-        dispatch({
-            type: "CONNECTING_CENTRAL_DEVICE"
-        })
-        
-        IS_CONNECTED(device.id).then(response => {
-        	console.log("response",response)
-        	if(!response){
-	            BleManager.connect(device.id)
-	            	.then((peripheralInfo) => {
-	                this.writeSecondService(device)
-	            })
-	            .catch((error) => {
-	            	console.log("error",error)
-	                //Alert.alert("Error",error)
-	            });
-        	}else{ //IF IS ALREADY CONNECTED
-        		if(this.interval){
-        			clearInterval(this.interval)
-        			this.connected = true
-        		}
-        		this.props.dispatch({
-        			type: "CONNECTED_CENTRAL_DEVICE"
-        		})
-        	}
-        }).catch(error => console.log(error))
-    }
-
-    writeSecondService(device){       
+    writeSecondService(device){
         if(!this.connected){
             BleManagerModule.retrieveServices(device.id,() => {
                 BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,device.manufactured_data.security_string,20).then((response) => {
@@ -136,11 +103,14 @@ class StatusBox extends Component{
                     this.props.dispatch({
                         type: "CONNECTED_CENTRAL_DEVICE"
                     })
+                    this.props.readStatusCharacteristic(device)
 
                 }).catch(error => console.log("Error",error));
             })
         }
     }	
+
+
 
     renderStatusDevice(){
     	var {device_status,remote_devices,remote_device_status,device} = this.props
@@ -195,7 +165,7 @@ class StatusBox extends Component{
 								</Text>
 							</View>
 							<View style={styles.touchableSectionContainer}>
-								<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+								<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
 									<View style={styles.touchableSectionInner}>
 										<Image 
 											source={require('../images/bridge_icon.imageset/bridge_icon.png')} 
@@ -215,7 +185,7 @@ class StatusBox extends Component{
 											</Text>
 										</View>
 									</View>
-								</TouchableHighlight>
+								</View>
 							</View>					
 							{this.renderStatusDevice()}
 						</View>
@@ -232,7 +202,7 @@ class StatusBox extends Component{
 								</Text>
 							</View>
 							<View style={styles.touchableSectionContainer}>
-								<TouchableHighlight onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+								<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
 									<View style={styles.touchableSectionInner}>
 										<Image 
 											source={require('../images/hardware_select.imageset/hardware_select.png')} 
@@ -243,7 +213,7 @@ class StatusBox extends Component{
 											Select Central Unit
 										</Text>
 									</View>
-								</TouchableHighlight>
+								</View>
 							</View>
 							{this.renderStatusDevice()}
 						</View>

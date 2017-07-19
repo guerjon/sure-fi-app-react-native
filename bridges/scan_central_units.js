@@ -33,8 +33,10 @@ import {
     first_color
 } from '../styles/index'
 import Camera from 'react-native-camera';
+import { NavigationActions } from 'react-navigation'
 //import {IS_CONNECTED} from '../action_creators'
 const RTCamera = NativeModules.RCTCameraModule
+
 
 var md5 = require('md5');
 //md5 = require('js-md5');
@@ -49,11 +51,14 @@ class ScanCentralUnits extends Component {
             type: "RESET_CENTRAL_REDUCER"
         })
         dispatch({type :"SHOW_CAMERA"})
+        
     }
 
     onSuccess(scan_result) {
         //Vibration.vibrate()
         var device_id = scan_result.data;
+
+
         this.scan_result_id = device_id
         var {
             dispatch,
@@ -62,24 +67,26 @@ class ScanCentralUnits extends Component {
 
         var devices = this.props.devices
         var matched_device = []
-
+        console.log("lol")
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
-            console.log("mames 1")
+            
             var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
-                console.log("mames 2")
+            
                 matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
-                    console.log("mames 3")
+            
                     
                     if(matched_devices.length > 0){
-                        console.log("mames 4")
+            
                         var matched_device = matched_devices[0]
                         dispatch({
                             type: "CENTRAL_DEVICE_MATCHED",
-                            central_device: matched_devices[0]
+                            central_device: matched_device
                         });
+
+                        this.goToPanelDevice(matched_device)
                     }else{
                     
                         dispatch({
@@ -104,20 +111,29 @@ class ScanCentralUnits extends Component {
         }
     }
 
+
     stopScanning(scanning){
         if(scanning)
             clearInterval(scanning)
     }
 
-    goToPanelDevice() {
+    goToPanelDevice(device) {
         var {
             navigation,
             dispatch
         } = this.props;
-        dispatch({type:"HIDE_CAMERA"})
+        
 
         this.stopScanning(this.props.scanner)
-        this.props.navigation.navigate("DeviceControlPanel",{device : this.props.central_device,dispatch: dispatch})
+        
+        const reset_stack = NavigationActions.reset({
+            index : 1,
+            actions : [
+                NavigationActions.navigate({routeName:"Main"}),
+                NavigationActions.navigate({routeName:"DeviceControlPanel",device : device,dispatch: dispatch})
+            ]
+        })
+        this.props.navigation.dispatch(reset_stack)
     }
 
     clearQr(){
@@ -162,6 +178,7 @@ class ScanCentralUnits extends Component {
     }
 
     getConfirmButtons(){
+        return null
       return (
         <View style={{flex:1,flexDirection:"row",height:50,marginTop:10}}>
             <TouchableHighlight style={{flex:1,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10}} onPress={() =>  this.clearQr()}>
@@ -195,6 +212,7 @@ class ScanCentralUnits extends Component {
                 var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>
                 return this.renderCamera(message,clear_button)
             case "device_scanned_and_matched":
+                
                 var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
                 return this.renderCamera(message,confirm_buttons)
             case "device_is_not_on_paring_mode":

@@ -33,8 +33,12 @@ import {
     first_color
 } from '../styles/index'
 import Camera from 'react-native-camera';
-//import {IS_CONNECTED} from '../action_creators'
+import {IS_CONNECTED} from '../action_creators'
 import BleManager from 'react-native-ble-manager'
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+
 const RTCamera = NativeModules.RCTCameraModule
 
 var md5 = require('md5');
@@ -42,14 +46,67 @@ var md5 = require('md5');
 
 class ScanRemoteUnits extends Component {
 
+    constructor(props) {
+        super(props);
+        this.devices = []
+        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        this.searchDevices()
+        
+    }
+
     componentDidMount() {
-        var {
-            dispatch
-        } = this.props;
+        this.props.dispatch({type: "SHOW_REMOTE_CAMERA"})
+    }
+
+    handleDiscoverPeripheral(data) {
+      
+      var devices = this.devices;
+
+        if (data.name == "Sure-Fi Brid" || data.name == "SF Bridge") {
+            
+            if (!constants.FIND_ID(devices, data.id)) {              
+
+                var data = this.getManufacturedData(data)
+                devices.push(data)
+                this.devices = devices
+
+            }
+        }
+    }
+
+    getManufacturedData(device) {
+        if (device) {
+            device.manufactured_data = constants.DIVIDE_MANUFACTURED_DATA(device.new_representation, device.id);
+            delete device.manufacturerData;
+        }else{
+          console.log("error on getManufacturedData device is null or 0")
+        }
+        return device;
+    }
+
+    searchDevices(){
+
+        this.scanning = setInterval(() => {
+            BleManager.scan([], 3, true).then(() => {
+                console.log('handleScan()');
+            })
+        } , 1000)
+        
+        setTimeout(() => {
+            if(this.scanning)
+            clearInterval(this.scanning)
+        },60000)
+    }
+
+    stopScanner(){
+        if(this.scanning){
+            clearInterval(this.scanning)
+            this.scanning = null
+        }
     }
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
+        //Vibration.vibrate()
         var device_id = scan_result.data;
         this.scan_result_id = device_id
         var {
@@ -57,7 +114,7 @@ class ScanRemoteUnits extends Component {
             navigation
         } = this.props;
 
-        var devices = this.props.devices
+        var devices = this.devices
         var matched_device = []
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                 
@@ -68,21 +125,18 @@ class ScanRemoteUnits extends Component {
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
                     matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
                     if(matched_devices.length > 0){
-                        var matched_device = matched_devices[0]
-                        dispatch({
-                            type: "REMOTE_DEVICE_MATCHED",
-                            remote_device: matched_devices[0]
-                        });
-                        BleManager.connect(matched_devices[0].id).then(response => {    
-
-                        }).catch(response => {
-                            console.log(response)
-                        })
+                        
+                        let device = matched_devices[0]
+                            dispatch({
+                                type: "REMOTE_DEVICE_MATCHED",
+                                remote_device: device
+                            });
+                        this.stopScanner()    
                     }else{
-                       Alert.alert("Pairing Error","Device " + device_id.toUpperCase() + "is not on pairing mode.");                    
+                       Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    
                     }
                 }else{
-                    Alert.alert("Pairing Error","Device " + device_id.toUpperCase() + "is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.");
+                    Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.");
                 }
             }else{
                 
@@ -94,42 +148,38 @@ class ScanRemoteUnits extends Component {
         }
     }
 
+
     stopScanning(scanning){
         if(scanning)
             clearInterval(scanning)
     }
 
-    goToPanelDevice() {
-        var {
-            navigation,
-            dispatch
-        } = this.props;
-        dispatch({type:"HIDE_CAMERA"})
-
-        this.stopScanning(this.props.scanner)
-        this.props.navigation.navigate("DeviceControlPanel",{device : this.props.remote_device,dispatch: dispatch})
-    }
 
     clearQr(){
       this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
     }
 
     renderCamera(message,button) {
-        return(
-            <View style={{paddingVertical:20}}>
-                <View>
-                    <Camera
-                        style={styles.preview_remote}
-                        aspect={Camera.constants.Aspect.fill}
-                        ref={(cam) => {
-                            this.camera = cam;
-                        }}
-                        onBarCodeRead={(e) => this.onSuccess(e)}
-                    >
-                    </Camera>
+        if(this.props.camera_status == "showed"){
+            return(
+                <View style={{paddingVertical:20}}>
+                    <View>
+                        <Camera
+                            style={styles.preview_remote}
+                            aspect={Camera.constants.Aspect.fill}
+                            ref={(cam) => {
+                                this.camera = cam;
+                            }}
+                            onBarCodeRead={(e) => this.onSuccess(e)}
+                        >
+                        </Camera>
+                    </View>
                 </View>
-            </View>
-        )
+            )            
+        }
+
+        return null
+
     }
 
     getClearButton(){
@@ -142,22 +192,6 @@ class ScanRemoteUnits extends Component {
         )
     }
 
-    getConfirmButtons(){
-      return (
-        <View style={{flex:1,flexDirection:"row",height:50,marginTop:10}}>
-            <TouchableHighlight style={{flex:1,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10}} onPress={() =>  this.clearQr()}>
-                <Text style={{color:"white",fontSize:16}}>
-                    Clear
-                </Text>
-            </TouchableHighlight>
-            <TouchableHighlight style={{flex:1,backgroundColor: "#00DD00",alignItems:"center",justifyContent:"center",borderRadius:10,marginLeft:10}} onPress={() => this.goToPanelDevice()}>
-                <Text style={{color: "white",fontSize:16}}>
-                    Confirm
-                </Text>
-            </TouchableHighlight>
-        </View>
-      )
-    }
 
     render() {
         var {
@@ -166,7 +200,7 @@ class ScanRemoteUnits extends Component {
         } = this.props
 
         var clear_button = this.getClearButton()
-        var confirm_buttons = this.getConfirmButtons()
+        
 
         switch (scanning_status) {
             case "no_device_found":
@@ -176,8 +210,7 @@ class ScanRemoteUnits extends Component {
                 var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>
                 return this.renderCamera(message,clear_button)
             case "device_scanned_and_matched":
-                var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({remote_device.manufactured_data.device_id.toUpperCase()})</Text>
-                return this.renderCamera(message,confirm_buttons)
+                return   <View style={{paddingVertical:40}}><Text>Connecting </Text><ActivityIndicator /></View>
             case "device_is_not_on_paring_mode":
                 var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not on pairing mode</Text>
                 return this.renderCamera(message,clear_button)
@@ -208,7 +241,6 @@ const mapStateToProps = state => ({
     remote_device: state.scanRemoteReducer.remote_device,
     manufactured_data: state.scanRemoteReducer.manufactured_data,
     scanning_status: state.scanRemoteReducer.scanning_status,
-    devices : state.pairReducer.devices,
     camera_status : state.scanRemoteReducer.camera_status,
     scanner : state.pairReducer.scanner
 })

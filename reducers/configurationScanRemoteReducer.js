@@ -53,19 +53,16 @@ export default function configurationScanRemoteReducer (state = initialState, ac
          remote_device : {}
       }
     case "CONFIGURATION_CONNECTING_REMOTE_DEVICE":
-      console.log("debug","12")
       return {
         ...state,
         remote_device_status : "connecting"
       }
     case "CONFIGURATION_CONNECTED_REMOTE_DEVICE":
-      console.log("debug","8")
       return {
         ...state,
         remote_device_status : "connected"
       }
     case "CONFIGURATION_DISCONNECT_REMOTE_DEVICE":
-      console.log("debug","9")
       return{
         ...state,
         remote_device_status : "disconnected"

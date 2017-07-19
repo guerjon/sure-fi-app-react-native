@@ -66,7 +66,7 @@ class MainScreen extends Component {
   	sendInformation(info){
   		var {dispatch} = this.props
   		var device_details = info.model + "-" + info.android_version + "-" + info.language + "-" + info.country + "-" + info.app_version
-  		console.log("info",info)
+  		
   		fetch(DEVICE_REGISTRATION_LINK,{
   			method: "POST",
 			headers: {

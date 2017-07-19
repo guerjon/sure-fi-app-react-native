@@ -25,7 +25,8 @@ export default function scanRemoteReducer (state = initialState, action) {
         ...state,
         manufactured_data : [],
         remote_device : {},
-        scanning_status : "no_device_found"
+        scanning_status : "no_device_found",
+        devices : []
       }
     case "REMOTE_DEVICE_MATCHED":
       return {
@@ -63,12 +64,12 @@ export default function scanRemoteReducer (state = initialState, action) {
         ...state,
         scanning_status : "is_not_remote_device"
       }
-    case "HIDE_CAMERA":
+    case "HIDE_REMOTE_CAMERA":
       return {
         ...state,
         camera_status : "hidden"
       }
-    case "SHOW_CAMERA":
+    case "SHOW_REMOTE_CAMERA":
       return {
         ...state,
         camera_status : "showed"
@@ -77,6 +78,11 @@ export default function scanRemoteReducer (state = initialState, action) {
       return {
         ...state,
         remote_device : action.device
+      }
+    case "CONNECTING_REMOTE_DEVICE":
+      return {
+        ...state,
+        scanning_status : "device_scanned_and_matched"
       }
     default:
       return state
