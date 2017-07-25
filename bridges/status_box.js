@@ -159,11 +159,6 @@ class StatusBox extends Component{
             return (
                 <ScrollView style={styles.pairContainer}>
 						<View style={styles.pairSectionsContainer}>
-							<View style={styles.titleContainer}>
-								<Text style={styles.title}>
-									Central Unit
-								</Text>
-							</View>
 							<View style={styles.touchableSectionContainer}>
 								<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
 									<View style={styles.touchableSectionInner}>
@@ -174,7 +169,7 @@ class StatusBox extends Component{
 										</Image>
 										<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 											<Text >
-												Sure-Fi Bridge Central
+												{this.props.device.manufactured_data.hardware_type == "01" ? "Sure-Fi Bridge Central" : "Sure-Fi Bridge Remote"} 
 											</Text>
 											<Text style={{fontSize:22}}>
 												{device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }

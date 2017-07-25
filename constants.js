@@ -9,6 +9,7 @@ export const DEVICE_REGISTRATION_LINK = BASE_URL + "sessions/check_device_regist
 export const DEVICE_REGISTRATE_LINK = BASE_URL + "sessions/register_device"
 export const CHECK_USER_EXITS = BASE_URL + "users/check_exists"
 export const FINISH_USER_REGISTRATION = BASE_URL + "sessions/confirm_device_registration"
+export const PUSH_CLOUD_STATUS_ROUTE = BASE_URL + "hardware/update_status"
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -66,6 +67,19 @@ export const TURN_OFF_SCANNING = "TURN_OFF_SCANNING"
 export const ADD_NEW_BRIDGE = "ADD_NEW_BRIDGE"
 export const ADD_DEVICES = "ADD_DEVICES"
 export const RESET_PAIR_REDUCER_STATE = "RESET_PAIR_REDUCER_STATE"
+
+export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_CMD_READ_UUID = "C8BF000C-0EC5-2536-2143-2D155783CE78"
+
+
+export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
+
+export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
+export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
+export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
+
 
 export const TO_HEX_STRING = string_array => {
 	var byteArray = JSON.parse(string_array);
@@ -183,19 +197,30 @@ export const GET_HEADERS = {
 	'Content-Type': 'application/x-www-form-urlencoded',
 }
 
-export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_CMD_READ_UUID = "C8BF000C-0EC5-2536-2143-2D155783CE78"
+export const DEC2HEX = i => {
+	var result = "0000";
+	if      (i >= 0    && i <= 15)    { result = "000" + i.toString(16); }
+	else if (i >= 16   && i <= 255)   { result = "00"  + i.toString(16); }
+	else if (i >= 256  && i <= 4095)  { result = "0"   + i.toString(16); }
+	else if (i >= 4096 && i <= 65535) { result =         i.toString(16); }
+	return result
+}
 
+export const CRC16 = bytes => {
+	var crc = 0
+	var k = 0
+	var CRC_TABLE = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
+         0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef]
 
-export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
+	bytes.map(data_byte => {
+		k = 0xFFFFFFFF & ((crc >> 12) ^ (data_byte >> 4))
+        crc = 0xFFFF & (CRC_TABLE[k & 0x0F] ^ (crc << 4))
+        k = 0xFFFFFFFF & ((crc >> 12) ^ (data_byte >> 0))
+        crc = 0xFFFF & (CRC_TABLE[k & 0x0F] ^ (crc << 4))
+	})
 
-export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
-export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
-export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
-
-
+	return crc & 0xFFFF	
+}
 
 
 export const DIVIDE_MANUFACTURED_DATA = (manufacturedData, address) => {
@@ -310,4 +335,75 @@ export const CALCULATE_VOLTAGE = x => {
 	let voltage = (x / 4095) * 16.5
 	return voltage
 }
+
+
+export const FIND_PROGRAMING_NUMBER = data =>{
+	var data = data.value
+	
+	var bootloader_info = BYTES_TO_HEX(data)
+	bootloader_info = bootloader_info.substr(2,bootloader_info.length).toUpperCase()
+	
+	var lowerReadCrc            = bootloader_info.substr(0,4)
+	var lowerCalculatedCrc      = bootloader_info.substr(4,4)
+	var lowerVersionNumberMajor = bootloader_info.substr(8,2)
+	var lowerVersionNumberMinor = bootloader_info.substr(10,2)
+	var lowerProgramNumber      = bootloader_info.substr(12,4)
+	var upperReadCrc            = bootloader_info.substr(16,4)
+	var upperCalculatedCrc      = bootloader_info.substr(20,4)
+	var upperVersionNumberMajor = bootloader_info.substr(24,2)
+	var upperVersionNumberMinor = bootloader_info.substr(26,2)
+	var upperProgramNumber      = bootloader_info.substr(28,4)
+	var bootingUpperMemory      = bootloader_info.substr(32,2)
+
+	if(lowerProgramNumber == "FFFF") {
+	    lowerProgramNumber = "0000"
+	}
+
+	if( upperProgramNumber == "FFFF" ){
+	    upperProgramNumber = "0000"
+	}
+
+	if( lowerReadCrc == lowerCalculatedCrc) {
+	    lowerImageOK = true
+	    lowerProgramNumber = INCREMENT_PROGRAM_NUMBER(lowerProgramNumber)
+	}
+
+	if (upperReadCrc == upperCalculatedCrc){
+	    upperImageOK = true
+	    upperProgramNumber = INCREMENT_PROGRAM_NUMBER(upperProgramNumber)
+	}
+
+	if( bootingUpperMemory == "00") {
+		return lowerProgramNumber
+	}
+
+	else if  (bootingUpperMemory == "01") {
+		return upperProgramNumber
+	}
+
+	else {
+		console.log("CRC ERROR","Error Updating Firmware. CRC Error on Bridge Device")
+	    return 0
+	}	
+}
+
+const INCREMENT_PROGRAM_NUMBER = programNumber => {
+	programNumber = parseInt(programNumber, 10) + 1
+	var byte_program_number = LONG_TO_BYTE_ARRAY(programNumber)
+	return byte_program_number
+}
+
+const LONG_TO_BYTE_ARRAY = long => {
+    // we want to represent the input as a 8-bytes array
+    var byteArray = [0, 0];
+
+    for ( var index = byteArray.length -1; index >= 0; index -- ) {
+        var byte = long & 0xff;
+        byteArray [ index ] = byte;
+        long = (long - byte) / 256 ;
+    }
+
+    return byteArray;
+};
+
 

@@ -18,7 +18,8 @@ import {
   	TextInput,
   	ActivityIndicator,
   	NativeModules,
-  	NativeEventEmitter
+  	NativeEventEmitter,
+  	Alert
 } from 'react-native'
 
 
@@ -88,19 +89,6 @@ class SetupCentral extends Component{
 	
 	static navigationOptions = ({ navigation, screenProps }) => ({
 		title : "Device Control Panel",
-		headerLeft :( 
-			<TouchableHighlight 
-				onPress={
-			 		() => {
-			 			navigation.state.params.dispatch({type: "SHOW_CAMERA"})
-			 			navigation.goBack()
-			 		}
-			 	}
-			 	style={{marginLeft:20}}
-			>
-				<Icon name="arrow-left" size={25} color="white"/>
-			</TouchableHighlight>
-		),	
 		headerStyle: {backgroundColor: first_color},
 		headerTitleStyle : {color :"white"},
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
@@ -110,65 +98,62 @@ class SetupCentral extends Component{
 	constructor(props) {
 		super(props);
 		this.connected = false
-		console.log("props",props)
 		this.device = props.navigation.state.device
-		BleManager.start().then(response => {})
 		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',() =>  this.handleDisconnectedPeripheral() );
 		bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
+		bleManagerEmitter.addListener('BleManagerConnectPeripheral',(data) => this.handleConnectedDevice(data) );
+		BleManager.start().then(response => console.log(response)).catch(error => console.log(error))
 	}
 
 	componentDidMount() {
-		//this.device = this.props.device
-        this.tryToConnect(this.device)
+
+		//if(this.props.navigation.state.tryToConnect){
+		if(true){
+			this.device = this.device ? this.device : this.props.device // we need make this because some times the devices comes from params
+			this.tryToConnect(this.device)
+		}
+        else{
+        	BleManager.isPeripheralConnected(this.device.id).then(isConnected =>{
+        		if(isConnected){
+        			this.props.dispatch({type:"CONNECTED_CENTRAL_DEVICE"})
+        			this.getDeviceData(this.device)
+        		}
+        	})
+        }
 	}
 
-    tryToConnect(device){
-        var {
-            navigation
-        } = this.props;
+
+	tryToConnect(device){
+		//console.log("tryToConnect()",device)
         this.props.dispatch({
            type: "CONNECTING_CENTRAL_DEVICE",
         })
-        this.interval = setInterval(() => this.connect(device),500);
+
+        this.interval = setInterval(() => this.connect(device),1000);
+
+	}
+
+	connect(device){
+		//console.log("connect()",this.props)
+		BleManager.connectWithOutResponse(device.id)
+	}
+
+    handleConnectedDevice(data){
+    	//console.log("handleConnectedDevice()",data)
+        if(this.interval){
+            clearInterval(this.interval)
+            this.connected = true;
+            this.writeSecondService(this.device)
+        }
     }
 
-    connect(device) {
-        var {
-            dispatch
-        } = this.props
-                
-        IS_CONNECTED(device.id).then(response => {
-        	
-        	if(!response){
-	            BleManager.connect(device.id)
-	            	.then((peripheralInfo) => {
-	                this.writeSecondService(device)
-	            })
-	            .catch((error) => {
-	                //Alert.alert("Error",error)
-	            });
-        	}else{ //IF IS ALREADY CONNECTED
-        		if(this.interval){
-        			clearInterval(this.interval)
-        			this.connected = true
-        		}
-        		this.props.dispatch({
-        			type: "CONNECTED_CENTRAL_DEVICE"
-        		})
-        		this.getDeviceData(device) 
-        	}
-        }).catch(error => console.log(error))
-    }
 
     writeSecondService(device){       
-        if(!this.connected){
+        console.log("writeSecondService()",device)
+        
             BleManagerModule.retrieveServices(device.id,() => {
                 BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,device.manufactured_data.security_string,20).then((response) => {
-       	
-                    if(this.interval){
-                        clearInterval(this.interval)
-                        this.connected = true;
-                    }
+       				
                     this.props.dispatch({
                         type: "CONNECTED_CENTRAL_DEVICE"
                     })
@@ -177,7 +162,7 @@ class SetupCentral extends Component{
 
                 }).catch(error => console.log("Error",error));
             })
-        }
+        
     }	
 
 	startNotification(device){
@@ -211,12 +196,15 @@ class SetupCentral extends Component{
 
     readStatusCharacteristic(device){
     	BleManager.read(device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_READ_UUID).then(response => {
+    		let device_status = response[0]
+
     		this.props.dispatch(
     			{
     				type: "UPDATE_OPTIONS",
     				device_status : response[0]
     			}
     		)
+
     		this.getAppFirmwareVersion(device)
     		
     	}).catch(error => console.log("error",error))
@@ -259,7 +247,7 @@ class SetupCentral extends Component{
 	handleCharacteristicNotification(data){
 		
 		let value = data.value[0]
-
+		console.log("notification,DeviceControle",data)
 		switch(value){
 			case 1 : //app firmware version
 				if(data.value[1]){
@@ -302,7 +290,7 @@ class SetupCentral extends Component{
 
 	renderInfo(){
 
-		if(this.props.central_device_status == "connected"){
+		if(this.props.central_device_status == "connected" && this.props.battery_voltage ){
 			return (
 				<View style={{alignItems:"center"}}>
 					<View>
@@ -335,14 +323,31 @@ class SetupCentral extends Component{
 	}
 
 	renderOptions(){
-		if(this.props.central_device_status == "connected"){
+		//console.log(this.props.central_device_status)
+		//console.log(this.props.battery_voltage)
+		if(this.props.central_device_status == "connected" && this.props.battery_voltage){ //tou should test if this.props.battery != 0 because is the last on charge, if is different of 0 then show de options
 			return <Options 
 				device={this.device} 
 				device_status = {this.props.central_device_status} 
 				navigation={this.props.navigation}
+				goToPair={() => this.goToPair()}
+				goToDeploy={() => this.goToDeploy()}
+				goToFirmwareUpdate={() => this.goToFirmwareUpdate()}
 			/>
 		}
 		return null
+	}
+
+	goToPair(){
+		this.props.navigation.navigate("PairBridge",{device: this.device})
+	}
+
+	goToDeploy(){
+		this.props.navigation.navigate("Deploy",{device: this.device})	
+	}
+
+	goToFirmwareUpdate(){
+		this.props.navigation.navigate("FirmwareUpdate",{device: this.device})
 	}
 
 	render(){
@@ -350,7 +355,7 @@ class SetupCentral extends Component{
 			<Background>
 				<ScrollView>
 					<View>
-						<StatusBox 
+						<StatusBox
 							device = {this.device} 
 							device_status = {this.props.central_device_status}
 							readStatusCharacteristic={(device) => this.readStatusCharacteristic(device)}
@@ -373,8 +378,9 @@ const mapStateToProps = state => ({
 	central_photo_data : state.setupCentralReducer.central_photo_data,
 	central_unit_description : state.setupCentralReducer.central_unit_description,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
-	device: state.scanCentralReducer.central_device,
-	/*device:       {
+	//device: state.scanCentralReducer.central_device,
+	
+	device:       {
         new_representation: '01021303FF0FF0FF1FF1',
         rssi: -54,
         name: 'Sure-Fi Brid',
@@ -409,8 +415,7 @@ const mapStateToProps = state => ({
             180
           ]
         }
-      },
-    */
+    },
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,

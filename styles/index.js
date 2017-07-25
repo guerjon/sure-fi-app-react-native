@@ -228,8 +228,15 @@ export  const styles = StyleSheet.create({
     device_control_title: {
       margin:20,
       color:"black"
+    },
+    tab: {
+      borderRadius:10,
+      backgroundColor:option_blue,
+      flex:0.3,
+      padding:10,
+      margin:10,
+      alignItems:"center",
+      justifyContent:"center"
     }
-
-
 });
 

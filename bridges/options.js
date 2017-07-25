@@ -20,8 +20,13 @@ import { connect } from 'react-redux';
 import { 
 	LOADING,
 	PAIR_SUREFI_SERVICE,
-	PAIR_SUREFI_WRITE_UUID
+	PAIR_SUREFI_WRITE_UUID,
+	IS_EMPTY
 } from '../constants'
+import { 
+	PUSH_CLOUD_STATUS
+} from '../action_creators/index'
+
 
 
 class Options extends Component{
@@ -39,10 +44,6 @@ class Options extends Component{
 		super(props);		
 	}
 
-	goToPair(){
-		this.props.navigation.navigate("PairBridge",{central_device: this.props.device})
-	}
-
 	showAlertUnpair(){
 		var {device} = this.props
 		Alert.alert(
@@ -57,34 +58,81 @@ class Options extends Component{
 
     unPair() {
     	var {device} = this.props
-    	BleManagerModule.retrieveServices(device.id, () => {
-            BleManagerModule.unPair(device.id, PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID, 20,(response) => {	
-            	// you don't have to do anything here since the BLE event onDisconnect handle the change
-	    		Alert.alert("Success", "Un-Pair successfully sent") 
-	    	})      
-        })  
+    	let device_id = device.manufactured_data.device_id
+    	let expected_status = 1
+    	let rxUUID = device.manufactured_data.device_id
+    	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
+    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+
+    	PUSH_CLOUD_STATUS(device_id,hardware_status)
+    	.then(response => {
+    		console.log(response)
+	    	BleManagerModule.retrieveServices(device.id, () => {
+	            BleManagerModule.unPair(device.id, PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID, 20,(response) => {	
+	            	// you don't have to do anything here since the BLE event onDisconnect handle the change
+		    		Alert.alert(
+		    			"Success", "Un-Pair successfully sent",[
+		    				{text: "Ok",onPress : () => this.resetStack()}
+		    			],
+			    		{
+			    			cancelable : false
+			    		}  	    		
+		    		)
+		    	})
+	        })    		
+    	})
+    	.catch(error => console.log("error",error))
+
+  
+    }
+
+    resetStack(){
+    	console.log("devices on Unpair ResetStack",this.device)
+
+    	const resetActions = NavigationActions.reset({
+    		index: 1,
+    		actions : [
+    			NavigationActions.navigate({routeName: "Main"}),
+    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device, tryToConnect:true})
+    		]
+    	})
+
+    	this.props.navigation.dispatch(resetActions)
     }
 
     getPairBridgeOption(){
 		return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.goToPair()}>
-				<View style={styles.white_touchable_highlight_inner_container}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+			<View style={{marginBottom:50}}>
+				
+				<Text style={{alignSelf:"center"}}>
+					Next Step
+				</Text>
+				
+				
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",						
+  					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Pair Bridge
+							</Text>
+						</View>
 					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Pair Bridge
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
+				</TouchableHighlight>
+				
+			</View>
 		)    	
     }
 
     getUpdateFirwmareOption(){
 		return (
-			<TouchableHighlight style={styles.white_touchable_highlight}>
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToFirmwareUpdate()}>
 				<View style={styles.white_touchable_highlight_inner_container}>
 					<View style={styles.white_touchable_highlight_image_container}>
 						<Image source={require('../images/menu_flash_firmware.imageset/menu_flash_firmware.png')} style={styles.white_touchable_highlight_image}/>
@@ -117,19 +165,29 @@ class Options extends Component{
     }
 
     getDeployCentralUnitOption(){
+    	
     	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.goToPair()}>
-				<View style={styles.white_touchable_highlight_inner_container}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
+    		<View style={{marginBottom:50}}>
+				<Text style={{alignSelf:"center"}}>
+					Next Step
+				</Text>    		
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToDeploy()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",	
+					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								{this.props.device.manufactured_data.hardware_type == "01" ? "Deploy Central Unit" : "Deploy Remote Unit" } 
+							</Text>
+						</View>
 					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Deploy Central Unit
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
+				</TouchableHighlight>
+			</View>
     	)
     }
 
@@ -211,6 +269,8 @@ class Options extends Component{
 const mapStateToProps = state => ({
 	device_status : state.setupCentralReducer.device_status,
 	central_device: state.scanCentralReducer.central_device,
+	device_status : state.setupCentralReducer.device_status,
+	remote_device : state.scanRemoteReducer.remote_device
 });
 
 export default connect(mapStateToProps)(Options);

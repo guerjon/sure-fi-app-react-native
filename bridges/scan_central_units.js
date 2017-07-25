@@ -67,13 +67,13 @@ class ScanCentralUnits extends Component {
 
         var devices = this.props.devices
         var matched_device = []
-        console.log("lol")
+        
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
             
             var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
             
-                matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+                //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
             
@@ -130,7 +130,7 @@ class ScanCentralUnits extends Component {
             index : 1,
             actions : [
                 NavigationActions.navigate({routeName:"Main"}),
-                NavigationActions.navigate({routeName:"DeviceControlPanel",device : device,dispatch: dispatch})
+                NavigationActions.navigate({routeName:"DeviceControlPanel",device : device,dispatch: dispatch,tryToConnect:true})
             ]
         })
         this.props.navigation.dispatch(reset_stack)
@@ -206,7 +206,7 @@ class ScanCentralUnits extends Component {
 
         switch (scanning_status) {
             case "no_device_found":
-                var message = <Text>Plese scan the QR Code of your Sure-Fi Central Device</Text>
+                var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>
             return this.renderCamera(message,clear_button)
             case "device_scanned_not_matched":
                 var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>

@@ -50,8 +50,8 @@ class ScanRemoteUnits extends Component {
         super(props);
         this.devices = []
         bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        this.current_device = this.props.current_device // this device was matched could be a central or a remote one
         this.searchDevices()
-        
     }
 
     componentDidMount() {
@@ -85,24 +85,9 @@ class ScanRemoteUnits extends Component {
     }
 
     searchDevices(){
-
-        this.scanning = setInterval(() => {
-            BleManager.scan([], 3, true).then(() => {
-                console.log('handleScan()');
-            })
-        } , 1000)
-        
-        setTimeout(() => {
-            if(this.scanning)
-            clearInterval(this.scanning)
-        },60000)
-    }
-
-    stopScanner(){
-        if(this.scanning){
-            clearInterval(this.scanning)
-            this.scanning = null
-        }
+        BleManager.scan([], 600, true).then(() => {
+            console.log('handleScan()');
+        })
     }
 
     onSuccess(scan_result) {
@@ -116,27 +101,56 @@ class ScanRemoteUnits extends Component {
 
         var devices = this.devices
         var matched_device = []
+
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                 
             var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are REMOTE i.e hardware_type == 01 return true
-                matched_devices = constants.GET_REMOTE_DEVICES(matched_devices)
                 
-                if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-                    matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
-                    if(matched_devices.length > 0){
-                        
-                        let device = matched_devices[0]
+                if(this.current_device.manufactured_data.hardware_type == "01"){ // THE PREVIOUS MATCHED DEVICE IS A CENTRAL SO WE NEED FIGURE OUT A REMOTE ONE
+                    matched_devices = constants.GET_REMOTE_DEVICES(matched_devices)
+                    
+                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
+                        matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
+                        if(matched_devices.length > 0){
+
+                            let device = matched_devices[0]
                             dispatch({
                                 type: "REMOTE_DEVICE_MATCHED",
                                 remote_device: device
                             });
-                        this.stopScanner()    
+                            console.log("this.scanning",this.scanning)
+                            this.props.showAlertConfirmation(this.scanning)
+                            
+                        }else{
+                           Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    
+                        }
                     }else{
-                       Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    
+                        Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.");
                     }
+            
                 }else{
-                    Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.");
+                    matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+                    
+                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
+                        matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
+                        if(matched_devices.length > 0){
+
+                            let device = matched_devices[0]
+                            dispatch({
+                                type: "REMOTE_DEVICE_MATCHED",
+                                remote_device: device
+                            });
+                            console.log("this.scanning",this.scanning)
+                            this.props.showAlertConfirmation(this.scanning)
+                            
+                        }else{
+                           Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    
+                        }
+                    }else{
+                        Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Remote Unit. You need to pair to a Sure-Fi Remote Unit.");
+                    }
+
                 }
             }else{
                 
@@ -153,7 +167,6 @@ class ScanRemoteUnits extends Component {
         if(scanning)
             clearInterval(scanning)
     }
-
 
     clearQr(){
       this.props.dispatch({type: "RESET_REMOTE_REDUCER"})

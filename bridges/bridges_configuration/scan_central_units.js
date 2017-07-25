@@ -135,7 +135,7 @@ class ScanCentralUnits extends Component {
             var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
         
-                matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+                //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                 if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
         

@@ -1,14 +1,15 @@
 const initialState = {
   firmware_file: null,
-  central_update_mode : false
+  central_update_mode : false,
+  active_tab : "charging"
 }
 
 export default function updateFirmwareCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER":
       return {
-        ...state,
-        firmware_file: null       
+        firmware_file: null,
+        central_update_mode : false
       }
     case "SET_CENTRAL_FIRMWARE_FILE":
       return {  
@@ -26,6 +27,12 @@ export default function updateFirmwareCentralReducer (state = initialState, acti
         ...state,
         central_update_mode: true
       }
+    case "CHANGE_TAB":
+      console.log("action.active_tab",action.active_tab)
+      return{
+        ...state,
+        active_tab : action.active_tab
+      } 
     default:
       return state
   }

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { StackNavigator,addNavigationHelpers } from 'react-navigation'
+import { StackNavigator,addNavigationHelpers,TabNavigator } from 'react-navigation'
 import { View, Image } from 'react-native'
 import { connect } from 'react-redux';
-import {styles} from './styles'
+import {styles,option_blue} from './styles'
 import MainScreen from './MainScreen'
 import Bridges from './bridges/index.js'
 import PairBridge from './bridges/pair'
@@ -13,29 +13,29 @@ import WriteBridgeConfiguration from './bridges/write_bridge_configuration'
 import BridgesConfiguration from './bridges/bridges_configuration/index'
 import ConfigurationScanCentralUnits from './bridges/bridges_configuration/scan_central_units'
 import ConfigurationScanRemoteUnits from './bridges/bridges_configuration/scan_remote_units'
-import BluetoothFirmwareUpdate from './bridges/bridges_configuration/bluetooth_firmware_update'
+//import BluetoothFirmwareUpdate from './bridges/bridges_configuration/bluetooth_firmware_update'
 import BatteryLevel from './bridges/bridges_configuration/battery_level'
 
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
-import FirmwareUpdate from './bridges/bridges_configuration/firmware_update'
+import FirmwareUpdate from './bridges/firmware_update'
 import ConfigureRadioCentral from './bridges/bridges_configuration/configure_radio_central'
 import DeviceControlPanel from './bridges/device_control_panel'
 import SetupCentralExamples from './bridges/setup_central_examples'
-import SetupRemote from './bridges/setup_remote'
+import Deploy from './bridges/deploy'
 import BridgeDetails from './bridges/bridge_details'
 import Register from './bridges/register'
 import RadioConfiguration from './bridges/radio/index'
-
 
 const mapStateToProps = state => ({
   nav: state.nav,
 });
 
+
 export const AppNavigator = StackNavigator({
-	Main: {screen: MainScreen,headerMode: 'screen'},
 	DeviceControlPanel : {screen : DeviceControlPanel},
-	
+	Main: {screen: MainScreen,headerMode: 'screen'},
+	FirmwareUpdate : {screen : FirmwareUpdate},
 	Bridges: {screen: Bridges},
 	PairBridge: {screen: PairBridge},
 	BridgesConfiguration : {screen : BridgesConfiguration},
@@ -46,7 +46,7 @@ export const AppNavigator = StackNavigator({
 	WriteBridgeConfiguration : {screen : WriteBridgeConfiguration },
 	
 	BridgeDetails : {screen : BridgeDetails},
-	SetupRemote: {screen : SetupRemote},
+	Deploy: {screen : Deploy},
 	
 	UpdateFirmwareCentral : {screen : UpdateFirmwareCentral},
 	SelectFirmwareCentral : {screen : SelectFirmwareCentral},
@@ -54,17 +54,18 @@ export const AppNavigator = StackNavigator({
 	ScanRemoteUnits: { screen: ScanRemoteUnits},	
 	ScanCentralUnits: { screen: ScanCentralUnits},
 	
-	FirmwareUpdate : {screen : FirmwareUpdate},
+	
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
 	ConfigurationScanRemoteUnits : {screen : ConfigurationScanRemoteUnits},
 	
 	
 	SetupCentralExamples : {screen : SetupCentralExamples},
 	Register : {screen : Register},
-	BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate},
+	//BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate},
 	BatteryLevel : {screen : BatteryLevel}
 	
 });
+
 
 
 class App extends Component{
@@ -75,6 +76,5 @@ class App extends Component{
 		)
 	}
 }
-
 
 export default connect(mapStateToProps)(App);

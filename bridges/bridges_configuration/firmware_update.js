@@ -57,10 +57,12 @@ class UpdateFirmwareCentral extends Component{
 
 	}
 
+
+
 	startNotification(){
 		var {central_device,dispatch} = this.props
 		dispatch({type:"STARING_FIRMWARE_UPDATE"})
-        BleManagerModule.retrieveServices(
+        BleManagerModule.retrieveServifterces(
         	central_device.id,
         	() => {
         		BleManagerModule.startNotification(

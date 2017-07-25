@@ -8,10 +8,10 @@ import {
 	TouchableHighlight,
 	ActivityIndicator,
 	Alert,
-	FlatList
-
+	FlatList,
+	
 } from 'react-native'
-import {styles,first_color} from '../../styles/index.js'
+import {styles,first_color,width,height} from '../../styles/index.js'
 import {connect} from 'react-redux'
 import {
 	FIRMWARE_CENTRAL_ROUTE
@@ -33,14 +33,14 @@ function selectValues(status){
 				style: {
 					color: "green"	
 				},
-				text: "Release"
+				text: "Development"
 			}
 		case 2 : //beta
 			return {
 				style: {
 					color : "orange"	
 				},
-				text: "Beta"
+				text: "Release"
 				
 			}
 		case 3: //Deprecated
@@ -61,12 +61,6 @@ function selectValues(status){
 
 class selectFirmwareFile extends Component{
 
-	componentDidMount() {
-		this.dispatch = this.props.dispatch
-		this.navigate = this.props.navigation.navigate
-		this.downloadFirmwareFiles()
-	}
-
 	static navigationOptions = {
 		title : "Select Firmware File",
 		headerStyle: {backgroundColor: first_color},
@@ -75,107 +69,74 @@ class selectFirmwareFile extends Component{
 		headerTintColor: 'white',
 	}
 
-	downloadFirmwareFiles(){
-		var dispatch = this.dispatch;
+	constructor(props) {
+		super(props);
+		this.device = this.props.device
+		this.firwmare_files = this.props.firmware_files
+		this.dispatch = this.props.dispatch
+	}
 
-		dispatch({type:"DOWNLOADING_FIRMWARE_FILES"})
-
-		dispatch({type: "FETCH_STATUS_LOADING"})
-		if(this.props.central_device.manufactured_data.hardware_type == "01")
-			var body = JSON.stringify({
-				hardware_type_key : "eaa4c810-e477-489c-8ae8-c86387b1c62e",
-				firmware_type : this.props.kind_firmware
-			})
-		else
-			var body = JSON.stringify({
-				hardware_type_key : "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf",
-				firmware_type : this.props.kind_firmware
-			})
-		
-		fetch(FIRMWARE_CENTRAL_ROUTE, {
-			headers: {
-			    'Accept': 'application/json',
-			    'Content-Type': 'application/json',				
-			},
-			method: 'POST',
-			body : body
-		})
-		.then((response) => response.json())
-      	.then((responseJson) => {
-      		
-
-	        if(responseJson.status == "success"){
-	        	let files = this.sortByFirmwareVersion(responseJson.data.files)
-		        dispatch({type: "DOWNLOADED_FIRMWARE_FILES",central_firmware_files : files })
-
-	        }else{
-	        	console.log(responseJson)
-	        }
-      	})
-		.catch((error) => {
-		  console.warn(error);
-		});
-
-
+	componentWillMount() {
+		this.props.dispatch({type: "PARTIAL_RESET_FIRMWARE_CENTRAL_REDUCER"})
 	}
 
 	sortByFirmwareVersion(files){
 		var order_files = files.sort((a,b) => b.firmware_version.localeCompare(a.firmware_version))
+		//console.log(order_files)
 		return order_files;
 	}
 
-	getFirmwareList(central_firmware_files,dispatch,central_firmware_file_selected){
-
+	renderFirmwareFileList(firmware_files){
+		//console.log("renderFirmwareFileList",firmware_files)
 		return (
-			<ScrollView style={{paddingBottom: 50}}>
-				<FlatList 
-					data={central_firmware_files} 
+			<ScrollView >
+				<FlatList
+					data={firmware_files} 
 					renderItem={
 						(item) => this.listItem(item) 
 					} 
-					extraData ={central_firmware_file_selected}
 					keyExtractor={(item,index) => item.firmware_id }/>
 			</ScrollView>
 		)
 	}
 
 	listItem(item){
-		var file = item.item
-		var file_selected = this.props.central_firmware_file_selected
-		var backgroundColor = file.firmware_id == file_selected.firmware_id ? "#CCCCCC" :"white" 
-		var values = selectValues(file.firmware_status)
 
+		var file = item.item
+		var values = selectValues(file.firmware_status)
+		
 		return( 
-			<TouchableHighlight 
-				style={{backgroundColor:backgroundColor,marginVertical:5}} 
-				onPress={() => this.changeRender(file) }
-			>
-				<View style={{padding:30}}>
-					<Text>
-						{file.firmware_title}
-					</Text>
-					<Text>
-						{file.firmware_description}
-					</Text>
-					<Text style={values.style}>
+			<View style={{flexDirection:"row",flex:1}}>
+				<View style={{backgroundColor:values.style.color,width:80,alignItems:"center",justifyContent:"center",borderBottomWidth:0.3}}>
+					<Text style={{color:"white",fontSize:12}}>
 						{values.text}
 					</Text>
-					<Text>
-						{file.firmware_version}
-					</Text>
 				</View>
-			</TouchableHighlight>
+				<TouchableHighlight
+					style={{backgroundColor:"white",borderBottomWidth:0.3,width:(width-80)}} 
+					onPress={() => this.changeRender(file) }
+				>
+					<View style={{paddingLeft:15,paddingTop:10}}>
+						<Text>
+							{file.firmware_title} {file.firmware_version}
+						</Text>
+						<Text>
+							{file.firmware_description.substr(0,30)} ...
+						</Text>
+					</View>
+				</TouchableHighlight>
+			</View>
 		)
 	}
 
+
 	changeRender(file){
-		this.dispatch({type: "SET_CENTRAL_FIRMWARE_FILE", firmware_file : file})
 		Alert.alert(
 			"Select this Firmware?",
 			"Are you sure to select this firmware to update?",
 			[
 				{text: "Cancel",onPress : () => this.deleteFiles() },
-				{text: "Continue",onPress : () => this.props.navigation.goBack()}
+				{text: "Continue",onPress : () => this.props.fetchFirmwareUpdate(file)}
 			]
 		)
 	}
@@ -186,38 +147,38 @@ class selectFirmwareFile extends Component{
 	}
 
 	render(){
-		
-		var {central_firmware_file_selected,dispatch,download_firmware_files,central_firmware_files} = this.props;
-		
+		console.log(this.props.update_status)
+		console.log(this.props.firmware_files)
+		if(this.props.update_status == "without_activity"){
 
-		if(download_firmware_files == "inactive" || download_firmware_files == "active"){
-			var content = <View style={{flex:1,alignItems:"center",justifyContent:"center",marginVertical:50}} ><ActivityIndicator /></View>
+			if(this.props.firmware_files){
+				var content = this.renderFirmwareFileList(this.props.firmware_files)
+			}
+			else{
+				var content = <ActivityIndicator/>
+			}
+
+			return(
+				<View>
+					<View style={{marginBottom:40}}>
+						{content}
+					</View>
+				</View>
+			);			
+		}else{
+			
+			return this.props.getStartRow()
 		}
 
-		if(download_firmware_files == "downloaded"){
-			var content = this.getFirmwareList(central_firmware_files,dispatch,central_firmware_file_selected)
-		}
 
-		return(
-			<Image  
-				source={require('../../images/temp_background.imageset/temp_background.png')} 
-				style={styles.image_complete_container}
-			>					
-				<ScrollView style={{flex:1}}>
-					{content}	
-				</ScrollView>
-			</Image>
-		);
 	}
 }
 
 
 const mapStateToProps = state => ({
 	download_firmware_files : state.selectFirmwareCentralReducer.download_firmware_files,
-	central_firmware_files : state.selectFirmwareCentralReducer.central_firmware_files,
 	central_firmware_file_selected : state.selectFirmwareCentralReducer.central_firmware_file_selected,
-	central_device: state.scanCentralReducer.central_device,
-	kind_firmware : state.selectFirmwareCentralReducer.kind_firmware
+	update_status : state.selectFirmwareCentralReducer.update_status
 });
 
 export default connect(mapStateToProps)(selectFirmwareFile)

@@ -8,11 +8,24 @@ const initialState = {
 
 export default function setupRemoteReducer (state = initialState, action) {
   switch (action.type) {
-  	case "SHOW_REMOTE_CAMERA":
+  	case "RESET_SETUP_REMOTE_REDUCER":
+      return {
+        ...state,
+        screen_status : "index",
+        show_remote_continue_button : false,
+        remote_photo_data : {},
+        remote_unit_description : ""
+      }
+    case "SHOW_REMOTE_CAMERA":
   		return {
   			...state,
   			screen_status : "camera"
   		}
+    case "HIDE_REMOTE_CAMERA":
+      return {
+        ...state,
+        screen_status: "index"
+      }
     case "SHOW_REMOTE_IMAGE":
       return {
         ...state,

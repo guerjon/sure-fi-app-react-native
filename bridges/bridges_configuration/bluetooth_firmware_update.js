@@ -27,7 +27,6 @@ const BleManagerModule = NativeModules.BleManager;
 const BluetoothModule = NativeModules.BluetoothModule
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-
 class BluetoothFirmwareUpdate extends Component{
 	
 	static navigationOptions ={
@@ -41,24 +40,32 @@ class BluetoothFirmwareUpdate extends Component{
 	constructor(props) {
 		super(props);
 		this.central_device = this.props.central_device
-		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
-		bleManagerEmitter.addListener('DFUCompletedEvent',data => this.dfuCompletedEvent(data))
-		bleManagerEmitter.addListener("DFUUpdateGraph",data => this.updateGraph(data))
-		
-		 // remote after finish the testing 
+		this.handleDiscoverPeripheral = this.handleDiscoverPeripheral.bind(this)
+		this.dfuCompletedEvent = this.dfuCompletedEvent.bind(this);
+		this.updateGraph = this.updateGraph.bind(this)
+	}
+
+
+	componentWillMount() {
+		this.discoverPeripheral = bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral);
+		this.completedEvent = bleManagerEmitter.addListener("DFUCompletedEvent",this.dfuCompletedEvent)
+		this.uGraph = bleManagerEmitter.addListener("DFUUpdateGraph",this.updateGraph)
+		this.props.dispatch({type : "RESET_FIRMWARE_UPDATE_REDUCER"})
+		BleManagerModule.retrieveServices(this.central_device.id,() => {
+			BleManagerModule.specialWrite(this.central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[0x1A],20)
+				this.searchDevices()
+		})	
+	}
+
+	componentWillUnmount() {
+		this.discoverPeripheral.remove()
+		this.completedEvent.remove()
+		this.uGraph.remove()
 	}
 
 	updateGraph(data){
 		var {dispatch} = this.props;
 		dispatch({type: "CHANGE_PROGRESS", new_progress: (data.percent * 0.01)})
-	}
-
-	componentWillMount() {
-		this.props.dispatch({type : "RESET_FIRMWARE_UPDATE_REDUCER"})
-		BleManagerModule.retrieveServices(this.central_device.id,() => {
-			BleManagerModule.specialWrite(this.central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[0x1A],20)
-				this.searchDevices()
-		})
 	}
 
     connect() {

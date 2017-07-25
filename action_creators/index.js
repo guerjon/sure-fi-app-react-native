@@ -3,7 +3,12 @@ import {
 	NativeModules
 } from 'react-native'
 
-import {SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_READ_UUID} from '../constants'
+import {
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_READ_UUID,
+	PUSH_CLOUD_STATUS_ROUTE
+} from '../constants'
+
 const BleManagerModule = NativeModules.BleManager;
 
 export const IS_CONNECTED = (id) => {
@@ -45,4 +50,23 @@ export const START_NOTIFICATION = (id) => {
 			.catch(error => reject(error))
 		})
 	})
+}
+
+export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
+	return new Promise((fulfill,reject) => {
+		fetch(PUSH_CLOUD_STATUS_ROUTE,{
+			method : "POST",
+			headers: {
+			    'Accept': 'application/json',
+			    'Content-Type': 'application/json',				
+			},
+			body : JSON.stringify({
+				hardware_serial : hardware_serial,
+				hardware_status : hardware_status	
+			})
+		}).then(response => {
+			fulfill(response)
+		}).catch(error => reject(error))
+	})
+
 }
