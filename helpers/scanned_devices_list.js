@@ -32,7 +32,6 @@ import {
     PAIR_SUREFI_SERVICE, 
     PAIR_SUREFI_WRITE_UUID
 } from '../constants'
-import modules from '../CustomModules.js'
 import BleManager from 'react-native-ble-manager';
 
 const BleManagerModule = NativeModules.BleManager;
@@ -42,28 +41,10 @@ class ScannedDevicesList extends Component {
 
     constructor(props) {
     	super(props);
-		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));    	
-        BleManager.start().then(() => {
-        	this.searchDevices()
-        });			
-    }
-
-    componentDidMount() {
-    	
-    }
-
-	searchDevices(){
-		this.scanning = setInterval(() => {
-			BleManager.scan([], 3, true).then(() => {
-            	
-        	})
-		} , 1000)
+		bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));	
+        
         this.devices = []
-        setTimeout(() => {
-        	if(this.scanning)
-          	clearInterval(this.scanning)
-        },60000)
-	}
+    }
 
 	handleDiscoverPeripheral(data) {
       
@@ -77,7 +58,7 @@ class ScannedDevicesList extends Component {
                 this.devices = devices
 
                 this.remote_devices = this.filterRemoteDevices(devices)
-                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices,scanner: this.scanning})
+                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
             }
         }
     }

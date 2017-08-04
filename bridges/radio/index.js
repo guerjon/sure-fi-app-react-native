@@ -31,7 +31,6 @@ import {
     PAIR_SUREFI_SERVICE, 
     PAIR_SUREFI_WRITE_UUID
 } from '../../constants'
-import modules from '../../CustomModules.js'
 import {
     NavigationActions
 } from 'react-navigation'

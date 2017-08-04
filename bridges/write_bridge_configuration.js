@@ -15,7 +15,6 @@ import {
 } from 'react-native'
 import {connect} from 'react-redux'
 import {styles,first_color} from '../styles/index'
-import modules from '../CustomModules.js'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import RNFetchBlob from 'react-native-fetch-blob'

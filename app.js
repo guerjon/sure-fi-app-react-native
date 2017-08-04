@@ -6,6 +6,7 @@ import {styles,option_blue} from './styles'
 import MainScreen from './MainScreen'
 import Bridges from './bridges/index.js'
 import PairBridge from './bridges/pair'
+import ForcePair from './bridges/force_pair'
 
 import ScanCentralUnits from './bridges/scan_central_units'
 import ScanRemoteUnits from './bridges/scan_remote_units'
@@ -19,7 +20,7 @@ import BatteryLevel from './bridges/bridges_configuration/battery_level'
 import UpdateFirmwareCentral from './bridges/bridges_configuration/update_firmware_central'
 import SelectFirmwareCentral from './bridges/bridges_configuration/select_firmware_central'
 import FirmwareUpdate from './bridges/firmware_update'
-import ConfigureRadioCentral from './bridges/bridges_configuration/configure_radio_central'
+import ConfigureRadio from './bridges/configure_radio'
 import DeviceControlPanel from './bridges/device_control_panel'
 import SetupCentralExamples from './bridges/setup_central_examples'
 import Deploy from './bridges/deploy'
@@ -33,13 +34,16 @@ const mapStateToProps = state => ({
 
 
 export const AppNavigator = StackNavigator({
-	DeviceControlPanel : {screen : DeviceControlPanel},
 	Main: {screen: MainScreen,headerMode: 'screen'},
+	DeviceControlPanel : {screen : DeviceControlPanel},
+	
+	
+	ForcePair : {screen : ForcePair},
 	FirmwareUpdate : {screen : FirmwareUpdate},
 	Bridges: {screen: Bridges},
 	PairBridge: {screen: PairBridge},
 	BridgesConfiguration : {screen : BridgesConfiguration},
-	ConfigureRadioCentral : {screen : ConfigureRadioCentral},
+	ConfigureRadio : {screen : ConfigureRadio},
 	RadioConfiguration : {screen : RadioConfiguration},
 
 		

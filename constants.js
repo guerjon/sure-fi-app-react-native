@@ -10,6 +10,10 @@ export const DEVICE_REGISTRATE_LINK = BASE_URL + "sessions/register_device"
 export const CHECK_USER_EXITS = BASE_URL + "users/check_exists"
 export const FINISH_USER_REGISTRATION = BASE_URL + "sessions/confirm_device_registration"
 export const PUSH_CLOUD_STATUS_ROUTE = BASE_URL + "hardware/update_status"
+export const GET_STATUS_CLOUD_ROUTE = BASE_URL + "hardware/get_status"
+export const GET_MESSAGES_CLOUD_ROUTE = BASE_URL  + "hardware/get_messages"
+export const GET_DEVICE_NAME_ROUTE = BASE_URL + "hardware/get_name"
+export const UPDATE_DEVICE_NAME_ROUTE = BASE_URL + "hardware/update_name"
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -406,4 +410,30 @@ const LONG_TO_BYTE_ARRAY = long => {
     return byteArray;
 };
 
+export const GET_LARGEST = (a,b,c) => {
+	var major_version = 0
+    if(a > b)
+        if(a > c)
+            major_version = a
+        else
+            major_version = c
+    else
+        if(b > c)
+            major_version = b
+        else 
+            major_version = c
+    
+    return major_version
+}
 
+export const PRETY_VERSION = version => {
+	if(version < 1)
+		return ("V" + version.toString())
+	if (version == 1)
+		return "V1.0"
+	if (version > 1)
+		return ("V" + version.toString())
+
+	return ("V" + version.toString())
+
+}

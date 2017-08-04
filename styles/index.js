@@ -97,6 +97,8 @@ export  const styles = StyleSheet.create({
       backgroundColor:"white",
       width:width,
       alignItems:"center",
+      borderBottomWidth: 0.2,
+      borderBottomColor: "gray"
     },
     pairSectionsContainer:{
       marginVertical:5,
@@ -108,13 +110,11 @@ export  const styles = StyleSheet.create({
     touchableSectionInner:{
       flexDirection:"row",
       alignItems:"center",
-      
+      margin:20
     },
     touchableSectionInnerImage:{
-      width:width/5,
-      height:height/6,
-      marginHorizontal:20,
-      
+      height: 40,
+      width: width/5,
     },
     touchableSectionInnerText:{
       fontSize:medium_font_size
@@ -231,10 +231,20 @@ export  const styles = StyleSheet.create({
     },
     tab: {
       borderRadius:10,
-      backgroundColor:option_blue,
+      borderWidth: 0.3,
+      backgroundColor:"white",
       flex:0.3,
       padding:10,
-      margin:10,
+      marginVertical:10,
+      marginHorizontal:5,
+      alignItems:"center",
+      justifyContent:"center",
+      
+    },
+    row_style: {
+      backgroundColor:"white",
+      paddingVertical:5,
+      flexDirection:"row",
       alignItems:"center",
       justifyContent:"center"
     }

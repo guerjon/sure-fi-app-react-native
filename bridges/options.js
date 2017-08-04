@@ -12,8 +12,10 @@ import {
   	
 
 } from 'react-native'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+import BleManager from "react-native-ble-manager"
 import { NavigationActions } from 'react-navigation'
 import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
@@ -21,10 +23,14 @@ import {
 	LOADING,
 	PAIR_SUREFI_SERVICE,
 	PAIR_SUREFI_WRITE_UUID,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID,
 	IS_EMPTY
 } from '../constants'
 import { 
-	PUSH_CLOUD_STATUS
+	PUSH_CLOUD_STATUS,
+	WRITE_UNPAIR,
+	WRITE_FORCE_UNPAIR
 } from '../action_creators/index'
 
 
@@ -62,38 +68,92 @@ class Options extends Component{
     	let expected_status = 1
     	let rxUUID = device.manufactured_data.device_id
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
-    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
+    	let other_guy_status = "0" + this.props.device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
 
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
-    		console.log(response)
-	    	BleManagerModule.retrieveServices(device.id, () => {
-	            BleManagerModule.unPair(device.id, PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID, 20,(response) => {	
-	            	// you don't have to do anything here since the BLE event onDisconnect handle the change
-		    		Alert.alert(
-		    			"Success", "Un-Pair successfully sent",[
-		    				{text: "Ok",onPress : () => this.resetStack()}
-		    			],
-			    		{
-			    			cancelable : false
-			    		}  	    		
-		    		)
-		    	})
-	        })    		
-    	})
-    	.catch(error => console.log("error",error))
+    		PUSH_CLOUD_STATUS(txUUID,other_guy_status)
+    		.then(response => {
+    			WRITE_UNPAIR(device.id).then(response => {
 
-  
+				device.manufactured_data.tx = "000000"
+
+	    		this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: device
+                });
+            	this.resetStack()// you don't have to do anything here since the BLE event onDisconnect handle the change
+	    		
+    			}).catch(error => console.log(error))
+    		})
+    		.catch(error => console.log(error))
+			
+    	}).catch(error => console.log("error",error))
     }
 
-    resetStack(){
-    	console.log("devices on Unpair ResetStack",this.device)
+    forceUnPair(){
+    	console.log("forceUnPair()")
+    	var {device} = this.props
+    	let device_id = device.manufactured_data.device_id
+    	let expected_status = 1
+    	let rxUUID = device.manufactured_data.device_id
+    	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
+    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
+ 
+    	console.log("hardware_status",hardware_status)
+    	PUSH_CLOUD_STATUS(device_id,hardware_status)
+    	.then(response => {
+			WRITE_FORCE_UNPAIR(device.id).then(response => {
+				device.manufactured_data.tx = "000000" // this is because we need recalculate the security string to connect again, same reason for the next dispatch
 
+	    		this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: device
+                });
+            	this.resetStacktoForce()// you don't have to do anything here since the BLE event onDisconnect handle the change
+	    		
+    		}).catch(error => console.log(error))
+    	}).catch(error => console.log("error",error))
+
+    }
+
+    resetStacktoForce(){
+
+        console.log("resetStacktoForce()")
     	const resetActions = NavigationActions.reset({
     		index: 1,
     		actions : [
     			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device, tryToConnect:true})
+    			NavigationActions.navigate(
+    				{
+    					routeName: "DeviceControlPanel",
+    					device : this.props.device,
+    					tryToConnect:true,
+    					writeUnpairResult: true,
+    					force : true
+    				}
+    			)
+    		]
+    	})
+
+    	this.props.navigation.dispatch(resetActions)	
+    }
+
+    resetStack(){
+    	console.log("resetStack()")
+    	const resetActions = NavigationActions.reset({
+    		index: 1,
+    		actions : [
+    			NavigationActions.navigate({routeName: "Main"}),
+    			NavigationActions.navigate(
+    				{
+    					routeName: "DeviceControlPanel",
+    					device : this.props.device,
+    					tryToConnect:true,
+    					writeUnpairResult: true	
+    				}
+    			)
     		]
     	})
 
@@ -149,7 +209,7 @@ class Options extends Component{
 
     getConfigureRadioOption(){
     	return (
-			<TouchableHighlight style={styles.white_touchable_highlight}>
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
 				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
 					<View style={styles.white_touchable_highlight_image_container}>
 						<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
@@ -165,7 +225,26 @@ class Options extends Component{
     }
 
     getDeployCentralUnitOption(){
+    	if(this.props.device){
+    		if(this.props.device.manufactured_data){
+    			if(this.props.device.manufactured_data.hardware_type){
+    				var status_text = this.props.device.manufactured_data.hardware_type == "01" ? "Deploy Central Unit" : "Deploy Remote Unit" 
+    				let status_text_2 = this.props.device.manufactured_data.hardware_type == "01" ? "Deploy Central Unit" : "Deploy Remote Unit" 
+    			}else{
+    				var status_text = "UNDEFINED"
+    				let status_text_2 = "UNDEFINED"
+    			}
+    		}else{
+    			var status_text = "UNDEFINED"
+    			let status_text_2 = "UNDEFINED"
+    		}
+    	}else{
+    		var status_text = "UNDEFINED"
+    		let status_text_2 = "UNDEFINED"
+    	}
+
     	
+
     	return (
     		<View style={{marginBottom:50}}>
 				<Text style={{alignSelf:"center"}}>
@@ -182,7 +261,7 @@ class Options extends Component{
 						</View>
 						<View style={styles.white_touchable_text_container}>
 							<Text style={styles.white_touchable_text}>
-								{this.props.device.manufactured_data.hardware_type == "01" ? "Deploy Central Unit" : "Deploy Remote Unit" } 
+								{status_text}
 							</Text>
 						</View>
 					</View>
@@ -239,8 +318,71 @@ class Options extends Component{
 		)
 	}
 
-	renderOptions(status){
-		switch(status){
+
+    renderForcePairOption(){
+		return (
+			<View style={{marginBottom:50}}>
+				
+				<Text style={{alignSelf:"center"}}>
+					Next Step
+				</Text>
+				
+				
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToForcePair()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",						
+  					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Force Pair  Bridge
+							</Text>
+						</View>
+					</View>
+				</TouchableHighlight>
+				
+			</View>
+		)    	
+    }
+
+
+
+	renderForceUnpairOption(){
+		return (
+			<View style={{marginBottom:50}}>
+				
+				<Text style={{alignSelf:"center"}}>
+					Next Step
+				</Text>
+				
+				
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.forceUnPair()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",						
+  					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_unpair.imageset/menu_unpair.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Force Unpair
+							</Text>
+						</View>
+					</View>
+				</TouchableHighlight>
+				
+			</View>
+		)   
+	}
+
+	renderOptions(indicator){
+		switch(indicator){
 			case 0:
 			return null
 			
@@ -252,24 +394,35 @@ class Options extends Component{
 			
 			case 4:
 			return this.renderDeployedOptions()
-			
-			default:
-			return null;
+
+	    	case 13:
+	        	return this.renderForcePairOption()
+	    	case 14:
+	        	return this.renderForcePairOption()
+	        case 23: 
+	        	return null
+	    	case 24:
+	        	return null
+	        case 31:
+	        	return this.renderForceUnpairOption()
+	    	case 41:
+	        	return this.renderForceUnpairOption()
+	    	case 34:
+	        	return this.renderDeployedOptions()
+	    	default:
+	        	
 		}
 	}
 
 	render(){	
-
-		var options = this.renderOptions(this.props.device_status)
+		var options = this.renderOptions(this.props.indicatorNumber)
 		return <View>{options}</View>
-		
 	}
 }
 
 const mapStateToProps = state => ({
 	device_status : state.setupCentralReducer.device_status,
 	central_device: state.scanCentralReducer.central_device,
-	device_status : state.setupCentralReducer.device_status,
 	remote_device : state.scanRemoteReducer.remote_device
 });
 

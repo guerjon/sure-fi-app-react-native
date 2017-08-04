@@ -111,12 +111,6 @@ class ScanCentralUnits extends Component {
         }
     }
 
-
-    stopScanning(scanning){
-        if(scanning)
-            clearInterval(scanning)
-    }
-
     goToPanelDevice(device) {
         var {
             navigation,
@@ -124,8 +118,9 @@ class ScanCentralUnits extends Component {
         } = this.props;
         
 
-        this.stopScanning(this.props.scanner)
-        
+        this.props.stopScanning()
+        //we need do this because if we don't unmount the Bridges interface the camera will keep turn on and this will make everting more so much slow
+        //and we wont can use this on deploy
         const reset_stack = NavigationActions.reset({
             index : 1,
             actions : [

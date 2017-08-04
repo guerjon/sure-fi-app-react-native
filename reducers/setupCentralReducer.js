@@ -13,7 +13,9 @@ const initialState = {
   band_width : 0,
   power : 0,
   power_voltage : 0,
-  battery_voltage :0
+  battery_voltage :0,
+  show_modal : false,
+  is_editing: false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -72,15 +74,68 @@ export default function setupCentralReducer (state = initialState, action) {
     case "UPDATE_RADIO_SETTINGS":
       return{
         ...state,
+        power : action.power,
         spreading_factor : action.spreading_factor,
         band_width : action.band_width,
-        power : action.power
+        retry_count : action.retry_count,
+        heartbeat_period: action.heartbeat_period,
+        acknowledments : action.acknowledments
+      }
+    case "UPDATE_POWER":
+      return {
+        ...state,
+        power : action.power,
+      }
+    case "UPDATE_SPREADING_FACTOR":
+      return {
+        ...state,
+        spreading_factor : action.spreading_factor,
+      }
+    case "UPDATE_BAND_WIDTH":
+      return {
+        ...state,
+        band_width : action.band_width
+      }
+    case "UPDATE_RETRY_COUNT":
+      return {
+        ...state,
+        retry_count : action.retry_count,
+      }
+    case "UPDATE_HEARTBEAT_PERIOD":
+      return {
+        ...state,
+        heartbeat_period: action.heartbeat_period, 
+      }
+    case "UPDATE_ACKNOWLEDMENTS":
+      return{
+        ...state,
+        acknowledments : action.acknowledments
       }
     case "UPDATE_POWER_VALUES":
       return {
         ...state,
         power_voltage : action.power_voltage,
         battery_voltage : action.battery_voltage
+      }
+    case "SHOW_MODAL":
+      return {
+        ...state,
+        show_modal: true
+      }
+    case "HIDE_MODAL":
+      return {
+        ...state,
+        show_modal: false
+      }
+    case "START_EDITING": //start editing the name of the devices on the status_box file
+      return {
+        ...state,
+        is_editing: true
+      }
+    case "FINISH_EDITING":
+      return {
+        ...state,
+        is_editing: false
       }
     default:
       return state

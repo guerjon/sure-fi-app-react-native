@@ -2,47 +2,57 @@
 import React, {Component} from 'react'
 import BleManager from 'react-native-ble-manager'
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Camera from 'react-native-camera';
 import { connect } from 'react-redux';
-const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 import {
   	Text,
   	View,
   	Image,
   	ScrollView,
-  	StyleSheet,
   	TouchableHighlight,
   	Dimensions,
   	TextInput,
   	ActivityIndicator,
   	NativeModules,
   	NativeEventEmitter,
-  	Alert
+  	Alert,
+  	Modal
 } from 'react-native'
 
-
 import { 
-	LOADING,
 	IS_EMPTY,
-	SUREFI_SEC_SERVICE_UUID,
-	SUREFI_SEC_HASH_UUID,
 	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_WRITE_UUID,
 	SUREFI_CMD_READ_UUID,
 	PAIR_SUREFI_SERVICE,
 	PAIR_SUREFI_READ_UUID,
 	byteArrayToLong,
-	CALCULATE_VOLTAGE
+	CALCULATE_VOLTAGE,
+	GET_STATUS_CLOUD_ROUTE,
+	GET_HEADERS,
+	GET_MESSAGES_CLOUD_ROUTE,
+	GET_SECURITY_STRING,
+	PRETY_VERSION
 } from '../constants'
 
-import CameraHelper from '../helpers/camera';
 import StatusBox from './status_box'
 import Background from "../helpers/background"
 import Options from './options';
-import {styles,first_color,option_blue,success_green} from '../styles/index.js'
-import {IS_CONNECTED} from '../action_creators'
+import {
+	styles,
+	first_color,
+	height,
+	width,
+	option_blue
+} from '../styles/index.js'
+import {
+	IS_CONNECTED,
+	WRITE_COMMAND,
+	PUSH_CLOUD_STATUS,
+	READ_STATUS,
+	WRITE_HASH,
+	DISCONNECT
+} from '../action_creators'
+import Notification from '../helpers/notification'
 import {
 	COMMAND_GET_DEVICE_DATA,
 	COMMAND_GET_FIRMWARE_VERSION,
@@ -59,31 +69,11 @@ import {
 	acknowledments,
 	retryCount
 } from "../radio_values"
-
+import {WhiteRow} from './white_row'
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const backIcon = (<Icon name="arrow-left" size={30} color="white"/> )
-
-var {width,height} = Dimensions.get('window')
-
-function WhiteRow(params){
-	return (
-		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center",borderBottomWidth:0.3}}>
-			<View style={{padding:15,flexDirection:"row"}}>
-				<View style={{flex:0.7}}>
-					<Text style={{fontSize:16}}>
-						{params.name}
-					</Text>
-				</View>
-				<View style={{flex:1}}>
-					<Text style={{fontSize:16}}>
-						{params.value}
-					</Text>
-				</View>				
-			</View>
-		</TouchableHighlight>
-	)
-}
-
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class SetupCentral extends Component{
 	
@@ -92,82 +82,124 @@ class SetupCentral extends Component{
 		headerStyle: {backgroundColor: first_color},
 		headerTitleStyle : {color :"white"},
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',  	
+		headerTintColor: 'white',
+		headerLeft: <TouchableHighlight style={{marginHorizontal:15}} onPress={() => navigation.state.params.handleBack() }>{backIcon}</TouchableHighlight>
 	});
 
 	constructor(props) {
 		super(props);
 		this.connected = false
 		this.device = props.navigation.state.device
-		bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',() =>  this.handleDisconnectedPeripheral() );
-		bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data) );
-		bleManagerEmitter.addListener('BleManagerConnectPeripheral',(data) => this.handleConnectedDevice(data) );
-		BleManager.start().then(response => console.log(response)).catch(error => console.log(error))
+		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
+		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
+		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
+		this.show_notification = false
+		this.current_device_status = 0 // the real status on the device 0 for none 1 for unpairing 2 for pairing 3 for paired 4 for deply
 	}
 
-	componentDidMount() {
+	componentWillMount() {
+        let props = this.props
+		let tryToConnect = props.navigation.state.tryToConnect
+		let writeUnpairResult = props.navigation.state.writeUnpairResult
+		let intentionalDisconnect = props.navigation.state.intentionalDisconnect
+		props.navigation.setParams({handleBack : () => this.handleBack()})
 
-		//if(this.props.navigation.state.tryToConnect){
-		if(true){
-			this.device = this.device ? this.device : this.props.device // we need make this because some times the devices comes from params
-			this.tryToConnect(this.device)
-		}
-        else{
-        	BleManager.isPeripheralConnected(this.device.id).then(isConnected =>{
-        		if(isConnected){
-        			this.props.dispatch({type:"CONNECTED_CENTRAL_DEVICE"})
-        			this.getDeviceData(this.device)
+		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
+		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)
+		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
+
+		BleManager.start().then(response => {}).catch(error => console.log(error))
+		
+		if(tryToConnect){
+			console.log("1")
+			BleManager.isPeripheralConnected(this.device.id).then(isConnected => {
+				console.log("2")
+				if(isConnected){
+					console.log("3")
+					this.connected = true
+					if(writeUnpairResult){
+						console.log("3.1")
+						this.writeResultsRequests(this.device)
+					}else{
+						this.getCloudStatus(this.device)	
+					}
+					
+					
+				}else{
+					console.log("4")
+					this.device = props.navigation.state.device
+					this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
+					this.tryToConnect(this.device)					
+				}
+			})
+
+		}else{
+        	this.device = props.navigation.state.device ? props.navigation.state.device : props.device
+        	console.log("device",this.device)
+        	BleManager.isPeripheralConnected(this.device.id).then(isConnected => {
+        		console.log("1")
+        		if(isConnected){	
+        			console.log("2")
+        			this.connected = true;	
+        			
+        			this.getCloudStatus(this.device)
+        		}else{
+        			console.log("3")
+        			this.tryToConnect(this.device)
         		}
         	})
         }
 	}
 
+	componentWillUnmount() {
+		this.handleDisconnected.remove()
+		this.handleCharacteristic.remove()
+		this.handleConnected.remove()
+	}
+
+	handleBack(){
+		console.log("props",this.props)
+		let device = this.props.navigation.state.device ? this.props.navigation.state.device : this.props.device
+		DISCONNECT(device.id)
+		.then(response => {
+			console.log("response",response)
+			this.props.navigation.goBack()
+		})
+		.catch(error => console.log("error",error))
+	}
 
 	tryToConnect(device){
-		//console.log("tryToConnect()",device)
+		console.log("tryToConnect()",device)
         this.props.dispatch({
            type: "CONNECTING_CENTRAL_DEVICE",
         })
 
-        this.interval = setInterval(() => this.connect(device),1000);
-
+        this.interval = setInterval(() => this.connect(device),5000);
 	}
 
 	connect(device){
-		//console.log("connect()",this.props)
 		BleManager.connectWithOutResponse(device.id)
 	}
 
     handleConnectedDevice(data){
-    	//console.log("handleConnectedDevice()",data)
-        if(this.interval){
-            clearInterval(this.interval)
-            this.connected = true;
-            this.writeSecondService(this.device)
-        }
+    	if(!this.connected){
+	        if(this.interval)
+	            clearInterval(this.interval)
+
+			this.connected = true;
+	        WRITE_HASH(this.device.id,this.device.manufactured_data.security_string)
+	        .then(response => {
+	            this.props.dispatch({
+	                type: "CONNECTED_CENTRAL_DEVICE"
+	            })
+	            this.startNotification(this.device)            	
+	        })
+	        .catch(error => console.log("error",error))    		
+    	}
     }
 
-
-    writeSecondService(device){       
-        console.log("writeSecondService()",device)
-        
-            BleManagerModule.retrieveServices(device.id,() => {
-                BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,device.manufactured_data.security_string,20).then((response) => {
-       				
-                    this.props.dispatch({
-                        type: "CONNECTED_CENTRAL_DEVICE"
-                    })
-                    this.startNotification(device)
-                    
-
-                }).catch(error => console.log("Error",error));
-            })
-        
-    }	
-
 	startNotification(device){
-		this.props.dispatch({type:"STARING_FIRMWARE_UPDATE"})
-       
+		console.log("startNotification()")
         BleManagerModule.retrieveServices(
         	device.id,
         	() => {
@@ -180,8 +212,8 @@ class SetupCentral extends Component{
 							device.id,
 							SUREFI_CMD_SERVICE_UUID,
 							SUREFI_CMD_READ_UUID,
-							() => {		
-								this.getDeviceData(device)
+							() => {	
+								this.writeResultsRequests(device)	
 							}
 						)
 					}
@@ -190,116 +222,249 @@ class SetupCentral extends Component{
         )
 	}
 
-    getDeviceData(device){
-    	this.readStatusCharacteristic(device)
-    }
+	writeResultsRequests(device){
+		console.log("writeResultsRequests()")
+		if(this.props.navigation.state.writePairingResult || this.props.navigation.state.writeUnpairResult){
+			if(this.props.navigation.state.writePairingResult){
+				WRITE_COMMAND(device.id,[0x21])
+				.then(response => {
+					this.getCloudStatus(device)
+				})
+				.catch(error => console.log("error",error))			
+			}
 
-    readStatusCharacteristic(device){
-    	BleManager.read(device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_READ_UUID).then(response => {
-    		let device_status = response[0]
+			if(this.props.navigation.state.writeUnpairResult){
 
-    		this.props.dispatch(
-    			{
-    				type: "UPDATE_OPTIONS",
-    				device_status : response[0]
-    			}
-    		)
+					WRITE_COMMAND(device.id,[0x22])
+					.then(response => {
+						this.getCloudStatus(device)
+					})
+					.catch(error => console.log("error",error))			
 
-    		this.getAppFirmwareVersion(device)
-    		
-    	}).catch(error => console.log("error",error))
-    }
+			}
 
+		}else{
+			this.getCloudStatus(device)
+		}
+	}
 
-    getAppFirmwareVersion(device){
-    	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_FIRMWARE_VERSION],20)
-    	.then(response => {
-    		
-    	})
-    	.catch(error => console.log("error",error))
-    }
-
-    getRadioFirmwareVersion(device){
-    	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_RADIO_FIRMWARE_VERSION],20)
-    	.then(response => {
-    	})
-    	.catch(error => console.log("error",error))
-    }
-
-
-    getBluetoothFirmwareVersion(device){
-    	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION],20)
+	getCloudStatus(device){
+		console.log("getCloudStatus()")
+		let hardware_serial = device.manufactured_data.device_id.toUpperCase()
+		let status_data = {
+			method : "POST",
+			headers :{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',             
+        	},
+			body : JSON.stringify({
+				hardware_serial : hardware_serial
+			})
+		}
+		//console.log("GET_STATUS_CLOUD_ROUTE",GET_STATUS_CLOUD_ROUTE)
+		//console.log("status_data",status_data)
+		fetch(GET_STATUS_CLOUD_ROUTE,status_data)
 		.then(response => {
+			
+			let status = JSON.parse(response._bodyInit).data.status
+			this.hardware_status = status
+			this.c_status = status.split("|")[0]
+			this.c_expected_status = status.split("|")[1]
+			this.getStatus(device,this.c_status,this.c_expected_status)
+
+		}).catch(error => console.log("error",error))
+	}
+	
+	getStatus(device,current_status_on_cloud,expected_status){
+		console.log("getStatus()")
+		READ_STATUS(device.id)
+		.then(response => {
+    		this.current_device_status = response[0]
+    		let current_device_status = response[0]
+    		console.log("current device readed",response[0])
+    		this.props.dispatch({type: "UPDATE_OPTIONS",device_status : current_device_status})
+    		this.props.dispatch({type:"CONNECTED_CENTRAL_DEVICE"})
+
+			if(current_device_status != expected_status){ //something was wrong and is need show a notification
+				console.log("1",current_device_status,expected_status)	
+				this.show_notification = true
+				this.indicator_number = (parseInt(current_device_status) * 10)  +  parseInt(expected_status.substr(1))
+				
+				if(current_device_status != current_status_on_cloud){
+					this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
+				}
+
+			}else{ //all correct on the device, we need know if was a pair or unpair before
+				this.indicator_number = current_device_status
+				console.log("2",current_device_status,current_status_on_cloud)
+				if(current_device_status != current_status_on_cloud){ // 
+					console.log("3",current_device_status,current_status_on_cloud)
+	    			this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
+	    		}
+			}
+
+    		this.getAllInfo(device)
 		})
-    	.catch(error => console.log("error",error))
+		.catch(error => console.log("error",error))
     }
 
-    getRadioSettings(device){
-    	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_RADIO_SETTINGS],20).then(response => {
-    	}).catch(error => console.log("error",error))
+    pushStatusToCloud(device,current_status,current_status_on_cloud,expected_status_on_cloud){
+    	console.log("pushStatusToCloud()")
+    	/*console.log("pushStatusToCloud()",device)
+    	console.log("pushStatusToCloud()",current_status)
+    	console.log("pushStatusToCloud()",current_status_on_cloud)
+    	console.log("pushStatusToCloud()",expected_status_on_cloud)*/
+		let rx = device.manufactured_data.device_id
+		let tx = device.manufactured_data.tx //tx is always right because when we write on the device we always change the local tx on the device
+		let device_id = device.manufactured_data.device_id
+		let hardware_status = "0" + current_status + "|" +  expected_status_on_cloud + "|" + rx + "|" + tx
+		
+		PUSH_CLOUD_STATUS(device_id,hardware_status).then(response => {
+			this.props.dispatch({type: "UPDATE_OPTIONS",device_status : current_status})
+		}).catch(error => console.log("error",error))
     }
 
-    getPowerVoltage(device){
-    	BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_GET_VOLTAGE],20).then(response => {
-    	}).catch(error => console.log("error",error))
+    getAllInfo(device){
+    	console.log("getAllInfo()")
+    	WRITE_COMMAND(device.id,[COMMAND_GET_FIRMWARE_VERSION])
+    	.then(response => {
+	    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
+	    	.then(response => {
+		    	WRITE_COMMAND(device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
+				.then(response => {
+			    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_SETTINGS])
+			    	.then(response => {
+				    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
+				    	.then(response => {
+
+				    	}).catch(error => console.log("error",error))
+
+			    	}).catch(error => console.log("error",error))
+				})
+		    	.catch(error => console.log("error",error))
+	    	})
+	    	.catch(error => console.log("error",error))    		
+    	})
+    	.catch(error => console.log("error",error))    	
     }
 
 	handleCharacteristicNotification(data){
-		
+		console.log("handleCharacteristicNotification",data.value)
 		let value = data.value[0]
-		console.log("notification,DeviceControle",data)
+		
 		switch(value){
 			case 1 : //app firmware version
-				if(data.value[1]){
-					let version = "v" + data.value[1].toString() +"." + data.value[2].toString()	
-					this.props.dispatch({type: "UPDATE_APP_VERSION",version : version })
-					this.getRadioFirmwareVersion(this.device)
+				if(data.value.length == 3){
+					this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(data.value[1].toString() +"." + data.value[2].toString())  })
 				}
 				break
 			case 9 : // radio firmware version
-				this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : "v" + data.value[1].toString() +"." + data.value[2].toString()})
-				this.getBluetoothFirmwareVersion(this.device)
+				this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(data.value[1].toString() +"." + data.value[2].toString())  })
 				break
 			case 8 : //radio settings
-				let spreading_factor = spreadingFactor.get(data.value[2])
-				let band_width = bandWidth.get(data.value[1])
 				let power = powerOptions.get(data.value[3])
+				let spreading_factor = spreadingFactor.get(data.value[1]) 
+				let band_width = bandWidth.get(data.value[2]) 
+				let retry_count = data.value[4]
+				let heartbeat_period = heartbeatPeriod.get(data.value[5]) 
+				let acknowledments =  data.value[6] ? "Enabled" : "Disabled"
 
-				this.props.dispatch({type: "UPDATE_RADIO_SETTINGS",spreading_factor : spreading_factor,band_width : band_width, power: power })
-				this.getPowerVoltage(this.device)
+				this.props.dispatch(
+					{
+						type: "UPDATE_RADIO_SETTINGS",
+						power : power,
+						spreading_factor : spreading_factor,
+						band_width : band_width,
+						retry_count : retry_count,
+						heartbeat_period: heartbeat_period,
+						acknowledments : acknowledments
+					}
+				)
 				break
 			case 18 : //bluetooth firmware version
-				this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : "v" + data.value[1].toString() +"." + data.value[2].toString()})
-				this.getRadioSettings(this.device)
+				this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[1].toString() + "." + data.value[2].toString()) })
 				break
-			case 20:
-				let power_voltage = CALCULATE_VOLTAGE(byteArrayToLong([data.value[1],data.value[2]])).toFixed(2)
-				let battery_voltage = byteArrayToLong([data.value[3],data.value[4]])
+			case 0x14: //Voltage
+				let v1 = byteArrayToLong([data.value[1],data.value[2]])
+				let v2 = byteArrayToLong([data.value[2],data.value[4]])
+
+				let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
+				let battery_voltage = CALCULATE_VOLTAGE(v2).toFixed(2) 
 				this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
+				break
+			case 0x16: // pair result
+					if(data.value[1] == 2){
+						Alert.alert(
+							"Pairing Complete",
+							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
+						)
+					}else{
+						Alert.alert(
+							"Error !! something was wrong on the pairing process","Connect to the other bridge to fix it."
+						)
+					}
+				break
+			case 0x17:
+				if(this.props.navigation.state.force){ //this comes from the file options method resetStacktoForce
+					Alert.alert(
+		    			"Success", "Un-Pair successfully sent"    		
+	    			)		
+	    			break
+				}
+
+				if(data.value[1] == 2){
+					Alert.alert(
+		    			"Success", "Un-Pair successfully sent"    		
+	    			)		
+
+				}else{
+					Alert.alert(
+						"Error !!","Un-Pair Unsuccessfully connect to the other bridge to fix it."
+					)
+				}
+				break
 			default:
+				console.log("No options found to: " + value)
 			return
 		}		
 	}
 
-	handleDisconnectedPeripheral(){
+	handleDisconnectedPeripheral(device){
+		console.log("handleDisconnectedPeripheral()")
 		this.connected = false
 		this.props.dispatch({
 			type : "DISCONNECT_CENTRAL_DEVICE"
 		})
 	}
 
+	handleNotification(){
+		console.log("no deberia de hacer nada")
+	}
+
+	resetBoard(){
+		WRITE_COMMAND(this.device.id,[0x1C])
+		.then(response => {
+			Alert.alert("Success","The Application Board has been restared")
+		})
+		.catch(error => console.log("error",error))
+	}
+
 	renderInfo(){
 
-		if(this.props.central_device_status == "connected" && this.props.battery_voltage ){
+		if(this.props.central_device_status == "connecting")
+			return null
+
+		if(this.props.central_device_status == "connected" && this.props.power_voltage){
+
 			return (
 				<View style={{alignItems:"center"}}>
 					<View>
 						<Text style={styles.device_control_title}>
 							CURRENT VERSION
 						</Text>
-						<WhiteRow name="Application" value={this.props.app_version}/>
-						<WhiteRow name="Radio" value={this.props.radio_version}/>
-						<WhiteRow name="Bluetooth" value ={this.props.bluetooth_version}/>
+						<WhiteRow name="Application" value={PRETY_VERSION(this.props.app_version) }/>
+						<WhiteRow name="Radio" value={PRETY_VERSION(this.props.radio_version) }/>
+						<WhiteRow name="Bluetooth" value ={PRETY_VERSION(this.props.bluetooth_version) }/>
 					</View>
 					<View>
 						<Text style={styles.device_control_title}>
@@ -309,45 +474,159 @@ class SetupCentral extends Component{
 						<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
 						<WhiteRow name="Power" value ={this.props.power}/>
 					</View>
-					<View style={{marginBottom:80}}>
+					<View>
 						<Text style={styles.device_control_title}>
 							CURRENT POWER VALUES
 						</Text>
 						<WhiteRow name="Power Voltage" value={this.props.power_voltage}/>
 						<WhiteRow name="Battery Voltage" value={this.props.battery_voltage}/>
 					</View>
+					<View style={{marginBottom:80}}>
+						<Text style={styles.device_control_title}>
+							OTHER COMMANDS
+						</Text>
+						<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => this.resetBoard()}>
+							<View style={{padding:15,flexDirection:"row"}}>
+								<Text style={{fontSize:16,color:option_blue}}>
+									RESET APPLICATION BOARD
+								</Text>
+							</View>
+						</TouchableHighlight>						
+					</View>
 				</View>	
 			)
 		}
+
 		return null
 	}
 
-	renderOptions(){
-		//console.log(this.props.central_device_status)
-		//console.log(this.props.battery_voltage)
-		if(this.props.central_device_status == "connected" && this.props.battery_voltage){ //tou should test if this.props.battery != 0 because is the last on charge, if is different of 0 then show de options
+	renderOptions(device,central_device_status,indicator_number){
+		/*
+		console.log("renderOptions","device: " + device, "central_device_status:" + central_device_status, "indicator_number:" + indicator_number)
+		console.log("!IS_EMPTY(device)",!IS_EMPTY(device))
+		console.log("indicator_number",indicator_number)
+		console.log("central_device_status",central_device_status)
+		*/
+		if(central_device_status == "connecting")
+			return null
+
+		if(!IS_EMPTY(device) &&  central_device_status == "connected" && indicator_number){
 			return <Options 
-				device={this.device} 
-				device_status = {this.props.central_device_status} 
+				device={device} 
+				device_status = {central_device_status.central_device_status} 
 				navigation={this.props.navigation}
+				indicatorNumber={this.indicator_number}
 				goToPair={() => this.goToPair()}
 				goToDeploy={() => this.goToDeploy()}
 				goToFirmwareUpdate={() => this.goToFirmwareUpdate()}
+				goToConfigureRadio={() => this.goToConfigureRadio()}
+				goToForcePair={() => this.goToForcePair()}
+				
 			/>
 		}
+		
+		return null
+	}
+
+	renderNotification(show_notification,indicator_number){
+
+		if(show_notification && indicator_number){
+			return(
+				<Notification 
+					handleNotification={() => this.handleNotification()} 
+					showNotification={show_notification}
+					indicatorNumber={indicator_number}
+				/>
+			)
+
+		}
+
 		return null
 	}
 
 	goToPair(){
-		this.props.navigation.navigate("PairBridge",{device: this.device})
+		//if((this.props.battery_voltage > 7) && (this.props.battery_voltage < 11)){
+		if(true){
+			this.handleCharacteristic.remove()
+			this.props.navigation.navigate("PairBridge",{device: this.device})			
+		}else{
+			this.props.dispatch({type:"SHOW_MODAL"})
+		}
 	}
 
 	goToDeploy(){
+		this.handleCharacteristic.remove()
 		this.props.navigation.navigate("Deploy",{device: this.device})	
 	}
 
 	goToFirmwareUpdate(){
+		this.handleCharacteristic.remove()
 		this.props.navigation.navigate("FirmwareUpdate",{device: this.device})
+	}
+
+	goToConfigureRadio(){
+		this.handleCharacteristic.remove()
+		this.props.navigation.navigate("ConfigureRadio",{device: this.device})
+	}
+
+	goToForcePair(){
+		this.handleCharacteristic.remove()
+		this.props.navigation.navigate("ForcePair",{device: this.device,hardware_status : this.hardware_status})
+	}
+
+	closeModal(){
+		this.props.dispatch({type: "HIDE_MODAL"})
+	}
+
+	openModal(){
+		this.props.dispatch({type: "SHOW_MODAL"})
+	}
+
+	renderModal(){
+		return (
+			<Modal 
+				animationType={"slide"}
+				transparent={true}
+				visible={this.props.show_modal}
+				onRequestClose={() => this.closeModal()}
+
+			>
+				<View style={{backgroundColor: 'rgba(10,10,10,0.5)',flex:1,alignItems:"center",justifyContent:"center"}}>
+					<View style={{backgroundColor:"white",width: width-20,height:410,alignSelf:'center',borderRadius:10,alignItems:"center"}}>
+						<View style={{marginVertical:10,marginHorizontal:20}}>
+							<Text style={{fontSize:20}}>
+								Pairing Error
+							</Text>
+						</View>
+						<View style={{marginHorizontal:20,marginVertical:15}}>
+							<Text>
+								In order to Pair the Sure-Fi Bridge, the device must have a charged 9V Battery plugged into the PWR inputs
+							</Text>
+						</View>
+						<Image 
+							source={require('../images/pair_battery_image/pair_battery_image.png')}
+							style={{width:200,height:200}}
+						/>
+						
+						<TouchableHighlight 
+							onPress={() => this.closeModal()} 
+							style={{
+								marginTop:10,
+								borderTopWidth: 0.2,
+								width:width,
+								height: 60,
+								alignItems:"center",
+								justifyContent:"center",
+								borderRadius: 10
+							}}>
+							<Text>
+								Ok
+							</Text>
+						</TouchableHighlight>
+					</View>
+				</View>
+			</Modal>
+		)
 	}
 
 	render(){
@@ -358,14 +637,23 @@ class SetupCentral extends Component{
 						<StatusBox
 							device = {this.device} 
 							device_status = {this.props.central_device_status}
-							readStatusCharacteristic={(device) => this.readStatusCharacteristic(device)}
+							readStatusCharacteristic={(device) => this.getStatus(device)}
 							tryToConnect={(device) => this.tryToConnect(device)}
+							disconnectDevice={() => this.disconnectDevice()}
 						/>
 					</View>
 					<View>
-						{this.renderOptions()}
+						{this.renderNotification(this.show_notification,this.indicator_number)}
 					</View>
-					{this.renderInfo()}
+					<View>
+						{this.renderOptions(this.device,this.props.central_device_status,this.indicator_number)}
+					</View>
+					<View>
+						{this.renderInfo()}
+					</View>
+					<View>
+						{this.renderModal()}
+					</View>
 				</ScrollView>
 			</Background>
 		)
@@ -379,42 +667,41 @@ const mapStateToProps = state => ({
 	central_unit_description : state.setupCentralReducer.central_unit_description,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
 	//device: state.scanCentralReducer.central_device,
-	
-	device:       {
-        new_representation: '01021303FF0FF0FF1FF1',
-        rssi: -54,
-        name: 'Sure-Fi Brid',
-        id: 'C1:BC:40:D9:93:B9',
-        advertising: {
-          CDVType: 'ArrayBuffer',
-          data: 'AgEGDf///wECEwP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA='
-        },
-        manufactured_data: {
-          hardware_type: '01',
-          firmware_version: '02',
-          device_state: '1303',
-          device_id: 'FF0FF0',
-          tx: 'FF1FF1',
-          address: 'C1:BC:40:D9:93:B9',
-          security_string: [
-            178,
-            206,
-            206,
-            71,
-            196,
-            39,
-            44,
-            165,
-            158,
-            178,
-            226,
-            19,
-            111,
-            234,
-            113,
-            180
-          ]
-        }
+	 device: {
+      new_representation: '01010004FF0FF0FF1FF1',
+      rssi: -57,
+      name: 'Sure-Fi Brid',
+      id: 'C1:BC:40:D9:93:B9',
+      advertising: {
+        CDVType: 'ArrayBuffer',
+        data: 'AgEGDf///wEBAAT/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA='
+      },
+      manufactured_data: {
+        hardware_type: '01',
+        firmware_version: '01',
+        device_state: '0004',
+        device_id: 'FF0FF0',
+        tx: 'FF1FF1',
+        address: 'C1:BC:40:D9:93:B9',
+        security_string: [
+          178,
+          206,
+          206,
+          71,
+          196,
+          39,
+          44,
+          165,
+          158,
+          178,
+          226,
+          19,
+          111,
+          234,
+          113,
+          180
+        ]
+      }
     },
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
@@ -424,7 +711,8 @@ const mapStateToProps = state => ({
   	power : state.setupCentralReducer.power,
   	battery_voltage : state.setupCentralReducer.battery_voltage,
   	power_voltage : state.setupCentralReducer.power_voltage,
-  	device_status : state.setupCentralReducer.device_status
+  	device_status : state.setupCentralReducer.device_status,
+  	show_modal : state.setupCentralReducer.show_modal
 });
 
 

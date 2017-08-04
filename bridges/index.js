@@ -6,7 +6,9 @@ import {
   	ScrollView,
   	TouchableHighlight,
   	FlatList,
-  	Alert
+  	Alert,
+  	NativeModules,
+  	NativeEventEmitter
 	} from 'react-native';
 
 import {styles,first_color} from '../styles/index.js'
@@ -15,9 +17,14 @@ import ScanCentralUnits from './scan_central_units'
 import ScannedDevicesList from '../helpers/scanned_devices_list'
 import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { NavigationActions } from 'react-navigation'
+import BleManager from 'react-native-ble-manager';
+
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const bluetoothIcon = (<Icon name="bluetooth" size={30} color="black" />)
-import { NavigationActions } from 'react-navigation'
+const refreshIcon = (<Icon name="refresh" size={30} color="black"/>)
 
 class Bridges extends Component{
 	
@@ -28,6 +35,15 @@ class Bridges extends Component{
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
 	}
+
+
+	componentWillMount() {
+		BleManager.start().then(() => {
+			this.searchDevices()
+        });
+	}
+
+
 
 	showHelpAlert(){
 		Alert.alert(
@@ -49,12 +65,30 @@ class Bridges extends Component{
 		}
 	}
 
+	researchDevices(){
+		this.props.dispatch({type: "RESET_DEVICES"})
+		this.searchDevices()
+	}
+
+	searchDevices(){
+		BleManager.scan([], 10, true).then(() => {
+        })
+	}
+
+	stopScanning(){
+		BleManager.stopScan()
+		.then(response => {})
+		.catch(error => console.log("error",error))
+	}
+
 	render(){
+
+		// <ScannedDevicesList /> has the scanner on there the scan start and its saved on the dispatch like a scanner in pairReducer
 		return(
 			<Background>
 				<View style={{flex:1,marginHorizontal:10}}>
 					<View style={{height:250,alignItems:"center",marginBottom:60}}>
-						<ScanCentralUnits navigation={this.props.navigation} />
+						<ScanCentralUnits navigation={this.props.navigation} stopScanning={()=> this.stopScanning()}/>
 					</View>
 					<View style={{flexDirection:"row"}}>
 						<View style={{flex:1}}>
@@ -64,11 +98,14 @@ class Bridges extends Component{
 							/>	
 						</View>
 						<View style={{alignItems:"center",flex:1,flexDirection:"row"}}>	
-							<TouchableHighlight style={{marginLeft: 50,zIndex:2}} elevation={5} onPress={() => this.showHelpAlert()} >
+							<TouchableHighlight style={{marginLeft: 30}} elevation={5} onPress={() => this.showHelpAlert()} >
 								{helpIcon}
 							</TouchableHighlight>
-							<TouchableHighlight style={{marginLeft:30}} onPress={() => this.showOrHideDevicesList()}>
+							<TouchableHighlight style={{marginLeft:25}} onPress={() => this.showOrHideDevicesList()}>
 								{bluetoothIcon}
+							</TouchableHighlight>
+							<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
+								{refreshIcon}
 							</TouchableHighlight>
 						</View>
 					</View>

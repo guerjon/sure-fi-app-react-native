@@ -12,34 +12,22 @@ import {
   	NativeEventEmitter,
   	StyleSheet
 } from 'react-native'
-import {styles,first_color,success_green} from '../styles/index.js'
+import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
-	LOADING,
-	LOADED,
-	DEVICES_FOUNDED,
-	DEVICES_NOT_FOUNDED,
-	TO_HEX_STRING,
-	SCANNING_CENTRAL_UNITS,
-	SCANNING_REMOTE_UNITS,
-	RESET_QR_CENTRAL_STATE,
-	RESET_QR_REMOTE_STATE,
 	IS_EMPTY,
-	
-	DIVIDE_MANUFACTURED_DATA,
-	GET_REMOTE_DEVICES,
-	PAIR_SUREFI_SERVICE,
-	PAIR_SUREFI_WRITE_UUID,
 	HEX_TO_BYTES,
-	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_WRITE_UUID
 } from '../constants'
-import modules from '../CustomModules.js'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
+
 import ScanRemoteUnits from './scan_remote_units'
 import Background from '../helpers/background'
-import { PUSH_CLOUD_STATUS } from '../action_creators/index'
+import {
+	PUSH_CLOUD_STATUS,
+	WRITE_PAIRING
+} from '../action_creators/index'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -62,11 +50,13 @@ class PairBridge extends Component{
 	}
 
     showAlertConfirmation(scanner){
-    	console.log("showAlertConfirmation()",scanner)
+    	
+    	let central_id = this.central_device.manufactured_data == "01" ? this.props.remote_device.manufactured_data.device_id :  this.central_device.manufactured_data.device_id 
+    	let remote_id = this.central_device.manufactured_data == "02" ? this.central_device.manufactured_data.device_id : this.props.remote_device.manufactured_data.device_id
     	this.props.dispatch({type: "HIDE_REMOTE_CAMERA"})
     	Alert.alert(
     		"Continue Pairing",
-    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + this.central_device.manufactured_data.device_id + "\n\n" + " Remote : " + this.props.remote_device.manufactured_data.device_id,
+    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + central_id + "\n\n" + " Remote : " + remote_id,
     		[
     		 	
     		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
@@ -76,54 +66,36 @@ class PairBridge extends Component{
     }
 
     resetStack(){
-    	console.log("resetStack()")
+
     	this.props.dispatch({type:"HIDE_CAMERA"})
-		BleManager.stopScan()
-		  	.then(() => {
-		    // Success code 
-		    console.log('Scan stopped');
-		  });
+	    this.props.dispatch({
+            type: "CENTRAL_DEVICE_MATCHED",
+            central_device: this.central_device
+        });
 
     	const resetActions = NavigationActions.reset({
     		index: 1,
     		actions : [
     			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.central_device,tryToConnect:true})
+    			NavigationActions.navigate(
+    				{
+    					routeName: "DeviceControlPanel",
+    					device : this.central_device,
+    					tryToConnect : true,
+    					writePairingResult : true
+    				})
     		]
     	})
 
-    	this.props.navigation.dispatch(resetActions)
-    }
 
-    tryToConnect(){
-    	let device = this.props.remote_device
-
-        var {
-            navigation
-        } = this.props;
-        this.interval = setInterval(() => this.connect(device),2000);
-    }
-
-    connect(device) {
-        var {
-            dispatch
-        } = this.props
-        
-    	BleManager.connect(device.id)
-            .then((peripheralInfo) => {
-            	if(this.interval){
-            		clearInterval(this.interval)
-            		this.pair()
-            	}
-            })
-        .catch((error) => {
-            console.log(error)
-        });
-        
+		BleManager.stopScan()
+		.then(() => {
+		    this.props.navigation.dispatch(resetActions)
+		});
+    	
     }
 
     pair(scanner){
-    	
     	if(scanner){
     		clearInterval(scanner)
     	}
@@ -137,37 +109,31 @@ class PairBridge extends Component{
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
     	let device_id = this.central_device.manufactured_data.device_id
+    	let remote_device_id = remote_device.manufactured_data.device_id
     	let expected_status = 3
     	let rxUUID = this.central_device.manufactured_data.device_id
     	let txUUID = remote_device.manufactured_data.device_id 
-    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+    	let remote_rxUUID = remote_device.manufactured_data.device_id
+    	let remote_txUUID = this.central_device.manufactured_data.device_id
 
-    	console.log("device_id",device_id)
-    	console.log("hardware_status",hardware_status)
+    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+    	let remote_hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
 
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
-    		console.log("pair",response)
-	    	BleManagerModule.retrieveServices(this.central_device.id,() => {
-	    		BleManager.write(this.central_device.id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,remote_id_bytes,20).then(() => {
-						Alert.alert(
-							"Pairing Complete",
-							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
-							[
-								{text : "Ok",onPress: () => this.resetStack()}
-							],
-							{ cancelable: false }
-						)
-
-	    			
-	    			
-	    		}).catch(error => console.log("error on Write Central",error))
-	    	})	    			
+    		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
+    		.then(response => {
+    			WRITE_PAIRING(this.central_device.id,remote_id_bytes)
+    			.then(response => {
+					this.central_device.manufactured_data.tx = remote_device.manufactured_data.device_id
+					this.resetStack()
+					/**/		    			
+		    			
+    			}).catch(error => console.log(error))
+    		}).catch(error => console.log("error",error))
     	}).catch(error => {
     		console.log("error",error)
     	})
-
-
     }
 
 	render(){
@@ -248,21 +214,19 @@ class PairBridge extends Component{
 							</View>
 						</View>
 					</View>					
-				</View>			
+				</View>
 				{!IS_EMPTY(current_device) && !IS_EMPTY(remote_device) &&
-					(	
+					(
 				        <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
-				            <TouchableHighlight 
-				            	style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}} 
+				            <TouchableHighlight
+				            	style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
 				            	onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
 				            >
 				                <Text style={{color:"white",fontSize:16}}>
 				                    Reset
 				                </Text>
 				            </TouchableHighlight>
-
-				        </View>							
-						
+				        </View>
 					)
 				}								
 			</Background>
@@ -271,43 +235,6 @@ class PairBridge extends Component{
 }
 
 const mapStateToProps = state => ({
-  	/*central_device:{
-        new_representation: '01021303FF0FF0FF1FF1',
-        rssi: -54,
-        name: 'Sure-Fi Brid',
-        id: 'C1:BC:40:D9:93:B9',
-        advertising: {
-          CDVType: 'ArrayBuffer',
-          data: 'AgEGDf///wECEwP/D/D/H/ENCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA='
-        },
-        manufactured_data: {
-          hardware_type: '01',
-          firmware_version: '02',
-          device_state: '1303',
-          device_id: 'FF0FF0',
-          tx: 'FF1FF1',
-          address: 'C1:BC:40:D9:93:B9',
-          security_string: [
-            178,
-            206,
-            206,
-            71,
-            196,
-            39,
-            44,
-            165,
-            158,
-            178,
-            226,
-            19,
-            111,
-            234,
-            113,
-            180
-          ]
-        }
-      },
-    */
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,
   	devices : state.pairReducer.devices,

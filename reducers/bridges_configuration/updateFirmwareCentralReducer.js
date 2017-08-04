@@ -28,7 +28,6 @@ export default function updateFirmwareCentralReducer (state = initialState, acti
         central_update_mode: true
       }
     case "CHANGE_TAB":
-      console.log("action.active_tab",action.active_tab)
       return{
         ...state,
         active_tab : action.active_tab

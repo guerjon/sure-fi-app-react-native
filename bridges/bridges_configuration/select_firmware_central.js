@@ -147,8 +147,7 @@ class selectFirmwareFile extends Component{
 	}
 
 	render(){
-		console.log(this.props.update_status)
-		console.log(this.props.firmware_files)
+
 		if(this.props.update_status == "without_activity"){
 
 			if(this.props.firmware_files){
@@ -169,7 +168,6 @@ class selectFirmwareFile extends Component{
 			
 			return this.props.getStartRow()
 		}
-
 
 	}
 }

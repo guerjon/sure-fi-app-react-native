@@ -3,7 +3,13 @@ const initialState = {
   progress : 0,
   application_firmware_files: [],
   radio_firmware_files: [],
-  bluetooth_firmware_files: []
+  bluetooth_firmware_files: [],
+  view_kind : "normal",
+  largest_version: 0,
+  app_update_status : "no_started",
+  radio_update_status: "no_started",
+  bt_update_status: "no_started",
+  current_update : "no_started"
 }
 
 export default function firmwareUpdateReducer (state = initialState, action) {
@@ -52,6 +58,42 @@ export default function firmwareUpdateReducer (state = initialState, action) {
       return {
         ...state,
           bluetooth_firmware_files : action.bluetooth_firmware_files
+      }
+    case "SHOW_ADVANCED_VIEW":
+      console.log("bi ha de entrar")
+      return {
+        ...state,
+        view_kind : "advanced"
+      }
+    case "SHOW_NORMAL_VIEW":
+      return {
+        ...state,
+        view_kind : "normal"
+      }
+    case "UPDATE_LARGEST_VERSION":
+      return {
+        ...state,
+        largest_version : action.largest_version
+      }
+    case "APP_UPDATE_STATUS":
+      return {
+        ...state,
+        app_update_status : action.app_update_status
+      }
+    case "RADIO_UPDATE_STATUS":
+      return{
+        ...state,
+        radio_update_status : action.radio_update_status
+      }
+    case "BT_UPDATE_STATUS":
+      return{
+        ...state,
+        bt_update_status : action.bt_update_status
+      }
+    case "UPDATE_CURRENT_UPDATE":
+      return {
+        ...state,
+        current_update: action.current_update
       }
     default:
       return state

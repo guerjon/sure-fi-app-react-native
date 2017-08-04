@@ -58,7 +58,6 @@ class UpdateFirmwareCentral extends Component{
 	}
 
 
-
 	startNotification(){
 		var {central_device,dispatch} = this.props
 		dispatch({type:"STARING_FIRMWARE_UPDATE"})
@@ -74,7 +73,6 @@ class UpdateFirmwareCentral extends Component{
         	}
         )
 	}
-
 
 
 	checkBleState(data){
