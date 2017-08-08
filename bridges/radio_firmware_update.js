@@ -34,9 +34,9 @@ var rows_to_write = 0
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-class Template extends Component{
+class RadioFirmwareUpdate extends Component{
 	
-	static navigationOptions ={
+	/*	static navigationOptions ={
 		title : "FirmwareUpdate",
 		tabBarLabel : "Radio",
 		headerStyle: {backgroundColor: first_color},
@@ -44,7 +44,7 @@ class Template extends Component{
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
 		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="signal" size={20} color="white"/>
-	}
+	}*/
 	
 	constructor(props) {
 		super(props);
@@ -76,10 +76,8 @@ class Template extends Component{
 		let path = firmware_file.firmware_path
 		
 		this.firmware_version = firmware_file.firmware_version
-		this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
-		this.props.dispatch({type: "RESET_FIRMWARE_CENTRAL_REDUCER"})
-
-		console.log("path",path)
+		//this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+		//this.props.dispatch({type: "RESET_FIRMWARE_CENTRAL_REDUCER"})
 
 		if(path){
 			
@@ -115,7 +113,7 @@ class Template extends Component{
 	}
 
 	handleCharacteristicRadioNotification(data){
-		console.log("notification data",data)
+		console.log("notification data",data.value)
 		var {dispatch} = this.props
 		var response = data.value[0]
 		switch(response){
@@ -133,20 +131,33 @@ class Template extends Component{
 				console.log("BleRsp_PageSuccess")
 				this.write_status = 0
 				this.calculateProgress()
-				if(this.new_rows.length > 0)
+				if(this.new_rows.length > 0){
+					console.log("entra 2")
 					this.processRadioRows()
-				else{
-					this.write([0x11])
-					this.props.startNextUpdate("app")
+				}else{
+					console.log("entra 1")
+					this.write([0x11])	
 				}
 				return
 			case 0x05:
 				this.calculateProgress()
 				this.writeRadioPiece()
 				return
+			case 0x0D: 
+				this.interval = setInterval(() => this.writeAllStateCommand(),1000)
+				return
 			case 11: 
-				console.log("BleRsp_BootloaderInfo 1111")
+				console.log("BleRsp_BootloaderInfo")
 				this.processRadioRows()
+				return
+			case 0x13:
+				console.log(data)
+				let radio_status = data.value[3]
+				if(!radio_status){
+					clearInterval(this.interval)
+					this.props.startNextUpdate("radio")
+				}
+
 				return
 			case 224:
 				console.log("BleRsp_SecurityError")
@@ -156,25 +167,36 @@ class Template extends Component{
 				return
 			case 226:
 				console.log("BleRsp_AlreadyStartedError")
+				Alert.alert("Error","Disconnect and connect the bluetooth to continue.")
 				return
 			case 227:
 				console.log("BleRsp_NotStartedError")
 				return
 			case 228: // 0xE4
-				console.log("BleRsp_InvalidNumBytesError")
-				this.errorHandleRow()
+				if(!this.error_handle){				
+					console.log("BleRsp_InvalidNumBytesError")
+					this.error_handle = true
+					this.errorHandleRow()
+				}else{
+					Alert.alert("Error","Something was wrong with the firmware update.")
+				}
 				return
 			case 229:
 				console.log("BleRsp_PageFailure")
 
 				return
 			case 230:
+				Alert.alert("Error","Something was wrong on the firmware update.")
 				console.log("BleRsp_ImageCrcFailureError") //BleRsp_ImageCrcFailureError
 				return
 			default:
 				console.log("No " + response + " option found")
 			return
 		}		
+	}
+
+	writeAllStateCommand(){
+		this.write([0x1D])
 	}
 
 	requestBootloaderInfo(){
@@ -212,12 +234,10 @@ class Template extends Component{
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
 				this.processRadioRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
-
 			}else{
-				console.log("before write [0x11]")
+				console.log("entra 2")
 				this.new_rows = null;
-				this.write([0x11]) //finish the rows sending
-				this.props.startNextUpdate("app")
+				this.write([0x11]) //finish the rows sending should return 0x0D or 13
 			}
 		}else{
 			console.log("3")
@@ -309,10 +329,6 @@ class Template extends Component{
 		var restante = 1 - (columnas_restantes / columnas_totales);
 
 		dispatch({type: "CHANGE_PROGRESS", new_progress: restante})
-		if(restante == 1){
-			this.props.resetStack()
-			Alert.alert("Success","The firmware Update has been completed.")
-		}
 	}
 
 	sumRow(){
@@ -333,8 +349,8 @@ class Template extends Component{
 	}	
 
 	getStartRow(){
-		var {progress,app_version} = this.props
-
+		var {progress,radio_version} = this.props
+		
 		if(progress > 0){
 			var content = (
 				<View>
@@ -353,19 +369,8 @@ class Template extends Component{
 					<View>
 						<View>
 							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
-						</View>
-						<View style={{marginTop:20,alignItems:"center",backgroundColor:"white",borderRadius:10}}>
-							<Text style={{fontSize:14}}>
-								Updating firmware from 
-							</Text>
-							<Text style={{fontSize:22}}>
-								{this.props.radio_version}
-							</Text>
 							<Text>
-								To
-							</Text>
-							<Text style={{fontSize:22}}>
-								v{this.firmware_version}
+								Updating Radio
 							</Text>
 						</View>
 					</View>
@@ -428,6 +433,7 @@ class Template extends Component{
 			</View>
 		);
 	}
+
 }
 
 const mapStateToProps = state => ({
@@ -436,4 +442,4 @@ const mapStateToProps = state => ({
 	radio_version : state.setupCentralReducer.radio_version,
 });
 
-export default connect(mapStateToProps)(Template);
+export default connect(mapStateToProps)(RadioFirmwareUpdate);

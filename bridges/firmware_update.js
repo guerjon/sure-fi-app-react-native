@@ -12,7 +12,8 @@ import {
     NativeModules,
     ActivityIndicator,
     Dimensions,
-    Alert
+    Alert,
+    FlatList
 } from 'react-native'
 import {
     styles,
@@ -33,7 +34,8 @@ import {
     BYTES_TO_HEX,
     FIRMWARE_CENTRAL_ROUTE,
     IS_EMPTY,
-    GET_LARGEST
+    GET_LARGEST,
+    PRETY_VERSION
 } from '../constants.js'
 
 import {
@@ -94,10 +96,7 @@ class UpdateFirmwareCentral extends Component {
         dispatch({type: "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER"})
         dispatch({type: "CHANGE_TAB",active_tab : "charging"})
         props.navigation.setParams({ changeView:() => this.changeView()});
-        
     }
-
-
 
     componentDidMount() {
         this.fetchFirmwareFiles()
@@ -120,7 +119,6 @@ class UpdateFirmwareCentral extends Component {
     }
 
     fetchFirmwareFiles(){
-        console.log("fetchFirmwareFiles()")
         var dispatch = this.props.dispatch;
         let hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
         let hardware_remote_type = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
@@ -184,21 +182,29 @@ class UpdateFirmwareCentral extends Component {
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
-                    
+                    console.log("bt_files",this.bt_files)
                     let app_version = parseFloat(this.application_files[0].firmware_version)
                     let radio_version = parseFloat(this.radio_files[0].firmware_version)
                     let bt_version = parseFloat(this.bt_files[0].firmware_version)
                     let dispatch = this.props.dispatch
 
+                    /* 
+                        console.log("app_version",app_version)
+                        console.log("radio_version",radio_version)
+                        console.log("bt_version",bt_version)
+                    */
                     this.largest_version = GET_LARGEST(app_version,radio_version,bt_version)
                     this.update_requires = this.checkRequireUpdates(app_version,radio_version,bt_version)
+                    this.require_update = this.dispatchRequireUpdates(this.update_requires)
 
-
-                    /*dispatch({type: "SET_APPLICATION_FIRMWARE_FILES",application_firmware_files: this.application_files})
-                    dispatch({type: "SET_RADIO_FIRMWARE_FILES",radio_firmware_files:this.radio_files})
-                    dispatch({type: "SET_BLUETOOTH_FIRMWARE_FILES",bluetooth_firmware_files:this.bt_files})
+                    /*
+                        dispatch({type: "SET_APPLICATION_FIRMWARE_FILES",application_firmware_files: this.application_files})
+                        dispatch({type: "SET_RADIO_FIRMWARE_FILES",radio_firmware_files:this.radio_files})
+                        dispatch({type: "SET_BLUETOOTH_FIRMWARE_FILES",bluetooth_firmware_files:this.bt_files})
                     */
                     dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
+                    dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
+                    dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
 
                 })
             })
@@ -208,17 +214,15 @@ class UpdateFirmwareCentral extends Component {
         });
     }
 
-    /*
-        get two arrays the first cointains the current versions for the app, radio and bt
-        the same order for the second the and this contains the require versions to be updated
-        returns an object
-    */
     checkRequireUpdates(app_version,radio_version,bt_version){
-        
         let props = this.props
-        let require_app = props.app_version < app_version
-        let require_radio = props.radio_version < radio_version
-        let require_bt = props.bluetooth_version < bt_version
+        /*console.log("props.app_version",props.app_version)
+        console.log("props.radio_version",props.radio_version)
+        console.log("props.bt_version",props.bluetooth_version)
+        */
+        let require_app = props.app_version != app_version
+        let require_radio = props.radio_version != radio_version
+        let require_bt = props.bluetooth_version != bt_version
 
         return [require_app,require_radio,require_bt]
     }
@@ -227,7 +231,8 @@ class UpdateFirmwareCentral extends Component {
         let props = this.props
         let dispatch = props.dispatch
         let require_update = false
-        
+        //console.log("updates",updates)
+
         if(updates[0]){
             dispatch({type: "APP_UPDATE_STATUS",app_update_status:"update_required"})
             require_update = true
@@ -243,10 +248,10 @@ class UpdateFirmwareCentral extends Component {
         }
 
         if(updates[2]){
-            dispatch({type: "BT_RADIO_STATUS",bt_update_status:"update_required"})
+            dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"update_required"})
             require_update = true
         }else{
-            dispatch({type: "BT_RADIO_STATUS",bt_update_status:"update_required"})
+            dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"no_update_required"})
         }
 
         return require_update
@@ -265,15 +270,26 @@ class UpdateFirmwareCentral extends Component {
         
         let device = !IS_EMPTY(this.central_device) ? this.central : this.props.navigation.state.params.device
 
-        const resetActions = NavigationActions.reset({
-            index: 1,
-            actions : [
-                NavigationActions.navigate({routeName: "Main"}),
-                NavigationActions.navigate({routeName: "DeviceControlPanel",device : device,intentionalDisconnect:true})
-            ]
-        })
-
+        if(this.props.current_update == "bt"){
+            const resetActions = NavigationActions.reset({
+                    index: 1,
+                    actions : [
+                        NavigationActions.navigate({routeName: "Main"}),
+                        NavigationActions.navigate({routeName: "DeviceControlPanel",device : device,tryToConnect:true})
+                    ]
+                })
             this.props.navigation.dispatch(resetActions)
+        }else{
+
+            const resetActions = NavigationActions.reset({
+                index: 1,
+                actions : [
+                    NavigationActions.navigate({routeName: "Main"}),
+                    NavigationActions.navigate({routeName: "DeviceControlPanel",device : device,intentionalDisconnect:true})
+                ]
+            })
+            this.props.navigation.dispatch(resetActions)
+        }         
     }
 
     getTab(tab){
@@ -331,139 +347,213 @@ class UpdateFirmwareCentral extends Component {
     }
 
     startFirmwareUpdate(){
-        let require_updates = this.dispatchRequireUpdates(this.update_requires)
+        
         let props = this.props
-        console.log(props.radio_update_status,props.app_update_status,props.bt_update_status)
-        if(require_updates){
+        let dispatch = props.dispatch
+
+        if(this.require_update){
+            dispatch({type: "HIDE_FIRMWARE_UPDATE_LIST"})
+
             if(props.radio_update_status == "update_required"){
-                this.startRadioUpdate()   
-                return
+                dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status:"updating"})
+                dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "radio"}) // this mount the component <AppFirmwareUpdate> and this component start the update automatically
+                
+            }else if(props.app_update_status == "update_required"){
+                dispatch({type: "APP_UPDATE_STATUS",app_update_status:"updating"})
+                
+                dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "app"}) // this mount the component <RadioFirmwareUpdate> and this component start the update automatically
+                
+            }else if (props.bt_update_status == "update_required"){
+                dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"updating"})
+                dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "bt"}) // this mount the component <BluetoothFirmwareUpdate> and this component start the update automatically  
             }
+
+        }
+    }
+
+    startNextUpdate(current){
+        let props = this.props
+        let dispatch = props.dispatch
+
+        if(current == "radio"){
+            dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status : "updated"})
 
             if(props.app_update_status == "update_required"){
-                this.startAppUpdate()
-                return
+                dispatch({type: "APP_UPDATE_STATUS",app_update_status : "updating"})
+                dispatch({type: "UPDATE_CURRENT_UPDATE", current_update:"app"})
+            }else if(props.bt_update_status == "update_required"){
+                dispatch({type: "BT_UPDATE_STATUS",bt_update_status : "updating"})
+                dispatch({type: "UPDATE_CURRENT_UPDATE", current_update: "bt"})
+            }else{
+                Alert.alert("Update Complete","All Firmware has been updated to the selected firmware version(s)")
+                this.resetStack()
             }
+        }
 
+        if(current == "app"){
+            dispatch({type: "APP_UPDATE_STATUS",app_update_status : "updated"})
             if(props.bt_update_status == "update_required"){
-                this.startBtUpdate()
-                return
+                dispatch({type: "BT_UPDATE_STATUS",bt_update_status : "updating"})
+                dispatch({type: "UPDATE_CURRENT_UPDATE",current_update: "bt"})
             }
+        }
+    }
+
+    showOrHideList(){
+        if(this.props.show_firmware_update_list)
+            this.props.dispatch({type:"HIDE_FIRMWARE_UPDATE_LIST"})
+        else
+            this.props.dispatch({type:"SHOW_FIRMWARE_UPDATE_LIST"})
+    }
+
+    getFirmwareList(){
+        let app_files = this.application_files
+        let radio_files = this.radio_files
+        let bt_files = this.bt_files
+        
+        if(this.props.show_firmware_update_list){
+            if(app_files.length == radio_files.length && radio_files.length == bt_files.length){
+                var items = []
+                for (var i = 0; i < app_files.length; i++) {
+                    items.push({app_files: app_files[i],radio_files: radio_files[i], bt_files: bt_files[i]})
+                }
+            }else{
+                items.push({app_files: app_files[0],radio_files: radio_files[0],bt_files:bt_files[0]})
+            }          
+
+            return ( 
+                <FlatList data={items} renderItem={({item}) => this.renderItem(item)} keyExtractor={(item,index) => index}/>
+            )
 
         }else{
-            Alert.alert("Update Complete","All Firmware has been updated to the selected firmware version(s)")
+            return null
         }
     }
 
-    startRadioUpdate(){
-        let props = this.props
-        let dispatch = props.dispatch
+    renderItem(item){
+        let app_version = parseFloat(item.app_files.firmware_version)
+        let radio_version = parseFloat(item.radio_files.firmware_version)
+        let bt_version = parseFloat(item.bt_files.firmware_version)
+        let largest_version = GET_LARGEST(app_version,radio_version,bt_version)
 
-        dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "radio"}) // this mount the component <RadioFirmwareUpdate> and this component start the update automatically
-
+        return (
+            <TouchableHighlight onPress={() => this.changeSelectedFirmware(largest_version,item,app_version,radio_version,bt_version)} style={{backgroundColor:"white",padding:15,borderBottomWidth:0.2}}>
+                <Text>
+                    App : {PRETY_VERSION(app_version)}  Radio : {PRETY_VERSION(radio_version)}  Bluetooth : {PRETY_VERSION(bt_version)}
+                </Text>
+            </TouchableHighlight>
+        )
     }
 
-    startAppUpdate(){
-        let props = this.props
-        let dispatch = props.dispatch
-
-        dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "app"}) // this mount the component <AppFirmwareUpdate> and this component start the update automatically
-        
-    }
-
-    startBtUpdate(){
-        let props = this.props
-        let dispatch = props.dispatch
-
-        dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "bt"}) // this mount the component <BluetoothFirmwareUpdate> and this component start the update automatically
-
-    }
-
-    startNextUpdate(kind){
-        let props = this.props
-
-        if(kind == "app"){
-            if(props.app_update_status == "update_required"){
-                this.startAppUpdate()
-                return
-            }
-        }
-        if(kind == "bt"){
-            if(props.bt_update_status == "update_required"){
-                this.startBtUpdate()
-                return
-            }
-        }
+    changeSelectedFirmware(largest_version,selected_files,app_version,radio_version,bt_version){
+        this.update_requires =  this.checkRequireUpdates(app_version,radio_version,bt_version)
+        this.require_update = this.dispatchRequireUpdates(this.update_requires)
+        this.props.dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : largest_version,selected_files:selected_files})
     }
 
     renderUpdateComponent(){
         let current_update = this.props.current_update
         let device = this.props.navigation.state.params.device
-        let app_firmware_file = this.application_files[0]
-        let radio_firmware_file = this.radio_files[0]
-        let bt_firmware_file = this.bt_files[0]
-                    
+        let selected_version = this.props.selected_version
+        let content = null
+
         switch(current_update){
             case "app":
-            return (
-                <AppFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
-                    resetStack={() => this.resetStack()}
-                    viewKind = {this.props.view_kind} 
-                    firmwareFile = {app_firmware_file}
-                    startNextUpdate = {kind => this.startNextUpdate(kind)}
-                />)
-            case "radio":
-            return (
-                <RadioFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
-                    resetStack={() => this.resetStack()}
-                    viewKind = {this.props.view_kind}
-                    firmwareFile = {radio_firmware_file}
-                    startNextUpdate = {kind => this.startNextUpdate(kind)}
-                />
-            )
+                let app_firmware_file = this.props.selected_files.app_files
+                content = (
+                    <AppFirmwareUpdate 
+                        device={device} 
+                        navigation={this.props.navigation} 
+                        resetStack={() => this.resetStack()}
+                        viewKind = {this.props.view_kind} 
+                        firmwareFile = {app_firmware_file}
+                        startNextUpdate = {kind => this.startNextUpdate(kind)}
+                    />
+                )
+                break
+                case "radio":
+                let radio_firmware_file = this.props.selected_files.radio_files
+                
+                /*
+                    console.log(device)
+                    console.log(radio_firmware_file)
+                    console.log(this.props.view_kind)
+                */
+                content = (
+                    <RadioFirmwareUpdate
+                        device={device} 
+                        navigation={this.props.navigation} 
+                        resetStack={() => this.resetStack()}
+                        viewKind = {this.props.view_kind}
+                        firmwareFile = {radio_firmware_file}
+                        startNextUpdate = {kind => this.startNextUpdate(kind)}
+                    />
+                )
+                break
             case "bt":
-            return (
-                <BluetoothFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
-                    resetStack={() => this.resetStack()}
-                    viewKind = {this.props.view_kind}
-                    firmwareFile = {bt_firmware_file}
-                    startNextUpdate = {kind => this.startNextUpdate(kind)}
-                />
-            )
+                let bt_firmware_file = this.props.selected_files.bt_files
+                content = (
+                    <BluetoothFirmwareUpdate 
+                        device={device} 
+                        navigation={this.props.navigation} 
+                        resetStack={() => this.resetStack()}
+                        viewKind = {this.props.view_kind}
+                        firmwareFile = {bt_firmware_file}
+                        startNextUpdate = {kind => this.startNextUpdate(kind)}
+                    />
+                )
+                break
             default:
-                return null
+                content = null
         }
+
+        return content
     }
 
     renderStartUpdateBtn(){
-        if(this.largest_version)
-        return (
-            <View style={{alignItems:"center"}}>
-                <TouchableHighlight 
-                    onPress={() => this.startFirmwareUpdate()} 
-                    style={{
-                        width:width-20,
-                        backgroundColor:success_green,
-                        borderRadius:10,
-                        alignItems:"center",
-                        padding:10,
-                        marginHorizontal: 10,
-                        marginVertical:20
-                    }}>
-                    <Text style={{color:"white",fontSize:16,fontWeight:"900"}}>
-                        Start Firmware Update
-                    </Text>
-                </TouchableHighlight>
-                {this.renderUpdateComponent()}
-            </View>
+        if(this.largest_version){
             
-        )
+            if(this.require_update){
+                return (
+                    <View style={{alignItems:"center"}}>
+                        <TouchableHighlight 
+                            onPress={() => this.startFirmwareUpdate()} 
+                            style={{
+                                width:width-20,
+                                backgroundColor:success_green,
+                                borderRadius:10,
+                                alignItems:"center",
+                                padding:10,
+                                marginHorizontal: 10,
+                                marginVertical:20
+                            }}>
+                            <Text style={{color:"white",fontSize:16,fontWeight:"900"}}>
+                                Start Firmware Update
+                            </Text>
+                        </TouchableHighlight>
+                        
+                    </View>
+                )
+            }else{
+                return (
+                    <View 
+                        style={{
+                            width:width-20,
+                            backgroundColor:"gray",
+                            borderRadius:10,
+                            alignItems:"center",
+                            padding:10,
+                            marginHorizontal: 10,
+                            marginVertical:20
+                        }}
+                    >
+                        <Text style={{color:"white",fontSize:16,fontWeight:"900"}}>
+                           No update required
+                        </Text>
+                    </View>
+                )
+            }
+        }
 
         return <ActivityIndicator style={{margin:30}}/>
     }
@@ -471,65 +561,82 @@ class UpdateFirmwareCentral extends Component {
     renderNormalView(){
         
         let props = this.props
-
         return (
-            <View style={{backgroundColor:"white",marginVertical:20}}>
-                <View style={{alignItems:"center"}}>
-                    <Text style={{fontWeight:"900"}}>
-                        Current Device Firmware Version
-                    </Text>
-                    <Text style={{fontWeight:"900",fontSize:30}}>
-                        {props.largest_version.length > 1 ? ("V" + props.largest_version) : ("V" + props.largest_version + ".0")}
-                    </Text>
-                </View>
-                <View style={{borderBottomWidth:0.2,flexDirection:"row",justifyContent:"center"}}>
+            <View>
+                <View style={{backgroundColor:"white",marginTop:40}}>
                     <View style={{alignItems:"center"}}>
-                        <Text style={{fontWeight:"900",marginHorizontal:10}}>
-                            Radio Firmware
-                        </Text>
-                        <Text>
-                            {props.radio_version}
-                        </Text>
-                    </View>
-                    <View style={{alignItems:"center"}}>
-                        <Text style={{fontWeight:"900",marginHorizontal:10}}>
-                            App Firmware
-                        </Text>
-                        <Text>
-                            {props.app_version}
+                        <View style={{backgroundColor:"gray",width:width,padding:10}}>
+                            <View style={{marginLeft:10}}>
+                                <Text style={{fontWeight:"900",color:"white"}}>
+                                    Current Device Firmware Version
+                                </Text>
+                            </View>
+                        </View>
+                        <Text style={{fontWeight:"900",fontSize:25}}>
+                            Up To Date - {props.largest_version.length > 1 ? ("V" + props.largest_version) : ("V" + props.largest_version + ".0")}
                         </Text>
                     </View>
-                    <View style={{alignItems:"center"}}>
-                        <Text style={{fontWeight:"900",marginHorizontal:10}}>
-                            BT Firmware
-                        </Text>
+                    <View style={{flexDirection:"row",justifyContent:"center"}}>
+                        <View style={{alignItems:"center"}}>
+                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                                Radio Firmware
+                            </Text>
+                            <Text>
+                                {PRETY_VERSION(props.radio_version)}
+                            </Text>
+                        </View>
+                        <View style={{alignItems:"center"}}>
+                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                                App Firmware
+                            </Text>
+                            <Text>
+                                {PRETY_VERSION(props.app_version)}
+                            </Text>
+                        </View>
+                        <View style={{alignItems:"center"}}>
+                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                                BT Firmware
+                            </Text>
+                            <Text>
+                                {PRETY_VERSION(props.bluetooth_version)}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={{backgroundColor:"gray",padding:10,justifyContent:"center",flexDirection:"row"}}>
+                        <View style={{flex:0.7,marginLeft:10}}>
+                            <Text style={{color:"white"}}>
+                                Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
+                            </Text>
+                        </View>
+                        <TouchableHighlight style={{flex:0.3,alignItems:"flex-end"}} onPress={() => this.showOrHideList()}>
+                            <Icon name="plus-square" size={20} color="white"/> 
+                        </TouchableHighlight>
+                    </View>
+                    <View style={{marginHorizontal:20,padding:5}}>
                         <Text>
-                            {props.bluetooth_version}
+                            Update Firmware to Version: {PRETY_VERSION(this.props.selected_version)}
                         </Text>
                     </View>
-                </View>
-                <View style={{marginHorizontal:20}}>
-                    <Text>
-                        Update Firmware to Version: 
-                    </Text>
-                    <View> 
+                    <View style={{marginHorizontal:20,padding:5}}>  
                         <Text>
+                            Radio - {this.getTextVersionStatus(props.radio_update_status)}
+                        </Text>
+                        <Text>
+                            Application - {this.getTextVersionStatus(props.app_update_status)}
+                        </Text>
+                        <Text>
+                            Bluetooth - {this.getTextVersionStatus(props.bt_update_status)}
                         </Text>
                     </View>
-                </View>
-                <View style={{marginHorizontal:20}}>  
-                    <Text>
-                        Radio - {this.getTextVersionStatus(props.radio_update_status)}
-                    </Text>
-                    <Text>
-                        Application - {this.getTextVersionStatus(props.app_update_status)}
-                    </Text>
-                    <Text>
-                        Bluetooth - {this.getTextVersionStatus(props.bt_update_status)}
-                    </Text>
+                    <View>
+                        {this.renderStartUpdateBtn()}
+                    </View>
                 </View>
                 <View>
-                    {this.renderStartUpdateBtn()}
+                    {this.getFirmwareList()}
+                </View>
+                <View>
+                    {this.renderUpdateComponent()}
                 </View>
             </View>
         )
@@ -600,7 +707,6 @@ class UpdateFirmwareCentral extends Component {
     }
 }
 
-
 const mapStateToProps = state => ({
     firmware_file: state.updateFirmwareCentralReducer.firmware_file,
     active_tab : state.updateFirmwareCentralReducer.active_tab,
@@ -619,8 +725,10 @@ const mapStateToProps = state => ({
     app_update_status : state.firmwareUpdateReducer.app_update_status,
     radio_update_status : state.firmwareUpdateReducer.radio_update_status,
     bt_update_status : state.firmwareUpdateReducer.bt_update_status,
-    current_update : state.firmwareUpdateReducer.current_update
-
+    current_update : state.firmwareUpdateReducer.current_update,
+    show_firmware_update_list : state.firmwareUpdateReducer.show_firmware_update_list,
+    selected_version : state.firmwareUpdateReducer.selected_version,
+    selected_files: state.firmwareUpdateReducer.selected_files
 });
 
 export default connect(mapStateToProps)(UpdateFirmwareCentral)

@@ -9,7 +9,10 @@ const initialState = {
   app_update_status : "no_started",
   radio_update_status: "no_started",
   bt_update_status: "no_started",
-  current_update : "no_started"
+  current_update : "no_started",
+  show_firmware_update_list : false,
+  selected_version : 0,
+  selected_files : {}
 }
 
 export default function firmwareUpdateReducer (state = initialState, action) {
@@ -95,8 +98,28 @@ export default function firmwareUpdateReducer (state = initialState, action) {
         ...state,
         current_update: action.current_update
       }
+    case "SHOW_FIRMWARE_UPDATE_LIST":
+      return {
+        ...state,
+        show_firmware_update_list : true
+      }
+    case "HIDE_FIRMWARE_UPDATE_LIST":
+      return {
+        ...state,
+        show_firmware_update_list : false
+      }
+    case "UPDATE_SELECTED_VERSION":
+      return {
+        ...state,
+        selected_version : action.selected_version,
+        selected_files : action.selected_files
+      }
+    case "UPDATE_SELECTED_FILES":
+      return {
+        ...state,
+        selected_files : action.selected_files
+      }
     default:
       return state
-
   }
 }

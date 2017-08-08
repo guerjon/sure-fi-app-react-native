@@ -10,7 +10,7 @@ import {
   	ActivityIndicator,
   	Dimensions
 } from 'react-native'
-import {styles,first_color} from '../styles/index.js'
+import {styles,first_color,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -35,8 +35,8 @@ var {
 
 import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
 
-class Template extends Component{
-	
+class BluetoothFirmwareUpdate extends Component{
+/*	
 	static navigationOptions ={
 		title : "FirmwareUpdate",
 		tabBarLabel: "Bluetooth",
@@ -45,7 +45,7 @@ class Template extends Component{
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
 		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="bluetooth" size={20} color="white"/>
-	}
+	}*/
 	
 	constructor(props) {
 		super(props);
@@ -53,6 +53,8 @@ class Template extends Component{
 		this.handleDiscoverPeripheral = this.handleDiscoverPeripheral.bind(this)
 		this.dfuCompletedEvent = this.dfuCompletedEvent.bind(this);
 		this.updateGraph = this.updateGraph.bind(this)
+		this.view_kind = props.viewKind
+		this.firmware_file = props.firmwareFile
 	}
 
 
@@ -67,6 +69,11 @@ class Template extends Component{
 		this.discoverPeripheral.remove()
 		this.completedEvent.remove()
 		this.uGraph.remove()
+	}
+
+	componentDidMount() {
+		if(this.view_kind == "normal")
+			this.fetchFirmwareUpdate(this.firmware_file)
 	}
 
 	updateGraph(data){
@@ -136,8 +143,8 @@ class Template extends Component{
 				<View>
 					<View style={{flexDirection:"row"}}>
 						<View style={{flex:1}}>
-							<Text style={{fontSize:16}}>
-								Updating
+							<Text style={{fontSize:16,padding:5}}>
+								Updating Bluetooth
 							</Text>
 						</View>
 						<View style={{flex: 1}}>
@@ -149,20 +156,6 @@ class Template extends Component{
 					<View>
 						<View>
 							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
-						</View>
-						<View style={{marginTop:20,alignItems:"center",backgroundColor:"white",borderRadius:10}}>
-							<Text style={{fontSize:14}}>
-								Updating firmware from 
-							</Text>
-							<Text style={{fontSize:22}}>
-								{this.props.bluetooth_version}
-							</Text>
-							<Text>
-								To
-							</Text>
-							<Text style={{fontSize:22}}>
-								v{this.firmware_version}
-							</Text>
 						</View>
 					</View>
 				</View>
@@ -212,20 +205,6 @@ class Template extends Component{
 						<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
 							{this.props.radio_version}
 						</Text>
-						<View style={{height:100,width:width,marginVertical:5}}>
-							<View style={{padding:10,backgroundColor:"white",marginHorizontal:15,borderRadius:10}}>
-								<Text style={{color:"black",fontSize:18,marginBottom:10}}>
-									Bootloader Buetooth Data
-								</Text>
-								<Text>
-									Upper CRC: 0000|0000 Version: 00.00 Prgm:0000
-								</Text>
-								<Text>
-									Lower CRC: 0000|0000 Version: 00.00 Prgm:0000
-								</Text>
-							</View>
-
-						</View>						
 						<View style={{height:400}}>
 							<SelectFirmwareCentral 
 								device ={this.device}
@@ -248,4 +227,4 @@ const mapStateToProps = state => ({
     progress : state.firmwareUpdateReducer.progress,
 });
 
-export default connect(mapStateToProps)(Template);
+export default connect(mapStateToProps)(BluetoothFirmwareUpdate);

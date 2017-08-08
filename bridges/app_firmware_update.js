@@ -36,7 +36,7 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class AppFirmwareUpdate extends Component{
 	
-	static navigationOptions ={
+/*	static navigationOptions ={
 		title : "Firmware Update",
 		headerStyle: {backgroundColor: first_color},
 		headerTitleStyle : {color :"white"},
@@ -45,7 +45,7 @@ class AppFirmwareUpdate extends Component{
 		tabBarLabel : "App",
 		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="mobile" size={20} color="white"/>
 	}
-
+*/
 	constructor(props) {
 		super(props);
 		this.device = props.device
@@ -63,7 +63,7 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	componentDidMount() {
-		if(view_kind == "normal")
+		if(this.view_kind == "normal")
 			this.fetchFirmwareUpdate(this.firmware_file)
 	}
 
@@ -78,8 +78,6 @@ class AppFirmwareUpdate extends Component{
 
 		// send http request in a new thread (using native code) 
 		this.firmware_version = firmware_file.firmware_version
-		this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
-		this.props.dispatch({type: "RESET_FIRMWARE_CENTRAL_REDUCER"})
 
 		if(path){
 
@@ -143,15 +141,15 @@ class AppFirmwareUpdate extends Component{
 					this.processRows()
 				else{
 					this.write([7])
-					this.props.startNextUpdate("bt")
+					
 				}
 				return
 			case 5:
 				//console.log("BleRsp_GenericOk")
 					this.writeFirstPiece()
 				return
-			case 6:
-				console.log("BleRsp_UpdateFinishSuccess")
+			case 0x06:
+				this.props.startNextUpdate("app")
 				return
 			case 7:
 				//console.log("BleRsp_BootloaderInfo")
@@ -200,7 +198,7 @@ class AppFirmwareUpdate extends Component{
 			this.writeWithoutResponse(data)
 		}
 
-		this.write([6])	
+		this.write([6])
 	}
 
 
@@ -224,10 +222,6 @@ class AppFirmwareUpdate extends Component{
 		var restante = 1 - (columnas_restantes / columnas_totales);
 
 		dispatch({type: "CHANGE_PROGRESS", new_progress: restante})
-		if(restante == 1){
-			this.props.resetStack()
-			Alert.alert("Success","The firmware Update has been completed.")
-		}
 	}
 
 	writeStartUpdate(programming_number){
@@ -322,7 +316,6 @@ class AppFirmwareUpdate extends Component{
 				
 				this.new_rows = null;
 				this.write([7]) //finish the rows sending
-				this.props.startNextUpdate("bt")
 			}
 		}else{
 			console.log("there is not rows array on processRows")
@@ -353,8 +346,8 @@ class AppFirmwareUpdate extends Component{
 				<View>
 					<View style={{flexDirection:"row"}}>
 						<View style={{flex:1}}>
-							<Text style={{fontSize:16}}>
-								Updating
+							<Text style={{fontSize:16,padding:5}}>
+								Updating App
 							</Text>
 						</View>
 						<View style={{flex: 1}}>
@@ -366,20 +359,6 @@ class AppFirmwareUpdate extends Component{
 					<View>
 						<View>
 							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
-						</View>
-						<View style={{marginTop:20,alignItems:"center",backgroundColor:"white",borderRadius:10}}>
-							<Text style={{fontSize:14}}>
-								Updating firmware from 
-							</Text>
-							<Text style={{fontSize:22}}>
-								{app_version}
-							</Text>
-							<Text>
-								To
-							</Text>
-							<Text style={{fontSize:22}}>
-								{this.firmware_version}
-							</Text>
 						</View>
 					</View>
 				</View>

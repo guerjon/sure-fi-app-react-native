@@ -91,7 +91,7 @@ class ScanRemoteUnits extends Component {
     }
 
     onSuccess(scan_result) {
-        //Vibration.vibrate()
+        Vibration.vibrate()
         var device_id = scan_result.data;
         this.scan_result_id = device_id
         var {

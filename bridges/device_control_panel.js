@@ -111,14 +111,10 @@ class SetupCentral extends Component{
 		BleManager.start().then(response => {}).catch(error => console.log(error))
 		
 		if(tryToConnect){
-			console.log("1")
 			BleManager.isPeripheralConnected(this.device.id).then(isConnected => {
-				console.log("2")
 				if(isConnected){
-					console.log("3")
 					this.connected = true
 					if(writeUnpairResult){
-						console.log("3.1")
 						this.writeResultsRequests(this.device)
 					}else{
 						this.getCloudStatus(this.device)	
@@ -126,7 +122,6 @@ class SetupCentral extends Component{
 					
 					
 				}else{
-					console.log("4")
 					this.device = props.navigation.state.device
 					this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
 					this.tryToConnect(this.device)					
@@ -135,16 +130,11 @@ class SetupCentral extends Component{
 
 		}else{
         	this.device = props.navigation.state.device ? props.navigation.state.device : props.device
-        	console.log("device",this.device)
         	BleManager.isPeripheralConnected(this.device.id).then(isConnected => {
-        		console.log("1")
         		if(isConnected){	
-        			console.log("2")
         			this.connected = true;	
-        			
         			this.getCloudStatus(this.device)
         		}else{
-        			console.log("3")
         			this.tryToConnect(this.device)
         		}
         	})
@@ -158,23 +148,21 @@ class SetupCentral extends Component{
 	}
 
 	handleBack(){
-		console.log("props",this.props)
 		let device = this.props.navigation.state.device ? this.props.navigation.state.device : this.props.device
 		DISCONNECT(device.id)
 		.then(response => {
-			console.log("response",response)
 			this.props.navigation.goBack()
 		})
 		.catch(error => console.log("error",error))
 	}
 
 	tryToConnect(device){
-		console.log("tryToConnect()",device)
+		//console.log("tryToConnect()")
         this.props.dispatch({
            type: "CONNECTING_CENTRAL_DEVICE",
         })
 
-        this.interval = setInterval(() => this.connect(device),5000);
+        this.interval = setInterval(() => this.connect(device),1000);
 	}
 
 	connect(device){
@@ -199,7 +187,7 @@ class SetupCentral extends Component{
     }
 
 	startNotification(device){
-		console.log("startNotification()")
+		//console.log("startNotification()")
         BleManagerModule.retrieveServices(
         	device.id,
         	() => {
@@ -223,7 +211,7 @@ class SetupCentral extends Component{
 	}
 
 	writeResultsRequests(device){
-		console.log("writeResultsRequests()")
+		//console.log("writeResultsRequests()")
 		if(this.props.navigation.state.writePairingResult || this.props.navigation.state.writeUnpairResult){
 			if(this.props.navigation.state.writePairingResult){
 				WRITE_COMMAND(device.id,[0x21])
@@ -239,10 +227,8 @@ class SetupCentral extends Component{
 					.then(response => {
 						this.getCloudStatus(device)
 					})
-					.catch(error => console.log("error",error))			
-
+					.catch(error => console.log("error",error))
 			}
-
 		}else{
 			this.getCloudStatus(device)
 		}
@@ -276,17 +262,17 @@ class SetupCentral extends Component{
 	}
 	
 	getStatus(device,current_status_on_cloud,expected_status){
-		console.log("getStatus()")
+		//console.log("getStatus()")
 		READ_STATUS(device.id)
 		.then(response => {
     		this.current_device_status = response[0]
     		let current_device_status = response[0]
-    		console.log("current device readed",response[0])
+    		
     		this.props.dispatch({type: "UPDATE_OPTIONS",device_status : current_device_status})
     		this.props.dispatch({type:"CONNECTED_CENTRAL_DEVICE"})
 
 			if(current_device_status != expected_status){ //something was wrong and is need show a notification
-				console.log("1",current_device_status,expected_status)	
+				
 				this.show_notification = true
 				this.indicator_number = (parseInt(current_device_status) * 10)  +  parseInt(expected_status.substr(1))
 				
@@ -296,9 +282,7 @@ class SetupCentral extends Component{
 
 			}else{ //all correct on the device, we need know if was a pair or unpair before
 				this.indicator_number = current_device_status
-				console.log("2",current_device_status,current_status_on_cloud)
-				if(current_device_status != current_status_on_cloud){ // 
-					console.log("3",current_device_status,current_status_on_cloud)
+				if(current_device_status != current_status_on_cloud){
 	    			this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
 	    		}
 			}
@@ -309,8 +293,8 @@ class SetupCentral extends Component{
     }
 
     pushStatusToCloud(device,current_status,current_status_on_cloud,expected_status_on_cloud){
-    	console.log("pushStatusToCloud()")
-    	/*console.log("pushStatusToCloud()",device)
+    	/*console.log("pushStatusToCloud()")
+    	console.log("pushStatusToCloud()",device)
     	console.log("pushStatusToCloud()",current_status)
     	console.log("pushStatusToCloud()",current_status_on_cloud)
     	console.log("pushStatusToCloud()",expected_status_on_cloud)*/
@@ -325,7 +309,7 @@ class SetupCentral extends Component{
     }
 
     getAllInfo(device){
-    	console.log("getAllInfo()")
+    	//console.log("getAllInfo()")
     	WRITE_COMMAND(device.id,[COMMAND_GET_FIRMWARE_VERSION])
     	.then(response => {
 	    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
@@ -349,7 +333,7 @@ class SetupCentral extends Component{
     }
 
 	handleCharacteristicNotification(data){
-		console.log("handleCharacteristicNotification",data.value)
+		//console.log("handleCharacteristicNotification")
 		let value = data.value[0]
 		
 		switch(value){
@@ -430,7 +414,7 @@ class SetupCentral extends Component{
 	}
 
 	handleDisconnectedPeripheral(device){
-		console.log("handleDisconnectedPeripheral()")
+		//console.log("handleDisconnectedPeripheral()")
 		this.connected = false
 		this.props.dispatch({
 			type : "DISCONNECT_CENTRAL_DEVICE"
@@ -666,8 +650,8 @@ const mapStateToProps = state => ({
 	central_photo_data : state.setupCentralReducer.central_photo_data,
 	central_unit_description : state.setupCentralReducer.central_unit_description,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
-	//device: state.scanCentralReducer.central_device,
-	 device: {
+	device: state.scanCentralReducer.central_device,
+	/*device: {
       new_representation: '01010004FF0FF0FF1FF1',
       rssi: -57,
       name: 'Sure-Fi Brid',
@@ -683,26 +667,10 @@ const mapStateToProps = state => ({
         device_id: 'FF0FF0',
         tx: 'FF1FF1',
         address: 'C1:BC:40:D9:93:B9',
-        security_string: [
-          178,
-          206,
-          206,
-          71,
-          196,
-          39,
-          44,
-          165,
-          158,
-          178,
-          226,
-          19,
-          111,
-          234,
-          113,
-          180
-        ]
+        security_string: [76,48,68,129,17,22,77,231,51,142,252,225,200,104,46,153]
       }
     },
+    */
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,

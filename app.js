@@ -62,10 +62,8 @@ export const AppNavigator = StackNavigator({
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
 	ConfigurationScanRemoteUnits : {screen : ConfigurationScanRemoteUnits},
 	
-	
 	SetupCentralExamples : {screen : SetupCentralExamples},
 	Register : {screen : Register},
-	//BluetoothFirmwareUpdate : {screen : BluetoothFirmwareUpdate},
 	BatteryLevel : {screen : BatteryLevel}
 	
 });

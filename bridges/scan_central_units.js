@@ -36,6 +36,7 @@ import Camera from 'react-native-camera';
 import { NavigationActions } from 'react-navigation'
 //import {IS_CONNECTED} from '../action_creators'
 const RTCamera = NativeModules.RCTCameraModule
+const Permissions = require('react-native-permissions');
 
 
 var md5 = require('md5');
@@ -51,11 +52,25 @@ class ScanCentralUnits extends Component {
             type: "RESET_CENTRAL_REDUCER"
         })
         dispatch({type :"SHOW_CAMERA"})
-        
+    }
+
+
+    requestPermisions(){
+        Permissions.check(['camera','photo'])
+        .then(response => {
+
+        })
+    }
+
+    alertForPermisions(){
+        Alert.alert(
+            "Access to the camera",
+            'In order to scan the Qr code we need access to the camera.'
+        )
     }
 
     onSuccess(scan_result) {
-        //Vibration.vibrate()
+        Vibration.vibrate()
         var device_id = scan_result.data;
 
 

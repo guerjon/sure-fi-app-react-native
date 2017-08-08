@@ -35,6 +35,7 @@
     "react-native-image-to-base64": "^0.1.0",
     "react-native-material-bottom-navigation": "^0.5.1",
     "react-native-pan-controller": "0.0.1",
+    "react-native-permissions": "^1.0.0",
     "react-native-progress": "^3.2.1",
     "react-native-qrcode-scanner": "0.0.8",
     "react-native-randombytes": "^2.2.0",

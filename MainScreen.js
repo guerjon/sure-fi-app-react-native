@@ -57,7 +57,15 @@ class MainScreen extends Component {
 
   	componentWillMount() {
 
-  		/*PushNotification.getBuildInfo(data => { //data is a json
+/*	    requestPermisions(){
+	        Permissions.check(['camera','photo','contacts','location','storage'])
+	        .then(response => {
+
+	        })
+	    }
+*/
+
+  		/*PushNotification.getBuildInfo(data => { //data is a json change on production
   			this.sendInformation(data)
   		})
 		*/
@@ -131,13 +139,14 @@ class MainScreen extends Component {
 		}).catch(err => console.error('An error occurred', err));
 	} 	
 
+
 	static navigationOptions = { title: 'Welcome', header: null };
   
   	render() {
   		
   		const { navigate } = this.props.navigation;
   		var {screen_status} = this.props
-  		//if(screen_status == "show_main_screen"){ change_this_to_production
+  		//if(screen_status == "show_main_screen"){  change on production
   		if(true){	
 			return (
 				<Background>

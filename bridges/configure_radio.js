@@ -131,7 +131,7 @@ class ConfigureRadio extends Component {
 	constructor(props) {
 		super(props);
 		this.device = this.props.navigation.state.params.device
-		this.handleNotification = this.handleNotification.bind(this)
+		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 	}
 
 	componentWillMount() {

@@ -427,13 +427,17 @@ export const GET_LARGEST = (a,b,c) => {
 }
 
 export const PRETY_VERSION = version => {
-	if(version < 1)
-		return ("V" + version.toString())
-	if (version == 1)
-		return "V1.0"
-	if (version > 1)
-		return ("V" + version.toString())
+	if(version){
+		if(version < 1)
+			return ("V" + version.toString())
+		if (version == 1)
+			return "V1.0"
+		if (version > 1)
+			return ("V" + version.toString())
 
-	return ("V" + version.toString())
+		return ("V" + version.toString())
+	}else{
+		return ""
+	}
 
 }
