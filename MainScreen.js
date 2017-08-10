@@ -237,8 +237,8 @@ class MainScreen extends Component {
   				//console.log("response",response)
   				if(response.status == "success"){
   					let data = response.data
-  					//if(data.registered){
-  					if(true){
+  					if(data.registered){
+  					//if(true){
   						dispatch({type : "SHOW_MAIN_SCREEN"})
   					}else{
   						const goRegister = NavigationActions.reset({

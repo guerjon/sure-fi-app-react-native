@@ -552,8 +552,7 @@ class SetupCentral extends Component{
 	}
 
 	goToPair(){
-		//if((this.props.battery_voltage > 7) && (this.props.battery_voltage < 11)){
-		if(true){
+		if((this.props.battery_voltage > 7) && (this.props.battery_voltage < 11)){
 			this.handleCharacteristic.remove()
 			this.props.navigation.navigate("PairBridge",{device: this.device})			
 		}else{

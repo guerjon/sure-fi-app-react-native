@@ -185,7 +185,7 @@ class ScanCentralUnits extends Component {
 
     onSuccess(scan_result) {
         Vibration.vibrate()
-
+        
         if(this.scanning){
             this.scanning = false;
 
@@ -199,7 +199,6 @@ class ScanCentralUnits extends Component {
                 var devices = this.props.devices
                 var matched_device = []
 
-                
 
                 if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                     

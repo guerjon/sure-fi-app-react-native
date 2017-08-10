@@ -19,6 +19,7 @@ import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager';
+import BluetoothState from 'react-native-bluetooth-state';
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -37,11 +38,21 @@ class Bridges extends Component{
 	}
 
 
-	componentWillMount() {
-		BleManager.start().then(() => {
-			this.searchDevices()
-        });
-	}
+	componentDidMount() {
+		BleManager.enableBluetooth()
+		  .then(() => {
+		    // Success code
+		    //console.log('The bluetooh is already enabled or the user confirm');
+				BleManager.start().then(() => {
+					this.searchDevices()
+		        });				
+
+		  })
+		  .catch((error) => {
+		    //console.log('The user refuse to enable bluetooth');
+		    Alert.alert("Bluetooth is need","In order to find the Sure-Fi device the bluetooth must be turn on.");
+		  });
+	}	
 
 	showHelpAlert(){
 		Alert.alert(
@@ -82,7 +93,6 @@ class Bridges extends Component{
 
 	render(){
 
-		// <ScannedDevicesList /> has the scanner on there the scan start and its saved on the dispatch like a scanner in pairReducer
 		return(
 			<Background>
 				<View style={{flex:1,marginHorizontal:10}}>
