@@ -113,7 +113,7 @@ export  const styles = StyleSheet.create({
       margin:20
     },
     touchableSectionInnerImage:{
-      height: 40,
+      height: 60,
       width: width/5,
     },
     touchableSectionInnerText:{

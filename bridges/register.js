@@ -43,8 +43,8 @@ class Register extends Component{
 
 	componentWillMount() {
 		this.info = this.props.navigation.state.info;
+		console.log("props",this.props)
 	}
-
 
   	fillConfirmationCode(code){
   		var code = code.code
@@ -144,6 +144,7 @@ class Register extends Component{
 						user_id : id,
 						device_token : this.props.navigation.state.info.token						
 					})
+
 					fetch(FINISH_USER_REGISTRATION,{
 						method: "POST",
 						headers: {
@@ -181,6 +182,7 @@ class Register extends Component{
 	}
 
 	renderStep1(){
+		let props = this.props
 		return (
 			<View>
 				<Text style={{color:"white",marginVertical:20,fontSize:16}}>
@@ -195,7 +197,7 @@ class Register extends Component{
 					</Text>
 				</TouchableHighlight>
 			</View>
-		)
+		)			
 	}
 
 	renderStep2(){
@@ -343,7 +345,10 @@ class Register extends Component{
 }
 
 const mapStateToProps = state => ({
-	register_status : state.registerReducer.register_status
+	register_status : state.registerReducer.register_status,
+	contacts_permission : state.mainScreenReducer.contacts_permission,
+	phone_state_permission : state.mainScreenReducer.phone_state_permission,
+	sms_permission : state.mainScreenReducer.sms_permission	
 });
 
 export default connect(mapStateToProps)(Register);

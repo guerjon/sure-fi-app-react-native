@@ -43,8 +43,6 @@ class Bridges extends Component{
         });
 	}
 
-
-
 	showHelpAlert(){
 		Alert.alert(
 			"Instructions",
@@ -71,6 +69,7 @@ class Bridges extends Component{
 	}
 
 	searchDevices(){
+		console.log("searchDevices()")
 		BleManager.scan([], 10, true).then(() => {
         })
 	}

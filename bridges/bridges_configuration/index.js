@@ -183,7 +183,6 @@ class BridgesConfiguration extends Component {
 		this.props.navigation.navigate("ConfigurationScanCentralUnits",{manager : this.manager,scan : this.scanning})
 	}
 
-
     disconnect() {
         var {
             central_device,
@@ -238,7 +237,6 @@ class BridgesConfiguration extends Component {
     	this.props.dispatch({
     		type: "CONFIGURATION_RESET_REMOTE_REDUCER"
     	})
-
     }
 
     unPair() {
@@ -276,7 +274,6 @@ class BridgesConfiguration extends Component {
     				.then(info => console.log("disconnect:" + info ))
     				.catch(error => console.log(error) )    				
     }
-
 
 	renderDevice(device){
 		device = device.item

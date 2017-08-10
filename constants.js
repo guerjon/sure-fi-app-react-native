@@ -99,6 +99,10 @@ export const BYTES_TO_HEX = (byteArray) => {
 	}).join('')
 }
 
+export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{
+	return ((byte_1 & 0xff) << 8) | (byte_2 & 0xff); 
+}
+
 export const HEX_TO_BYTES = (hex) => {
 	for (var bytes = [], c = 0; c < hex.length; c += 2) {
 		var sub = hex.substr(c, 2);

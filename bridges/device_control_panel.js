@@ -31,7 +31,8 @@ import {
 	GET_HEADERS,
 	GET_MESSAGES_CLOUD_ROUTE,
 	GET_SECURITY_STRING,
-	PRETY_VERSION
+	PRETY_VERSION,
+	BYTES_TO_HEX
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -162,7 +163,7 @@ class SetupCentral extends Component{
            type: "CONNECTING_CENTRAL_DEVICE",
         })
 
-        this.interval = setInterval(() => this.connect(device),1000);
+        this.interval = setInterval(() => this.connect(device),3000);
 	}
 
 	connect(device){
@@ -292,6 +293,9 @@ class SetupCentral extends Component{
 		.catch(error => console.log("error",error))
     }
 
+
+
+
     pushStatusToCloud(device,current_status,current_status_on_cloud,expected_status_on_cloud){
     	/*console.log("pushStatusToCloud()")
     	console.log("pushStatusToCloud()",device)
@@ -332,8 +336,26 @@ class SetupCentral extends Component{
     	.catch(error => console.log("error",error))    	
     }
 
+
+
+	byteArrayToLong(byteArray) {
+	    var value = 0;
+	    for ( var i = 0; i < byteArray.length; i++) {
+	        value = (value * 256) + byteArray[i];
+	    }
+
+	    return value;
+	};
+	
+	toHexString(byteArray) {
+	  return Array.from(byteArray, function(byte) {
+	    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+	  }).join('')
+	}
+
+
 	handleCharacteristicNotification(data){
-		//console.log("handleCharacteristicNotification")
+		console.log("handleCharacteristicNotification")
 		let value = data.value[0]
 		
 		switch(value){
@@ -352,6 +374,7 @@ class SetupCentral extends Component{
 				let retry_count = data.value[4]
 				let heartbeat_period = heartbeatPeriod.get(data.value[5]) 
 				let acknowledments =  data.value[6] ? "Enabled" : "Disabled"
+				let hopping_table = data.value[7]
 
 				this.props.dispatch(
 					{
@@ -361,7 +384,8 @@ class SetupCentral extends Component{
 						band_width : band_width,
 						retry_count : retry_count,
 						heartbeat_period: heartbeat_period,
-						acknowledments : acknowledments
+						acknowledments : acknowledments,
+						hopping_table : hopping_table
 					}
 				)
 				break
@@ -369,9 +393,9 @@ class SetupCentral extends Component{
 				this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[1].toString() + "." + data.value[2].toString()) })
 				break
 			case 0x14: //Voltage
-				let v1 = byteArrayToLong([data.value[1],data.value[2]])
-				let v2 = byteArrayToLong([data.value[2],data.value[4]])
-
+				
+				let v1 = ((data.value[1] & 0xff) << 8) | (data.value[2] & 0xff);  
+				let v2 = ((data.value[3] & 0xff) << 8) | (data.value[4] & 0xff);
 				let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
 				let battery_voltage = CALCULATE_VOLTAGE(v2).toFixed(2) 
 				this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
@@ -428,9 +452,8 @@ class SetupCentral extends Component{
 	resetBoard(){
 		WRITE_COMMAND(this.device.id,[0x1C])
 		.then(response => {
-			Alert.alert("Success","The Application Board has been restared")
 		})
-		.catch(error => console.log("error",error))
+		.catch(error =>  Alert.alert("Error",error))
 	}
 
 	renderInfo(){
@@ -678,6 +701,7 @@ const mapStateToProps = state => ({
   	band_width : state.setupCentralReducer.band_width,
   	power : state.setupCentralReducer.power,
   	battery_voltage : state.setupCentralReducer.battery_voltage,
+  	hopping_table : state.setupCentralReducer.hopping_table,
   	power_voltage : state.setupCentralReducer.power_voltage,
   	device_status : state.setupCentralReducer.device_status,
   	show_modal : state.setupCentralReducer.show_modal

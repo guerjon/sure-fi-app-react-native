@@ -14,7 +14,8 @@ const initialState = {
   manufactured_data : [],
   central_device : {},
   scanning_status: "no_device_found",
-  camera_status : "hidden"
+  camera_status : "hidden",
+  photo_data : {}
 }
 
 
@@ -25,7 +26,8 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         manufactured_data : [],
         central_device : {},
-        scanning_status : "no_device_found"
+        scanning_status : "no_device_found",
+        photo_data : {}
       }
     case "CENTRAL_DEVICE_MATCHED":
       return {
@@ -78,6 +80,16 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         central_device : action.device
+      }
+    case "SHOW_SCANNED_IMAGE":
+      return {
+        ...state,
+        photo_data : action.photo_data
+      }
+    case "SHOW_ACCEPT_PERMITIONS_MODAL":
+      return {
+        ...state,
+        scanning_status : "show_modal"
       }
     default:
       return state

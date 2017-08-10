@@ -348,10 +348,29 @@ class RadioFirmwareUpdate extends Component{
 		this.row_number = [first_num,second_num]
 	}	
 
+	limitSize(n){
+		if(n){
+				let n_string = n.toString()
+			if(n < 10){
+				let short_string = n_string.substring(0,1)
+				return short_string
+
+			}else if (n == 100){
+				let short_string = n_string.substring(0,3)
+				return short_string
+			}
+			else{
+				let short_string = n_string.substring(0,2)
+				return short_string	
+			}
+		}
+	}
+
 	getStartRow(){
 		var {progress,radio_version} = this.props
 		
 		if(progress > 0){
+			let progress_number = this.limitSize(progress.toFixed(2) * 100) 
 			var content = (
 				<View>
 					<View style={{flexDirection:"row"}}>
@@ -362,7 +381,7 @@ class RadioFirmwareUpdate extends Component{
 						</View>
 						<View style={{flex: 1}}>
 							<Text style={{alignSelf:"flex-end"}}>
-								{progress.toFixed(2) * 100 } %
+								{progress_number} %
 							</Text>
 						</View>
 					</View>

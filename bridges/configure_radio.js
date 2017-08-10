@@ -212,7 +212,7 @@ class ConfigureRadio extends Component {
 				acknowledmentsReverse.get(acknowledments)
 			]
 		)
-		Alert.alert("Success","The update was made with success")
+		Alert.alert("Success","Update successful")
 		dispatch({type:"CLOSE_OPTIONS"})
 	}
 

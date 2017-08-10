@@ -15,11 +15,15 @@ const initialState = {
   power_voltage : 0,
   battery_voltage :0,
   show_modal : false,
-  is_editing: false
+  is_editing: false,
+  device_name : "",
+  hopping_table : 0
 }
 
 export default function setupCentralReducer (state = initialState, action) {
   switch (action.type) {
+    case "RESET_SETUP_CENTRAL_REDUCER":
+      return initialState
   	case "SHOW_CAMERA":
   		return {
   			...state,
@@ -79,7 +83,8 @@ export default function setupCentralReducer (state = initialState, action) {
         band_width : action.band_width,
         retry_count : action.retry_count,
         heartbeat_period: action.heartbeat_period,
-        acknowledments : action.acknowledments
+        acknowledments : action.acknowledments,
+        hopping_table : action.hopping_table
       }
     case "UPDATE_POWER":
       return {
@@ -136,6 +141,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         is_editing: false
+      }
+    case "UPDATE_DEVICE_NAME":
+      return {
+        ...state,
+        device_name : action.device_name
       }
     default:
       return state

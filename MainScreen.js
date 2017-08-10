@@ -8,7 +8,9 @@ import {
   	TouchableHighlight,
   	Linking,
   	NativeModules,
-  	NativeEventEmitter
+  	NativeEventEmitter,
+  	Alert,
+  	PermissionsAndroid
 } from 'react-native';
 
 import {
@@ -26,6 +28,7 @@ import ActivityIndicator from './helpers/centerActivityIndicator'
 import Background from './helpers/background'
 const PushNotification = NativeModules.PushNotification
 const {width,height} = Dimensions.get("window")
+const Permissions = require('react-native-permissions')
 const image_styles = {
   container: {
     flex: 1,
@@ -55,26 +58,167 @@ class MainScreen extends Component {
 		super(props);	
   	}
 
-  	componentWillMount() {
+  	componentWillMount() {	
+  		this.checkPermissions()
+  	}
 
-/*	    requestPermisions(){
-	        Permissions.check(['camera','photo','contacts','location','storage'])
-	        .then(response => {
+  	checkPermissions(){
 
-	        })
-	    }
-*/
+  		Permissions.checkMultiple(['contacts','phone_state','read_sms'])
+  		.then(response => {
+  			console.log("firs_Response",response)
+  			if(response.contacts == "undetermined"){
+  				this.askForContacts(response)
+  			}else if(response.contacts == "denied"){
+  				this.askForContacts(response)
+  			}else if(response.contacts == "restricted"){
+  				this.props.dispatch({type: "UPDATE_CONTACT_PERMISSION",contacts_permission: "restricted"})
+  				this.askForPhoneState(response)
+  			}
+  			else{
+  				this.props.dispatch({type: "UPDATE_CONTACT_PERMISSION",contacts_permission: "activated"})
 
-  		/*PushNotification.getBuildInfo(data => { //data is a json change on production
-  			this.sendInformation(data)
+  				if(response.phone_state == "undetermined")
+  					this.askForPhoneState(response)
+  				else if(response.phone_state == "denied")
+  					this.askForPhoneState(response)
+  				else if(response.phone_state == "restricted"){
+  					this.props.dispatch({type: "UPDATE_PHONE_STATE_PERMISSION",phone_state_permission:"restricted"})
+  					this.askForReadSms(response)
+  				}
+  				else{
+  					this.props.dispatch({type: "UPDATE_PHONE_STATE_PERMISSION",phone_state_permission:"activated"})
+  					
+  					if(response.read_sms == "undetermined"){
+  						this.askForReadSms(response)	
+  					}else if(response.read_sms == "denied"){
+  						this.askForReadSms(response)
+  					}else if (response.read_sms == "restricted"){
+  						this.props.dispatch({type: "UPDATE_SMS_PERMISSION",sms_permission : "restricted"})	
+  						this.sendPushNotification()
+  					}else{
+  						this.sendPushNotification()
+  					}
+  				}
+  			}
   		})
-		*/
+  		.catch(error => Alert.alert("Error",error))  		
+  	}
+
+  	askForContacts(response){
+		Permissions.request('contacts')
+		.then(response => {
+			if(response == "activated"){
+				this.props.dispatch({type: "UPDATE_CONTACT_PERMISSION",contacts_permission: "activated"})
+			}else if (response == "restricted"){
+				this.props.dispatch({type: "UPDATE_CONTACT_PERMISSION",contacts_permission: "restricted"})
+				this.askForPhoneState(response)
+			}else if (response == "denied"){
+				this.props.dispatch({type: "UPDATE_CONTACT_PERMISSION",contacts_permission: "denied"})
+				this.showContactsAlert(response)
+			}else{
+				this.askForPhoneState(response)
+			}
+		})
+		.catch(error => console.log("Error",error))
+  	}
+
+	askForPhoneState(response){
+		Permissions.request('phone_state')
+		.then(response => {
+			if(response == "activated"){
+				this.props.dispatch({type : "UPDATE_PHONE_STATE_PERMISSION",phone_state_permission : "activated"})
+			}else if(response == "restricted"){
+				this.props.dispatch({type : "UPDATE_PHONE_STATE_PERMISSION",phone_state_permission : "restricted"})
+				this.askForReadSms(response)
+			}else if (response == "denied"){
+				this.props.dispatch({type : "UPDATE_PHONE_STATE_PERMISSION",phone_state_permission : "denied"})
+				this.showPhoneStatusAlert(response)
+			}else{
+				this.askForReadSms(response)
+			}
+		})
+		.catch(error => Alert.alert("Error",error))
+	}
+
+	askForReadSms(response){
+		Permissions.request('read_sms')
+		.then(response => {
+			if(response == "activated"){
+				this.props.dispatch({type : "UPDATE_SMS_PERMISSION",sms_permission : "activated"})
+			}else if(response == "restricted"){
+				this.props.dispatch({type : "UPDATE_SMS_PERMISSION",sms_permission : "restricted"})
+				this.sendPushNotification()
+			}else if (response == "denied"){
+				this.props.dispatch({type : "UPDATE_SMS_PERMISSION",sms_permission : "denied"})
+				this.showSMSAlert(response)
+			}else{
+				this.sendPushNotification()
+			}			
+		})
+		.catch(error => Alert.alert("Error",error))
+	}
+
+	showContactsAlert(response){
+  		Alert.alert(
+  			"Can we access to your contacts?",
+  			"In order to register your Sure-Fi device, we need access to your contacts",
+  			[
+  				{text: 'Cancel', onPress: () => this.askForPhoneState(response), style: 'cancel'},
+  				{text : "Accept", onPress: () => this.askForContacts(response)  }
+  			]
+  		)		
+	}
+
+	showPhoneStatusAlert(response){
+  		Alert.alert(
+  			"Can we access to your status phone?",
+  			"In order to register your Sure-Fi device, we need access to the status phone",
+  			[
+  				{text: 'Cancel', onPress: () => this.askForReadSms(response), style: 'cancel'},
+  				{text : "Accept", onPress: () => this.askForPhoneState(response) }
+  			]
+  		)		
+	}
+
+	showSMSAlert(response){
+
+  		Alert.alert(
+  			"Can we access to your sms?",
+  			"In order to register your Sure-Fi device, we need access to the sms",
+  			[
+  				{text: 'Cancel', onPress: () => this.sendPushNotification(), style: 'cancel'},
+  				{text : "Accept", onPress: () => this.askForReadSms(response) }
+  			]
+  		)		
+	}
+
+  	sendPushNotification(){
+  		Permissions.checkMultiple(['contacts','phone_state','read_sms'])
+  		.then(response => {
+  			if((response.phone_state == "authorized") && (response.read_sms == "authorized")){
+				PushNotification.getBuildInfo(data => { //data is a json change on production
+		  			this.sendInformation(data)
+		  		})  		  				
+  			}else{
+  				Alert.alert(
+  					"Accept to continue",
+  					"In order to continue you must allow the permissions, Contacts, SMS, Phone.",
+  					[
+  						{
+  							text : "Accept", onPress : () => this.checkPermissions()
+  						}
+  					]
+  				)
+  			}
+  		})
+  		.catch(error => Alert.alert("Error",error))
   	}
 
   	sendInformation(info){
   		var {dispatch} = this.props
   		var device_details = info.model + "-" + info.android_version + "-" + info.language + "-" + info.country + "-" + info.app_version
-  		
+  		console.log("device_details",device_details)
   		fetch(DEVICE_REGISTRATION_LINK,{
   			method: "POST",
 			headers: {
@@ -90,11 +234,12 @@ class MainScreen extends Component {
   		}).then(data => {
   			if(data.status == 200){
   				var response = JSON.parse(data._bodyText)
+  				//console.log("response",response)
   				if(response.status == "success"){
   					let data = response.data
-  					if(data.registered){
+  					//if(data.registered){
+  					if(true){
   						dispatch({type : "SHOW_MAIN_SCREEN"})
-  						
   					}else{
   						const goRegister = NavigationActions.reset({
 						  	index: 0,
@@ -117,7 +262,7 @@ class MainScreen extends Component {
 						}).then(response => {
 							this.props.navigation.dispatch(goRegister)
 						}).catch(error => Alert.alert("Error",error))
-
+ 
   					}
   				}else{
   					Alert.alert("Error","Server Response Error")
@@ -146,8 +291,8 @@ class MainScreen extends Component {
   		
   		const { navigate } = this.props.navigation;
   		var {screen_status} = this.props
-  		//if(screen_status == "show_main_screen"){  change on production
-  		if(true){	
+  		if(screen_status == "show_main_screen"){
+  		//if(true){	
 			return (
 				<Background>
 			  		<View style={styles.container}>
@@ -172,7 +317,7 @@ class MainScreen extends Component {
 									</View>
 									<View style={styles.textView}>
 										<Text style={styles.text}>
-											Access Controll 
+											Access Control
 										</Text>
 										<Text style={styles.text}>
 											Bridges
@@ -236,7 +381,10 @@ class MainScreen extends Component {
 
 
 const mapStateToProps = state => ({
-	screen_status : state.mainScreenReducer.screen_status
+	screen_status : state.mainScreenReducer.screen_status,
+	contacts_permission : state.mainScreenReducer.contacts_permission,
+	phone_state_permission : state.mainScreenReducer.phone_state_permission,
+	sms_permission : state.mainScreenReducer.sms_permission
 })
 
 

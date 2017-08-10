@@ -39,10 +39,11 @@ class StatusBox extends Component{
 		this.input_text = ""
 	}
 
-	componentWillMount() {
+	componentDidMount() {
 		this.fetchDeviceName()
 	}
 			
+
 	fetchDeviceName(){
 		let device = this.props.device
 		let device_id = device.manufactured_data.device_id.toUpperCase()
@@ -59,6 +60,8 @@ class StatusBox extends Component{
 		.then(response => {
 			var data = JSON.parse(response._bodyInit).data
 			this.device_name = data.name
+			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name})
+
 		})
 		.catch(error => console.log("error",error))
 	}
@@ -185,11 +188,11 @@ class StatusBox extends Component{
 	
     updateName(){
 
-    	if(this.input_text.length > 0 && this.input_text.length < 60){
+    	if(this.props.device_name.length > 0 && this.props.device_name.  length < 60){
 	    	let device = this.props.device
 	    	let device_id = device.manufactured_data.device_id.toUpperCase()
 	    	let ret_uuid = device.id
-	    	let name = BASE64.btoa(this.input_text)
+	    	let name = BASE64.btoa(this.props.device_name)
 
 	    	fetch(UPDATE_DEVICE_NAME_ROUTE,{
 	    		method: "POST",
@@ -215,7 +218,7 @@ class StatusBox extends Component{
 	    	.catch(error => console.log("error",error))
 
     	}else{
-    		if(this.input_text == 0)
+    		if(this.props.device_name == 0)
 				Alert.alert("Error!","The name can't be empty.")
 			else{
 				Alert.alert("Error!","The name is so large.")
@@ -246,7 +249,8 @@ class StatusBox extends Component{
 							placeholder = "Write your new name"
 							style={{height: 40, width:width -80, borderColor: 'gray', borderWidth: 0.3,borderRadius:5,backgroundColor:"white"}} 
 							underlineColorAndroid="transparent"
-							onChangeText = {(text) => this.input_text = text}
+							onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
+							value = {this.props.device_name}
 						/>					
 					</View>
 					<View style={{flex:0.2}}>
@@ -277,7 +281,7 @@ class StatusBox extends Component{
 					>
 					</Image>
 					</View>
-					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.9}}>
+					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.5}}>
 						<Text style={{fontSize:22}}>
 							{this.device_name}
 						</Text>
@@ -346,7 +350,8 @@ class StatusBox extends Component{
 }
 
 const mapStateToProps = state => ({
-	is_editing : state.setupCentralReducer.is_editing
+	is_editing : state.setupCentralReducer.is_editing,
+	device_name : state.setupCentralReducer.device_name
 })
 
 export default connect(mapStateToProps)(StatusBox);

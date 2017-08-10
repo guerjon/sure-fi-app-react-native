@@ -7,10 +7,7 @@ const initialState = {
 export default function updateFirmwareCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER":
-      return {
-        firmware_file: null,
-        central_update_mode : false
-      }
+      return initialState
     case "SET_CENTRAL_FIRMWARE_FILE":
       return {  
         ...state,

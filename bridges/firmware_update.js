@@ -78,7 +78,7 @@ class UpdateFirmwareCentral extends Component {
             alignSelf: "center"
         },
         headerTintColor: 'white',
-        headerRight: <TouchableHighlight onPress={() => navigation.state.params.changeView()}><Text style={{color:"white",margin:10,fontSize:16}}>Change View</Text></TouchableHighlight> 
+        //headerRight: <TouchableHighlight onPress={() => navigation.state.params.changeView()}><Text style={{color:"white",margin:10,fontSize:16}}>Change View</Text></TouchableHighlight> 
     })
 
     constructor(props) {
@@ -93,8 +93,8 @@ class UpdateFirmwareCentral extends Component {
         let props = this.props
         let dispatch = this.props.dispatch
 
-        dispatch({type: "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER"})
-        dispatch({type: "CHANGE_TAB",active_tab : "charging"})
+        dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+        //dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"})
         props.navigation.setParams({ changeView:() => this.changeView()});
     }
 
@@ -713,7 +713,6 @@ const mapStateToProps = state => ({
     central_device: state.scanCentralReducer.central_device,
     firmware_update_state: state.firmwareUpdateReducer.firmware_update_state,
     progress: state.firmwareUpdateReducer.progress,
-    kind_firmware: state.selectFirmwareCentralReducer.kind_firmware,
     app_version : state.setupCentralReducer.app_version,
     radio_version : state.setupCentralReducer.radio_version,
     bluetooth_version : state.setupCentralReducer.bluetooth_version,
