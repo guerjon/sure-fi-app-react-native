@@ -30,6 +30,14 @@ export default function scanCentralReducer (state = initialState, action) {
         scanning_status : "",
         photo_data : {}
       }
+    case "RESET_CAMERA":
+      return {
+        ...state,
+        manufactured_data : [],
+        central_device : {},
+        scanning_status : "no_device_found",
+        photo_data : {}
+      }
     case "CENTRAL_DEVICE_MATCHED":
       return {
         ...state,

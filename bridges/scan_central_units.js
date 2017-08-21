@@ -66,11 +66,11 @@ class ScanCentralUnits extends Component {
                     if(response){
                         PermissionsAndroid.check('android.permission.CAMERA')
                         .then(response => {
-                            console.log("response 3",response)
                             if(response){ 
                                 
                                 this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
                                 this.props.dispatch({type: "NO_DEVICE_FOUND"})
+
                             }else{
                                 this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
                             }
@@ -105,7 +105,6 @@ class ScanCentralUnits extends Component {
             ){
                 this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
                 this.props.dispatch({type: "NO_DEVICE_FOUND"})
-
             }else{
                 this.props.dispatch({type: "SHOW_ACCEPT_PERMITIONS_MODAL"})
             }
@@ -199,12 +198,21 @@ class ScanCentralUnits extends Component {
 
     onSuccess(scan_result) {
 
+        if(this.scanning){
+            this.scanning = false;          
+            var device_id = scan_result.data;
+            this.scan_result_id = device_id
+            var { dispatch,navigation} = this.props;
+            var devices = this.props.devices
+            var matched_device = []
+
             if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                 
                 var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
                 if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
                 
                     //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+
                     
                     if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
                 
@@ -248,7 +256,9 @@ class ScanCentralUnits extends Component {
 
     clearQr(){
         this.scanning = true
-        this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
+        this.props.dispatch({type: "RESET_CAMERA"})
+        this.props.dispatch({type :"SHOW_CAMERA"})
+
     }
 
     renderCamera(message,button) {

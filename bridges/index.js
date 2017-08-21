@@ -18,17 +18,12 @@ import ScannedDevicesList from '../helpers/scanned_devices_list'
 import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
-<<<<<<< HEAD
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
 import {
  	SUREFI_SEC_SERVICE_UUID,
  	SUREFI_SEC_HASH_UUID,
  	ARRAY_BUFFER_TO_BASE64
  } from '../constants' 
-=======
-import BleManager from 'react-native-ble-manager';
-import BluetoothState from 'react-native-bluetooth-state';
->>>>>>> d2db0e976c76e981655382da58a866864f446e08
 
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const bluetoothIcon = (<Icon name="bluetooth" size={30} color="black" />)
@@ -91,14 +86,28 @@ class Bridges extends Component{
         this.props.navigation.dispatch(reset_stack)
 	}
 
+	renderDeviceList(){
+		if(this.props.scanning_status != "")
+			return <ScannedDevicesList manager={this.manager}/>
+		else
+			return null 
+	}
+
 	render(){
 
-
+		/*
+					<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
+						{refreshIcon}
+					</TouchableHighlight>
+		*/
 		return(
 			<Background>
 				<View style={{flex:1,marginHorizontal:10}}>
 					<View style={{height:250,alignItems:"center",marginBottom:60}}>
-						<ScanCentralUnits navigation={this.props.navigation} stopScanning={(device)=> this.stopScanning(device)}/>
+						<ScanCentralUnits 
+							navigation={this.props.navigation} 
+							stopScanning={(device)=> this.stopScanning(device)}
+						/>
 					</View>
 					<View style={{flexDirection:"row"}}>
 						<View style={{flex:1}}>
@@ -118,7 +127,7 @@ class Bridges extends Component{
 						</View>
 					</View>
 					 <ScrollView>
-						<ScannedDevicesList manager={this.manager}/>
+						{this.renderDeviceList() } 
 					</ScrollView>
 				</View>
 			</Background>

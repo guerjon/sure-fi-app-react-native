@@ -45,7 +45,6 @@ class ScannedDevicesList extends Component {
         this.devices = []
     }
     
-    
     componentWillMount() {
         this.scanDevices()    
     }
