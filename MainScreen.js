@@ -207,7 +207,6 @@ class MainScreen extends Component {
   					let data = response.data
   					if(data.registered){
   					//if(true){
-  					//if(false){
   						dispatch({type : "SHOW_MAIN_SCREEN"})
   					}else{
 						fetch(DEVICE_REGISTRATE_LINK,{

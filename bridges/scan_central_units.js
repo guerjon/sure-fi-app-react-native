@@ -198,16 +198,6 @@ class ScanCentralUnits extends Component {
     }
 
     onSuccess(scan_result) {
-        //Vibration.vibrate()
-        
-        if(this.scanning){
-            this.scanning = false;          
-            var device_id = scan_result.data;
-            this.scan_result_id = device_id
-            var { dispatch,navigation} = this.props;
-            var devices = this.props.devices
-            var matched_device = []
-
 
             if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                 

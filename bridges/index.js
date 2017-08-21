@@ -18,12 +18,17 @@ import ScannedDevicesList from '../helpers/scanned_devices_list'
 import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
+<<<<<<< HEAD
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
 import {
  	SUREFI_SEC_SERVICE_UUID,
  	SUREFI_SEC_HASH_UUID,
  	ARRAY_BUFFER_TO_BASE64
  } from '../constants' 
+=======
+import BleManager from 'react-native-ble-manager';
+import BluetoothState from 'react-native-bluetooth-state';
+>>>>>>> d2db0e976c76e981655382da58a866864f446e08
 
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const bluetoothIcon = (<Icon name="bluetooth" size={30} color="black" />)
@@ -43,6 +48,7 @@ class Bridges extends Component{
 		super(props);
 		this.manager = new BleManager();
 	}
+
 
 	showHelpAlert(){
 		Alert.alert(
@@ -87,11 +93,7 @@ class Bridges extends Component{
 
 	render(){
 
-		/*
-			<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
-				{refreshIcon}
-			</TouchableHighlight>
-		*/
+
 		return(
 			<Background>
 				<View style={{flex:1,marginHorizontal:10}}>
