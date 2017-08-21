@@ -34,24 +34,25 @@ import {
 } from '../constants'
 
 
-
-
 class ScannedDevicesList extends Component {
 
     constructor(props) {
     	super(props);
         this.manager = this.props.manager;
-        
         this.devices = []
     }
     
     
     componentWillMount() {
+        this.configureScanManager()
         this.scanDevices()    
     }
 
+    configureScanManager(){
+        this.manager.setLogLevel)
+    }
+
     scanDevices(){
-        console.log("scanDevices()")
         var devices = this.props.devices
         this.manager.startDeviceScan(null,null,(error,device) => {
             if(error){
@@ -59,9 +60,11 @@ class ScannedDevicesList extends Component {
             }
 
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+                console.log(device)
                 if (!FIND_ID(devices, device.id)) {       
                     var data = this.getManufacturedData(device)
                     devices.push(data)
+
                     this.devices = devices
                     this.remote_devices = this.filterRemoteDevices(devices)
                     this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
@@ -72,9 +75,8 @@ class ScannedDevicesList extends Component {
 
     getManufacturedData(device) {
         if (device) {
-            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA.substring(14), device.id);
-            delete device.manufacturerData
-            delete device.CORRECT_DATA;
+            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA, device.id);
+            delete device.manufacturerData;
         }else{
           console.log("error on getManufacturedData device is null or 0")
         }

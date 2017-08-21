@@ -2,6 +2,7 @@ package com.surefi;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -23,14 +24,16 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
 import android.accounts.Account;
 import android.accounts.AccountManager;
-
+import android.util.Base64;
 import android.os.Build;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 
+
 import java.util.Locale;
+import java.util.UUID;
 
 import it.innove.BundleJSONConverter;
 
@@ -42,6 +45,9 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
 
     ReactApplicationContext context;
     static ReactApplicationContext static_context;
+    protected static final String PREFS_FILE = "device_id.xml";
+    protected static final String PREFS_DEVICE_ID = "device_id";
+
 
     public PushNotificationModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -55,11 +61,75 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void getSettingsUUID(Callback callback){
+        final SharedPreferences prefs = context.getSharedPreferences( PREFS_FILE, 0);
+        final String id = prefs.getString(PREFS_DEVICE_ID, null );
+
+        if(id != null){
+            callback.invoke(id);
+        }else{
+            callback.invoke();
+        }
+    }
+
+    @ReactMethod
+    public void getBasicInfo(Callback callback){
+        DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
+        UUID uuid = device_uuid.getDeviceUuid();
+
+        MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
+        String token = service.getToken();
+
+        String version = "1";
+
+        try {
+            PackageManager manager = context.getPackageManager();
+            PackageInfo info = manager.getPackageInfo(
+                    context.getPackageName(), 0);
+            version = info.versionName;
+        } catch (Exception e) {
+            Log.e("YourActivity", "Error getting version");
+        }
+
+        JSONObject json = new JSONObject();
+
+        try {
+
+            json.put("id",Build.ID);
+            json.put("model",Build.MODEL);
+            json.put("android_version",Build.VERSION.RELEASE);
+            json.put("language",Locale.getDefault().getDisplayLanguage());
+            json.put("country",getUserCountry(context));
+            json.put("app_version",version);
+            json.put("device_title",getDeviceName());
+            json.put("email",getEmail(context));
+            json.put("token",token);
+            json.put("device_id",uuid.toString());
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            callback.invoke(e.toString());
+        }
+        BundleJSONConverter bjc = new BundleJSONConverter();
+        try {
+            Bundle bundle = bjc.convertToBundle(json);
+            WritableMap map = Arguments.fromBundle(bundle);
+            callback.invoke(map);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            callback.invoke(e.toString());
+        }
+    }
+
+
+    @ReactMethod
     public void getBuildInfo(Callback callback){
+        DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
+        UUID uuid = device_uuid.getDeviceUuid();
 
         TelephonyManager tMgr = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
         String mPhoneNumber = tMgr.getLine1Number();
-
+        String device_id =  tMgr.getDeviceId();
         MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
         String token = service.getToken();
 
@@ -90,7 +160,7 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
             json.put("device_title",getDeviceName());
             json.put("email",getEmail(context));
             json.put("token",token);
-
+            json.put("device_id",uuid.toString());
 
         } catch (JSONException e) {
             e.printStackTrace();
@@ -108,6 +178,7 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
 
     }
 
+
     @ReactMethod
     public void openSmsBox(Callback callback){
         Log.d("MABY","MAYBE");
@@ -116,10 +187,16 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
         sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
         String token = service.getToken();
-        sendIntent.setType("vnd.android-dir/mms-sms");
+        Log.d("BEFORE",token);
+        String token_encode = Base64.encodeToString(token.getBytes(),Base64.DEFAULT);
+        Log.d("BEFORE",token_encode);
+        DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
+        UUID uuid = device_uuid.getDeviceUuid();
+
         sendIntent.putExtra("address", "14804007873");
-        sendIntent.putExtra("sms_body", "Please send the following Registration Code to SureFi: {" + token + "}");
+        sendIntent.putExtra("sms_body", "Please send the following Registration Code to SureFi: {" + uuid.toString() + "}");
         sendIntent.putExtra("exit_on_sent", true);
+        //sendIntent.setType("vnd.android-dir/mms-sms");
         context.startActivity(sendIntent);
     }
 

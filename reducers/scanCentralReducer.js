@@ -13,9 +13,10 @@ import {
 const initialState = {
   manufactured_data : [],
   central_device : {},
-  scanning_status: "no_device_found",
+  scanning_status: "",
   camera_status : "hidden",
-  photo_data : {}
+  photo_data : {},
+  show_permissions_modal : false
 }
 
 
@@ -26,7 +27,7 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         manufactured_data : [],
         central_device : {},
-        scanning_status : "no_device_found",
+        scanning_status : "",
         photo_data : {}
       }
     case "CENTRAL_DEVICE_MATCHED":
@@ -49,6 +50,10 @@ export default function scanCentralReducer (state = initialState, action) {
     case "CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE":
       return {
         scanning_status : "device_is_not_on_paring_mode"
+      }
+    case "SEARCHING":
+      return{
+        scanning_status : "scanning"
       }
     case "START_SCANNING":
       return {
@@ -90,6 +95,21 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         scanning_status : "show_modal"
+      }
+    case "SHOW_PERMISSIONS_MODAL":
+      return{
+        ...state,
+        show_permissions_modal : true
+      }
+    case "HIDE_PERMISSIONS_MODAL":
+      return{
+        ...state,
+        show_permissions_modal : false
+      }
+    case "NO_DEVICE_FOUND":
+      return{
+        ...state,
+        scanning_status : "no_device_found"
       }
     default:
       return state

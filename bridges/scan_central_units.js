@@ -33,24 +33,30 @@ import {
     styles,
     first_color,
     width,
-    height
+    height,
+    option_blue
 } from '../styles/index'
 import Camera from 'react-native-camera';
 import { NavigationActions } from 'react-navigation'
 //import {IS_CONNECTED} from '../action_creators'
 const RTCamera = NativeModules.RCTCameraModule
 //const Permissions = require('react-native-permissions')
-
+import Icon from 'react-native-vector-icons/FontAwesome';
+const cameraIcon = (<Icon name="camera" size={40} color="white" />)
 
 var md5 = require('md5');
 //md5 = require('js-md5');
 
 class ScanCentralUnits extends Component {
 
-    componentWillMount() 
-    {
+    constructor(props) {
+        super(props);
+    }
 
+    checkMultiplePermissions(){
+        console.log("checkMultiplePermissions()")
         let permissions = PermissionsAndroid.PERMISSIONS
+        var { dispatch } = this.props;
 
         PermissionsAndroid.check('android.permission.READ_EXTERNAL_STORAGE')
         .then(response => {
@@ -60,26 +66,31 @@ class ScanCentralUnits extends Component {
                     if(response){
                         PermissionsAndroid.check('android.permission.CAMERA')
                         .then(response => {
-                            if(!response){
-                                this.requestMultiplePermissions()
+                            console.log("response 3",response)
+                            if(response){ 
+                                
+                                this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
+                                this.props.dispatch({type: "NO_DEVICE_FOUND"})
+                            }else{
+                                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
                             }
                         })
                     }else{
-                        this.requestMultiplePermissions()
+                        this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
                     }
                 })
                 .catch(error => console.log("Error",error))
             }else{
-                this.requestMultiplePermissions()
+                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
             }
         })
-        .catch(error => console.log("Error",error))
-
-
+        .catch(error => console.log("Error",error))        
     }
 
     requestMultiplePermissions(){
         let permissions = PermissionsAndroid.PERMISSIONS
+        this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
+
         PermissionsAndroid.requestMultiple([
             permissions.CAMERA,
             permissions.READ_EXTERNAL_STORAGE,
@@ -92,7 +103,9 @@ class ScanCentralUnits extends Component {
                 (response['android.permission.ACCESS_COARSE_LOCATION']  == "granted") && 
                 (response['android.permission.CAMERA'] == "granted")
             ){
-                this.resetStack()
+                this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
+                this.props.dispatch({type: "NO_DEVICE_FOUND"})
+
             }else{
                 this.props.dispatch({type: "SHOW_ACCEPT_PERMITIONS_MODAL"})
             }
@@ -180,92 +193,68 @@ class ScanCentralUnits extends Component {
             type: "RESET_CENTRAL_REDUCER"
         })
         dispatch({type :"SHOW_CAMERA"})
+        this.checkMultiplePermissions()
         this.scanning = true
     }
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
-
+        //Vibration.vibrate()
+        
         if(this.scanning){
-            this.scanning = false;
+            this.scanning = false;          
+            var device_id = scan_result.data;
+            this.scan_result_id = device_id
+            var { dispatch,navigation} = this.props;
+            var devices = this.props.devices
+            var matched_device = []
 
-            this.camera.capture()
-            .then(photo_data => {
 
-                //console.log("first_photo_data",photo_data)
-                var device_id = scan_result.data;
-                this.scan_result_id = device_id
-                var { dispatch,navigation} = this.props;
-                var devices = this.props.devices
-                var matched_device = []
-
+            if(devices){// the scanner should found some devices at this moment, if not just keep looking 
                 
-
-                if(devices){// the scanner should found some devices at this moment, if not just keep looking 
+                var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
+                if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
+                
+                    //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
                     
-                    var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
-                    if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are central i.e hardware_type == 01 return true
-                    
-                        //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
+                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
+                
                         
-                        if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
-                    
-                            
-                            if(matched_devices.length > 0){
-                    
-                                var matched_device = matched_devices[0]
-                                dispatch({
-                                    type: "CENTRAL_DEVICE_MATCHED",
-                                    central_device: matched_device
-                                });
-
-                                this.goToPanelDevice(matched_device)
-                            }else{
-                            
-                                dispatch({
-                                    type: "CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE"
-                                })                        
-                            
-                            }
-                        }else{
-                            
+                        if(matched_devices.length > 0){
+                
+                            var matched_device = matched_devices[0]
                             dispatch({
-                                type : "IS_NOT_CENTRAL_DEVICE"
-                            })
+                                type: "CENTRAL_DEVICE_MATCHED",
+                                central_device: matched_device
+                            });
 
+                            this.props.stopScanning(matched_device)
+                        }else{
+                        
+                            dispatch({
+                                type: "CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE"
+                            })                        
+                        
                         }
                     }else{
                         
                         dispatch({
-                            type: "CENTRAL_DEVICE_NOT_MATCHED",
+                            type : "IS_NOT_CENTRAL_DEVICE"
                         })
 
                     }
-                }   
-                this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : photo_data })
-            }).catch(err => console.error(err));
+                }else{
+                    
+                    dispatch({
+                        type: "CENTRAL_DEVICE_NOT_MATCHED",
+                    })
+
+                }
+            }   
+            this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : null })
+            
         }       
     }
 
-    goToPanelDevice(device) {
-        var {
-            navigation,
-            dispatch
-        } = this.props;
-        
-
-        this.props.stopScanning()
-        //we need do this because if we don't unmount the Bridges interface the camera will keep turn on and this will make everting more so much slow
-        //and we wont can use this on deploy
-        const reset_stack = NavigationActions.reset({
-            index : 1,
-            actions : [
-                NavigationActions.navigate({routeName:"Main"}),
-                NavigationActions.navigate({routeName:"DeviceControlPanel",device : device,dispatch: dispatch,tryToConnect:true})
-            ]
-        })
-        this.props.navigation.dispatch(reset_stack)
-    }
 
     clearQr(){
         this.scanning = true
@@ -307,14 +296,12 @@ class ScanCentralUnits extends Component {
         return (
             <View>
                 <View>
-                    <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
-                </View> 
                 <View>
-                    <Image
-                      style={{width: width -20 , height: height-490}}
-                      source={{uri: photo_data.path}}
-                    >
-                    </Image>
+                    <View style={{margin:5,width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}></View>
+                </View> 
+                </View> 
+                <View style={{width: width -20 , height: height-490,backgroundColor:"white",alignItems:"center",justifyContent:"center"}}>
+                    <View style={{margin:5,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
                 </View>
                 <View style={{flexDirection:"row",height:40}}>
                     {button}
@@ -325,9 +312,9 @@ class ScanCentralUnits extends Component {
     
     getClearButton(){
         return (
-            <TouchableHighlight style={{backgroundColor: "red",flex:1,alignItems:"center",justifyContent:"center",borderRadius:10,marginTop:10,height:50}} onPress={() =>  this.clearQr()}>
+            <TouchableHighlight style={{backgroundColor: "green",flex:1,alignItems:"center",justifyContent:"center",borderRadius:10,marginTop:10,height:50}} onPress={() =>  this.clearQr()}>
                 <Text style={{color:"white"}}>
-                    Clear
+                    Scan Again
                 </Text>
             </TouchableHighlight>
         )
@@ -359,13 +346,72 @@ class ScanCentralUnits extends Component {
                 </View>
             </View>           
         )
+    }
 
+    getSearchingBox(){
+        return (
+            <View>
+                <View>
+                    <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>Searching</View>
+                </View>    
+                <View style={styles.preview}>
+                    <ActivityIndicator />
+                </View>
+                <View style={{flexDirection:"row",height:40}}>
+                    {button}
+                </View>                    
+            </View>
+        )
+    }
+
+    renderModal(){
+        return (
+            <Modal 
+                animationType={"slide"}
+                transparent={true}
+                visible={this.props.show_contacts_modal}
+                onRequestClose={() => null}
+
+            >
+                <View style={{backgroundColor: 'rgba(10,10,10,0.5)',flex:1,alignItems:"center",justifyContent:"center"}}>
+                    
+                    <View style={{backgroundColor:"white",width: width-80,height:300,alignSelf:'center',borderRadius:10,alignItems:"center"}}>
+                        <View style={{width:width-80,backgroundColor:option_blue,height:100,borderTopLeftRadius:10,borderTopRightRadius:10,alignItems:"center",justifyContent:"center"}}>
+                            {cameraIcon}
+                        </View>
+                        <View style={{marginHorizontal:20,marginVertical:15,height:100,alignItems:"center",justifyContent:"center"}}>
+                            <Text style={{fontSize:17}}>
+                                In order to Scan the Qr Code we need access to the camera and pictures. 
+                            </Text>
+                        </View>
+                        
+                        
+                        <TouchableHighlight 
+                            onPress={() => this.requestMultiplePermissions()} 
+                            style={{
+                                marginTop:10,
+                                borderTopWidth: 0.2,
+                                width:width,
+                                height: 60,
+                                alignItems:"center",
+                                justifyContent:"center",
+                                borderRadius: 10
+                            }}>
+                            <Text style={{color:option_blue}}>
+                                ACCEPT
+                            </Text>
+                        </TouchableHighlight>
+                    </View>
+                </View>
+            </Modal>
+        )
     }
 
     render() {
         var {
             central_device,
-            scanning_status
+            scanning_status,
+            show_permissions_modal
         } = this.props
 
         var clear_button = this.getClearButton()
@@ -373,39 +419,40 @@ class ScanCentralUnits extends Component {
 
         //console.log("scanning_status",scanning_status)
         
-        switch (scanning_status) {
-            case "no_device_found":
-                var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>
-            return this.renderCamera(message,clear_button)
-            case "device_scanned_not_matched":
-                var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>
-                return this.renderImage(message,clear_button)
-            case "device_scanned_and_matched":
-                var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
-                return this.renderCamera(message,confirm_buttons)
-            case "device_is_not_on_paring_mode":
-                var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not on pairing mode</Text>
-                 return this.renderCamera(message,confirm_buttons)
-            case "is_not_central_device":
-                var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a central device</Text>
-                return this.renderCamera(message,clear_button)
-            case "clean_camera":
-                return (<View><Text>Charging ... </Text></View>)
-            case "show_modal":
-                return this.getModal()
-            default:
-                return (
-                    <View style={{flex:1,alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
+        if(show_permissions_modal){
+            return this.renderModal()
+        }else{
+            console.log("scanning_status",scanning_status)
+            switch (scanning_status) {
+                case "no_device_found":
+                    var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>
+                return this.renderCamera(message,null)
+                case "device_scanned_not_matched":
+                    var message = (
                         <View>
-                            <Text style={{fontSize:30}}>
-                            Bluetooth Error
-                            </Text>
-                            <Text>
-                            Bluetooth is not turned off
-                            </Text>
+                            <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>
+                            <Text> Scan again to find the Sure-Fi Device </Text>
                         </View>
-                    </View>
-                )
+                    )
+                    return this.renderImage(message,clear_button)
+                case "device_scanned_and_matched":
+                    var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
+                    return this.renderCamera(message,confirm_buttons)
+                case "device_is_not_on_paring_mode":
+                    var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not on pairing mode</Text>
+                     return this.renderCamera(message,confirm_buttons)
+                case "is_not_central_device":
+                    var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a central device</Text>
+                    return this.renderCamera(message,clear_button)
+                case "clean_camera":
+                    return (<View><Text>Charging ... </Text></View>)
+                case "searching":
+                    return this.getSearchingBox()
+                case "show_modal":
+                    return this.getModal()
+                default:
+                   return <View style={{flex:1,alignItems:"center",justifyContent:"center"}}><ActivityIndicator/></View>
+            }
         }
     }
 }
@@ -418,7 +465,9 @@ const mapStateToProps = state => ({
     devices : state.pairReducer.devices,
     camera_status : state.scanCentralReducer.camera_status,
     scanner : state.pairReducer.scanner,
-    photo_data : state.scanCentralReducer.photo_data
+    photo_data : state.scanCentralReducer.photo_data,
+    show_permissions_modal : state.scanCentralReducer.show_permissions_modal
+
 })
 
 export default connect(mapStateToProps)(ScanCentralUnits);

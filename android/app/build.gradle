@@ -88,10 +88,10 @@ android {
 
     defaultConfig {
         applicationId "com.surefi"
-        minSdkVersion 18
+        minSdkVersion 21
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
@@ -134,6 +134,9 @@ android {
             }
         }
     }
+    dexOptions {
+        jumboMode true
+    }
 }
 
 repositories {
@@ -141,11 +144,13 @@ repositories {
 }
 
 dependencies {
+
     compile project(':react-native-vector-icons')
     compile project(':react-native-splash-screen')
     compile project(':react-native-fetch-blob')
     compile project(':react-native-camera')
     compile project(':react-native-ble-manager')
+    compile project(':react-native-ble-plx')
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile 'com.google.firebase:firebase-core:11.0.1'
     compile 'com.google.firebase:firebase-messaging:11.0.1'
@@ -153,6 +158,8 @@ dependencies {
     compile 'com.amazonaws:aws-android-sdk-s3:2.2.+'
     compile 'com.amazonaws:aws-android-sdk-ddb:2.2.+'
     compile 'no.nordicsemi.android:dfu:1.3.0'
+    //compile 'com.android.support:appcompat-v7:26.0.1'
+    //compile project(':RxAndroidBle')
 
 }
 

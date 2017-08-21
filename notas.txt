@@ -25,7 +25,7 @@ public class OurClass extends SimpleVieManager<OurType>
 since this is a extends from SimpleViewManager we must implemented the getName() method and createViewInstance(ThemedReactContext context)
 
 
-
+The user don't need allow push notifications, it is allowed by defaul
 
 -----------------+--------------------------redux-----------------+--------------------------
 the state, i mean the entire object is of the whole application is stored in an object tree within a single store. 
@@ -317,6 +317,13 @@ On Sure-Fi bridges you need put some kind of elevation on the menus.
 
 
 -------------------------------------------------------------------- Material Design ---------------------------------------------------------------------------------------
+
+
+device_push_token
+
+The MTU is 17 bytes
+
+
 
 
 

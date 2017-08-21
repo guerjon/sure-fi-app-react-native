@@ -18,13 +18,11 @@ import ScannedDevicesList from '../helpers/scanned_devices_list'
 import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
-import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
-import {
- 	SUREFI_SEC_SERVICE_UUID,
- 	SUREFI_SEC_HASH_UUID,
- 	ARRAY_BUFFER_TO_BASE64
- } from '../constants' 
+import BleManager from 'react-native-ble-manager';
+import BluetoothState from 'react-native-bluetooth-state';
 
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const bluetoothIcon = (<Icon name="bluetooth" size={30} color="black" />)
 const refreshIcon = (<Icon name="refresh" size={30} color="black"/>)
@@ -39,10 +37,22 @@ class Bridges extends Component{
 		headerTintColor: 'white',
 	}
 
-	constructor(props) {
-		super(props);
-		this.manager = new BleManager();
-	}
+
+	componentDidMount() {
+		BleManager.enableBluetooth()
+		  .then(() => {
+		    // Success code
+		    //console.log('The bluetooh is already enabled or the user confirm');
+				BleManager.start().then(() => {
+					this.searchDevices()
+		        });				
+
+		  })
+		  .catch((error) => {
+		    //console.log('The user refuse to enable bluetooth');
+		    Alert.alert("Bluetooth is need","In order to find the Sure-Fi device the bluetooth must be turn on.");
+		  });
+	}	
 
 	showHelpAlert(){
 		Alert.alert(
@@ -64,39 +74,40 @@ class Bridges extends Component{
 		}
 	}
 
-	stopScanning(device){
-		console.log("stopScanning()",device)
-		this.manager.stopDeviceScan();
-		const reset_stack = NavigationActions.reset({
-            index : 1,
-            actions : [
-                NavigationActions.navigate({routeName:"Main"}),
-                NavigationActions.navigate(
-                	{
-                		routeName:"DeviceControlPanel",
-                		device : device,
-                		dispatch: this.props.dispatch,
-                		device_status:"first_connection",
-                		fast_manager: this.manager
-                	})
-            ]
-        })
+	researchDevices(){
+		this.props.dispatch({type: "RESET_DEVICES"})
+		this.searchDevices()
+	}
 
-        this.props.navigation.dispatch(reset_stack)
+	searchDevices(){
+		console.log("searchDevices()")
+		BleManager.scan([], 10, true).then(() => {
+        })
+	}
+
+	stopScanning(){
+		BleManager.stopScan()
+		.then(response => {
+	        const resetActions = NavigationActions.reset({
+	            index: 1,
+	            actions : [
+	                NavigationActions.navigate({routeName: "Main"}),
+	                NavigationActions.navigate({routeName: "DeviceControlPanel"})
+	            ]
+	        })
+
+	        this.props.navigation.dispatch(resetActions)			
+		})
+		.catch(error => console.log("error",error))
 	}
 
 	render(){
 
-		/*
-			<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
-				{refreshIcon}
-			</TouchableHighlight>
-		*/
 		return(
 			<Background>
 				<View style={{flex:1,marginHorizontal:10}}>
 					<View style={{height:250,alignItems:"center",marginBottom:60}}>
-						<ScanCentralUnits navigation={this.props.navigation} stopScanning={(device)=> this.stopScanning(device)}/>
+						<ScanCentralUnits navigation={this.props.navigation} stopScanning={()=> this.stopScanning()}/>
 					</View>
 					<View style={{flexDirection:"row"}}>
 						<View style={{flex:1}}>
@@ -112,17 +123,18 @@ class Bridges extends Component{
 							<TouchableHighlight style={{marginLeft:25}} onPress={() => this.showOrHideDevicesList()}>
 								{bluetoothIcon}
 							</TouchableHighlight>
-
+							<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
+								{refreshIcon}
+							</TouchableHighlight>
 						</View>
 					</View>
 					 <ScrollView>
-						<ScannedDevicesList manager={this.manager}/>
+						<ScannedDevicesList />
 					</ScrollView>
 				</View>
 			</Background>
 
 		);
-		
 	}
 }
 

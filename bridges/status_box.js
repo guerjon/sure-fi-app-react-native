@@ -14,6 +14,7 @@ import {
 import {styles,first_color,width} from '../styles/index.js'
 import { connect } from 'react-redux';
 import BleManager from 'react-native-ble-manager'
+import { BleManager as FastBleManager } from 'react-native-ble-plx';
 import { 
 	LOADING,
 	IS_EMPTY,
@@ -88,8 +89,19 @@ class StatusBox extends Component{
 		)
 	}
 
+	tryDisconnect(id){
+		BleManager.disconnect()
+		.then(response => {
+			this.props.dispatch({
+				type : "DISCONNECT_CENTRAL_DEVICE"
+			})
+		}).catch(error => console.log("error",error))
+	}
+
 	disconnect(){
-		console.log(this.props.device.id)
+		console.log("this.props.device.id",this.props.device.id)
+		setInterval(this.props.tryDisconnect(this.props.device.id),300)
+
 		BleManager.disconnect(this.props.device.id)
 		.then(response => {
 			this.props.dispatch({
@@ -113,7 +125,7 @@ class StatusBox extends Component{
 					<View style={{flex:1}}>
 						<TouchableHighlight 
 							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-							onPress={()=> this.props.tryToConnect(this.props.device)}
+							onPress={()=> this.props.fastTryToConnect(this.props.device)}
 						>
 							<Text style={styles.bigGreenButtonText}>
 								Connect
@@ -170,7 +182,7 @@ class StatusBox extends Component{
 								<View style={{flex:1}}>
 									<TouchableHighlight 
 										style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-										onPress={() => this.disconnect()}
+										onPress={() => this.props.tryDiscconnect()}
 									>
 										<Text style={styles.bigGreenButtonText}>
 											Disconnect

@@ -161,6 +161,7 @@ export const READ_STATUS = id => {
 
 export const DISCONNECT = id => {
 	return new Promise((fulfill,reject) => {
+		console.log("la promesa se resolvera")
 		BleManager.disconnect(id)
 		.then(response => {
 			fulfill("Disconnected: " + id)
