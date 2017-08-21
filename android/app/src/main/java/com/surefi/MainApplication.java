@@ -8,6 +8,11 @@ import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 import com.polidea.reactnativeble.BlePackage;
+import com.oblador.vectoricons.VectorIconsPackage;
+import com.cboy.rn.splashscreen.SplashScreenReactPackage;
+import com.RNFetchBlob.RNFetchBlobPackage;
+import com.lwansbrough.RCTCamera.RCTCameraPackage;
+import it.innove.BleManagerPackage;
 
 import java.util.Arrays;
 import java.util.List;
