@@ -16,7 +16,8 @@ const initialState = {
   scanning_status: "",
   camera_status : "hidden",
   photo_data : {},
-  show_permissions_modal : false
+  show_permissions_modal : false,
+  show_serial_input : false
 }
 
 
@@ -118,6 +119,16 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         scanning_status : "no_device_found"
+      }
+    case "SHOW_SERIAL_INPUT" :
+      return {
+        ...state,
+        show_serial_input : true
+      }
+    case "HIDE_SERIAL_INPUT":
+      return {
+        ...state,
+        show_serial_input : false
       }
     default:
       return state

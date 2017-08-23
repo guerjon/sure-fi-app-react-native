@@ -22,7 +22,7 @@ import setupRemoteReducer from './setupRemoteReducer'
 import bridgeDetailsReducer from './bridgeDetailsReducer'
 import registerReducer from './registerReducer'
 import mainScreenReducer from './mainScreenReducer'
-
+import loginReducer from './loginReducer'
 
 
 const rootReducer = combineReducers({
@@ -46,7 +46,8 @@ const rootReducer = combineReducers({
     registerReducer,
     mainScreenReducer,
     bluetoothFirmwareUpdateReducer,
-    batteryLevelReducer
+    batteryLevelReducer,
+    loginReducer
 })
 
 export default rootReducer

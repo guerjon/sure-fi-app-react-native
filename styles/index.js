@@ -37,7 +37,7 @@ export  const styles = StyleSheet.create({
   		width: width,
   		height: 150,
   		alignItems:"center",
-  		top:-930
+  		top:-910
   	},
   	welcome: {
 		fontSize: 20,
@@ -124,6 +124,9 @@ export  const styles = StyleSheet.create({
     },
     title:{
       fontSize: 18,
+    },
+    miniTitle:{
+      fontSize: 14
     },
     bigTitle:{
       fontSize: 22

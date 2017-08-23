@@ -41,43 +41,7 @@ class ScannedDevicesList extends Component {
     constructor(props) {
     	super(props);
         this.manager = this.props.manager;
-        
-        this.devices = []
-    }
-    
-    componentWillMount() {
-        this.scanDevices()    
-    }
-
-    scanDevices(){
-        console.log("scanDevices()")
-        var devices = this.props.devices
-        this.manager.startDeviceScan(null,null,(error,device) => {
-            if(error){
-                return
-            }
-
-            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                if (!FIND_ID(devices, device.id)) {       
-                    var data = this.getManufacturedData(device)
-                    devices.push(data)
-                    this.devices = devices
-                    this.remote_devices = this.filterRemoteDevices(devices)
-                    this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
-                }                
-            }
-        })
-    }
-
-    getManufacturedData(device) {
-        if (device) {
-            device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA.substring(14), device.id);
-            delete device.manufacturerData
-            delete device.CORRECT_DATA;
-        }else{
-          console.log("error on getManufacturedData device is null or 0")
-        }
-        return device;
+        this.devices =  this.props.devices
     }
 
 	renderDevice(device){
@@ -104,12 +68,7 @@ class ScannedDevicesList extends Component {
     	)
     }
 
-    filterRemoteDevices(devices){
-    	let remote_revices = devices.filter(device => {
-    		return device.manufactured_data.hardware_type == "02"
-    	})
-    	return remote_revices
-    }
+
 
     render() {
         var {

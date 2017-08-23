@@ -27,6 +27,7 @@ import Deploy from './bridges/deploy'
 import BridgeDetails from './bridges/bridge_details'
 import Register from './bridges/register'
 import RadioConfiguration from './bridges/radio/index'
+import Login from './login'
 
 const mapStateToProps = state => ({
   nav: state.nav,
@@ -34,9 +35,12 @@ const mapStateToProps = state => ({
 
 export const AppNavigator = StackNavigator({
 	Main: {screen: MainScreen,headerMode: 'screen'},
+	DeviceControlPanel : {screen : DeviceControlPanel},
+
+	
 	Bridges: {screen: Bridges},
 	
-	DeviceControlPanel : {screen : DeviceControlPanel},
+	
 	
 	ForcePair : {screen : ForcePair},
 	FirmwareUpdate : {screen : FirmwareUpdate},
@@ -61,7 +65,8 @@ export const AppNavigator = StackNavigator({
 	
 	SetupCentralExamples : {screen : SetupCentralExamples},
 	Register : {screen : Register},
-	BatteryLevel : {screen : BatteryLevel}
+	BatteryLevel : {screen : BatteryLevel},
+	Login : {screen : Login}
 	
 });
 

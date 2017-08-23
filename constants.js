@@ -8,6 +8,8 @@ export const UNPAIR_LINK = BASE_URL + "systems/unpair_bridge_system"
 export const DEVICE_REGISTRATION_LINK = BASE_URL + "sessions/check_device_registration"
 export const DEVICE_REGISTRATE_LINK = BASE_URL + "sessions/register_device"
 export const CHECK_USER_EXITS = BASE_URL + "users/check_exists"
+export const USER_LOGIN = BASE_URL + "users/login"
+export const SESSION_START = BASE_URL + "sessions/start"
 export const FINISH_USER_REGISTRATION = BASE_URL + "sessions/confirm_device_registration"
 export const PUSH_CLOUD_STATUS_ROUTE = BASE_URL + "hardware/update_status"
 export const GET_STATUS_CLOUD_ROUTE = BASE_URL + "hardware/get_status"
@@ -444,4 +446,14 @@ export const PRETY_VERSION = version => {
 		return ""
 	}
 
+}
+
+export const MAKE_ID = () => {
+  var text = "";
+  var possible = "abcdef01234567890";
+
+  for (var i = 0; i < 12; i++)
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+  return text;
 }

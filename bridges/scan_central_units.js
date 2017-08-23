@@ -36,13 +36,12 @@ import {
     height,
     option_blue
 } from '../styles/index'
-import Camera from 'react-native-camera';
 import { NavigationActions } from 'react-navigation'
-//import {IS_CONNECTED} from '../action_creators'
-const RTCamera = NativeModules.RCTCameraModule
-//const Permissions = require('react-native-permissions')
 import Icon from 'react-native-vector-icons/FontAwesome';
+import Camera from 'react-native-camera';
+const RTCamera = NativeModules.RCTCameraModule
 const cameraIcon = (<Icon name="camera" size={40} color="white" />)
+import BleManager from 'react-native-ble-manager'
 
 var md5 = require('md5');
 //md5 = require('js-md5');
@@ -51,10 +50,25 @@ class ScanCentralUnits extends Component {
 
     constructor(props) {
         super(props);
+        this.scan_result = props.scanResult
+        this.manager = props.manager
+    }
+
+    componentDidMount() {
+        var {
+            dispatch
+        } = this.props;
+        dispatch({ 
+            type: "RESET_CENTRAL_REDUCER"
+        })
+        dispatch({type :"SHOW_CAMERA"})
+        this.checkMultiplePermissions()
+        this.scanning = true
+        this.scan_result = this.props.scan_result
     }
 
     checkMultiplePermissions(){
-        console.log("checkMultiplePermissions()")
+        //console.log("checkMultiplePermissions()")
         let permissions = PermissionsAndroid.PERMISSIONS
         var { dispatch } = this.props;
 
@@ -67,10 +81,7 @@ class ScanCentralUnits extends Component {
                         PermissionsAndroid.check('android.permission.CAMERA')
                         .then(response => {
                             if(response){ 
-                                
-                                this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
-                                this.props.dispatch({type: "NO_DEVICE_FOUND"})
-
+                                this.continueToBluetoothState()
                             }else{
                                 this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
                             }
@@ -103,19 +114,35 @@ class ScanCentralUnits extends Component {
                 (response['android.permission.ACCESS_COARSE_LOCATION']  == "granted") && 
                 (response['android.permission.CAMERA'] == "granted")
             ){
-                this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
-                this.props.dispatch({type: "NO_DEVICE_FOUND"})
+                this.continueToBluetoothState()
             }else{
                 this.props.dispatch({type: "SHOW_ACCEPT_PERMITIONS_MODAL"})
             }
         })
     }
 
+    continueToBluetoothState(){
+        this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
+        this.props.dispatch({type: "NO_DEVICE_FOUND"})
+        BleManager.enableBluetooth()
+          .then((response) => {
+            // Success code 
+            this.props.startScanning()
+            console.log(response,'The bluetooh is already enabled or the user confirm');
+
+          })
+          .catch((error) => {
+            // Failure code 
+            Alert.alert("You need turn on the bluetooth to connect the Sure-Fi Bridge.")
+            
+          });        
+    }
+
     requireCameraPermission(response){
-        console.log("requireCameraPermission()",response)
+        //console.log("requireCameraPermission()",response)
         Permissions.request('camera')
         .then(response => {
-            console.log("second_response",response)
+            //console.log("second_response",response)
             if(response == "denied"){
                 this.showCameraAlert(response)
             }else if (response == "restricted"){
@@ -184,24 +211,16 @@ class ScanCentralUnits extends Component {
         Alert.alert("Upps!","Looks like you has chosen the don't show anymore option, to activate the storage permissions you should do it since configuration.")
     }
 
-    componentDidMount() {
-        var {
-            dispatch
-        } = this.props;
-        dispatch({ 
-            type: "RESET_CENTRAL_REDUCER"
-        })
-        dispatch({type :"SHOW_CAMERA"})
-        this.checkMultiplePermissions()
-        this.scanning = true
-    }
+
 
     onSuccess(scan_result) {
 
         if(this.scanning){
             this.scanning = false;          
-            var device_id = scan_result.data;
+            var device_id = scan_result.data.substr(-6);
+            
             this.scan_result_id = device_id
+            
             var { dispatch,navigation} = this.props;
             var devices = this.props.devices
             var matched_device = []
@@ -262,28 +281,31 @@ class ScanCentralUnits extends Component {
     }
 
     renderCamera(message,button) {
+        if(this.props.id_input)
+            message = this.props.id_input
+
         if(this.props.camera_status == "showed")
-        return(
-            <View>
+            return(
                 <View>
-                    <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
-                </View>    
-                <View>
-                    <Camera
-                        style={styles.preview}
-                        aspect={Camera.constants.Aspect.fill}
-                        ref={(cam) => {
-                            this.camera = cam;
-                        }}
-                        onBarCodeRead={(e) => this.onSuccess(e)}
-                    >
-                    </Camera>
+                    <View>
+                        <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
+                    </View>    
+                    <View>
+                        <Camera
+                            style={styles.preview}
+                            aspect={Camera.constants.Aspect.fill}
+                            ref={(cam) => {
+                                this.camera = cam;
+                            }}
+                            onBarCodeRead={(e) => this.onSuccess(e)}
+                        >
+                        </Camera>
+                    </View>
+                    <View style={{flexDirection:"row",height:40}}>
+                        {button}
+                    </View>                    
                 </View>
-                <View style={{flexDirection:"row",height:40}}>
-                    {button}
-                </View>                    
-            </View>
-        )
+            )
         
         return null
     }
@@ -416,13 +438,14 @@ class ScanCentralUnits extends Component {
 
         var clear_button = this.getClearButton()
         var confirm_buttons = this.getConfirmButtons()
+        let scan_result = this.props.scanResult ? this.props.scanResult : this.scan_result_id
 
         //console.log("scanning_status",scanning_status)
         
         if(show_permissions_modal){
             return this.renderModal()
         }else{
-            console.log("scanning_status",scanning_status)
+            
             switch (scanning_status) {
                 case "no_device_found":
                     var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>
@@ -430,7 +453,7 @@ class ScanCentralUnits extends Component {
                 case "device_scanned_not_matched":
                     var message = (
                         <View>
-                            <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"})</Text>
+                            <Text style={{fontSize:16, color:"red"}}>Device not found ({scan_result ? scan_result : "ID UNDEFINED"})</Text>
                             <Text> Scan again to find the Sure-Fi Device </Text>
                         </View>
                     )
@@ -439,10 +462,10 @@ class ScanCentralUnits extends Component {
                     var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
                     return this.renderCamera(message,confirm_buttons)
                 case "device_is_not_on_paring_mode":
-                    var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not on pairing mode</Text>
+                    var message = <Text style={{fontSize:16, color:"red"}}>Device ({scan_result ? scan_result: "ID UNDEFINED"}) is not on pairing mode</Text>
                      return this.renderCamera(message,confirm_buttons)
                 case "is_not_central_device":
-                    var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a central device</Text>
+                    var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({scan_result ? scan_result : "ID UNDEFINED"}) is not a central device</Text>
                     return this.renderCamera(message,clear_button)
                 case "clean_camera":
                     return (<View><Text>Charging ... </Text></View>)

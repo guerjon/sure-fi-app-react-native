@@ -181,23 +181,27 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void openSmsBox(Callback callback){
-        Log.d("MABY","MAYBE");
+
         Intent sendIntent = new Intent(Intent.ACTION_VIEW);
         sendIntent.setData(Uri.parse("sms:"));
         sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
         String token = service.getToken();
-        Log.d("BEFORE",token);
+
         String token_encode = Base64.encodeToString(token.getBytes(),Base64.DEFAULT);
-        Log.d("BEFORE",token_encode);
+
         DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
         UUID uuid = device_uuid.getDeviceUuid();
+        //sendIntent.addCategory(Intent.CATEGORY_DEFAULT);
 
-        sendIntent.putExtra("address", "14804007873");
-        sendIntent.putExtra("sms_body", "Please send the following Registration Code to SureFi: {" + uuid.toString() + "}");
-        sendIntent.putExtra("exit_on_sent", true);
-        //sendIntent.setType("vnd.android-dir/mms-sms");
-        context.startActivity(sendIntent);
+        Intent smsIntent = new Intent(Intent.ACTION_SENDTO);
+        smsIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        smsIntent.setType("vnd.android-dir/mms-sms");
+        smsIntent.setData(Uri.parse("sms:" + "14804007873"));
+        smsIntent.putExtra("sms_body", "Please send the following Registration Code to SureFi: {" + uuid.toString() + "}"); //Replace the message witha a vairable
+        smsIntent.putExtra("exit_on_sent",true);
+
+        context.startActivity(smsIntent);
     }
 
 

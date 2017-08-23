@@ -225,11 +225,11 @@ class Register extends Component{
 				</Text>
 				<View>
 					<View style={{flexDirection:"row"}}>
-						<View style={{width:width-300,height:40,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
-							<View style={{alignItems:"center",justifyContent:"center",height:50,width:width-300}}>
+						<View style={{width:80,height:40,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
+							<View style={{alignItems:"center",justifyContent:"center",height:50,width:80}}>
 								<TextInput 
 									maxLength={4}
-									style={{flex:1,justifyContent:"center",fontSize:25,width:width-340}} 
+									style={{flex:1,justifyContent:"center",fontSize:25,width:80}} 
 									keyboardType="numeric" 
 									underlineColorAndroid="transparent" 
 									onChangeText={(t) => this.handleNumberChange(t)}
@@ -262,7 +262,6 @@ class Register extends Component{
 	renderEmailBox(){
 		return (
 			<View>
-				
 				<Text style={{color:"white",marginVertical:10,fontSize:16}}>
 					Step 4 - Enter your Email
 				</Text>
@@ -397,8 +396,7 @@ class Register extends Component{
 					{(register_status  == 1 || register_status > 1) && this.renderStep2()} 
 					{(register_status  == 2 || register_status > 2) && this.renderStep3()} 	
 					{(register_status  == 4 || register_status > 4) && this.renderEmailBox()}
-					{(register_status  == 3 || register_status > 3) && this.renderButtonActivate()} 	
-					
+					{(register_status  == 3 || register_status > 3) && this.renderButtonActivate()}
 				</View>
 				<View>
 					{this.renderModal()}

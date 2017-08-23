@@ -123,6 +123,7 @@ class SetupCentral extends Component{
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 		if(device_status == "first_connection"){
 				this.device = props.navigation.state.device
+				console.log("this.device.manufactured_data",this.device.manufactured_data)
 				this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
 				this.fastTryToConnect(this.device)
 		}else{
@@ -144,6 +145,7 @@ class SetupCentral extends Component{
 					}else{
 				
 						this.device = props.navigation.state.device
+						console.log("this.device.manufactured_data",this.device.manufactured_data)
 						this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
 						this.tryToConnect(this.device)					
 					}
@@ -308,6 +310,7 @@ class SetupCentral extends Component{
 
 	getCloudStatus(device){
 		console.log("getCloudStatus()")
+		console.log("this.device.manufactured_data",this.device.manufactured_data)
 		let hardware_serial = device.manufactured_data.device_id.toUpperCase()
 		let status_data = {
 			method : "POST",
@@ -371,6 +374,7 @@ class SetupCentral extends Component{
     	console.log("pushStatusToCloud()",current_status)
     	console.log("pushStatusToCloud()",current_status_on_cloud)
     	console.log("pushStatusToCloud()",expected_status_on_cloud)*/
+    	console.log("this.device.manufactured_data",device.manufactured_data)
 		let rx = device.manufactured_data.device_id
 		let tx = device.manufactured_data.tx //tx is always right because when we write on the device we always change the local tx on the device
 		let device_id = device.manufactured_data.device_id
@@ -421,7 +425,6 @@ class SetupCentral extends Component{
 	    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
 	  }).join('')
 	}
-
 
 	handleCharacteristicNotification(data){
 		console.log("handleCharacteristicNotification")
@@ -550,14 +553,11 @@ class SetupCentral extends Component{
 	}
 
 	renderInfo(){
-
-		if(this.props.central_device_status == "connecting")
-			return null
-
-		if(this.props.central_device_status == "connected" && this.props.power_voltage){
-
-			return (
-				<View style={{alignItems:"center"}}>
+		if(this.props.user_type != "admin")
+			var admin_values = null
+		else
+			var admin_values = (
+				<View>
 					<View>
 						<Text style={styles.device_control_title}>
 							CURRENT VERSION
@@ -574,6 +574,17 @@ class SetupCentral extends Component{
 						<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
 						<WhiteRow name="Power" value ={this.props.power}/>
 					</View>
+				</View>
+			)
+
+		if(this.props.central_device_status == "connecting")
+			return null
+
+		if(this.props.central_device_status == "connected" && this.props.power_voltage){
+
+			return (
+				<View style={{alignItems:"center"}}>
+					{admin_values}
 					<View>
 						<Text style={styles.device_control_title}>
 							CURRENT POWER VALUES
@@ -645,9 +656,11 @@ class SetupCentral extends Component{
 	}
 
 	goToPair(){
-		if((this.props.battery_voltage > 7) && (this.props.battery_voltage < 11)){
+		console.log("this.props.power_voltage",this.props.power_voltage)
+		if(this.props.power_voltage < 11){
+		//if(true){
 			this.handleCharacteristic.remove()
-			this.props.navigation.navigate("PairBridge",{device: this.device})			
+			this.props.navigation.navigate("PairBridge",{device: this.device,fast_manager:this.fast_manager})			
 		}else{
 			this.props.dispatch({type:"SHOW_MODAL"})
 		}
@@ -758,7 +771,6 @@ class SetupCentral extends Component{
 				</ScrollView>
 			</Background>
 		)
-		
 	}
 }
 
@@ -769,7 +781,6 @@ const mapStateToProps = state => ({
 	central_unit_description : state.setupCentralReducer.central_unit_description,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
 	device: state.scanCentralReducer.central_device,
-
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,

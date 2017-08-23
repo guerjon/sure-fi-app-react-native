@@ -27,6 +27,16 @@ since this is a extends from SimpleViewManager we must implemented the getName()
 
 The user don't need allow push notifications, it is allowed by defaul
 
+
+***Threads***
+
+On android when starts the first activity, automaticly the first thread is created, this thread is the handler of the user interface.
+
+Algo que queremos recordar es que para hacer procesos que no requieren de la interfaz,  siempre es bueno ponerlos en otro thread y no user el thread principal
+ademas no queremos nunca que otros threads cambien directamente aspectos de la interfaz directamente
+
+
+
 -----------------+--------------------------redux-----------------+--------------------------
 the state, i mean the entire object is of the whole application is stored in an object tree within a single store. 
 
@@ -271,6 +281,26 @@ public class SingletonClass {
 }
 
 
+Observer
+
+El patron observer es un patron de dise~no que define una dependencia del tipo uno a muchos, cuando uno de los objetos cambia su estado notifica a todos los dependientes.
+En principio el Sujeto que es quien da los cambios tiene que conocer a todos sus observadores, cuando este hace un cambio, los observadores deben de ser notificados.
+El observador debe de tener un metodo el cual implementa del Sujeto con el cual se le notificaran los cambios de estado.
+
+
+Iterator
+
+El patron iterador define una interfaz la cual puede ser implementada para recorrer una esctructura de datos sin conocer su implementacion interna. 
+Este patron no tiene por que solo limitarse a recorrer la estructura, tambi'en se pueden aplicar filtros y anadir otras funcionalidades.
+
+Los principales metodos en la interfaz que habria que implementar son
+first()
+next()
+currentElement()
+next? ()
+
+
+
 -------------------------------------------------------------------- PUSH NOTIFICATIONS ---------------------------------------------------------------------------------------
 
 Cuando registramos un celular en el servicio, este devuelve un token para el celular, este token lo usa amazon sns para para crear un mobile endpoint, este mobile endpoint nos sirve para enviar directamente las notificaciones es decir amazon envia las notificaciones a este endpoint
@@ -317,14 +347,4 @@ On Sure-Fi bridges you need put some kind of elevation on the menus.
 
 
 -------------------------------------------------------------------- Material Design ---------------------------------------------------------------------------------------
-
-
-device_push_token
-
-The MTU is 17 bytes
-
-
-
-
-
 

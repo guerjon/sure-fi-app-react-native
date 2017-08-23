@@ -208,20 +208,23 @@ class Options extends Component{
     }
 
     getConfigureRadioOption(){
-    	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
-				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
+    	if(this.props.user_type == "admin")
+	    	return (
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
+					<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Configure Radio
+							</Text>
+						</View>
 					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Configure Radio
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>	
-    	)
+				</TouchableHighlight>	
+	    	)
+	   	else
+	   		return null
     }
 
     getDeployCentralUnitOption(){

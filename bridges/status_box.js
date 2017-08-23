@@ -181,7 +181,7 @@ class StatusBox extends Component{
 								</View>
 								<View style={{flex:1}}>
 									<TouchableHighlight 
-										style={{backgroundColor:"red",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+										style={{backgroundColor:"gray",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
 										onPress={() => this.props.tryDiscconnect()}
 									>
 										<Text style={styles.bigGreenButtonText}>
@@ -294,14 +294,10 @@ class StatusBox extends Component{
 					</Image>
 					</View>
 					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.5}}>
-						<Text style={{fontSize:22}}>
+						<Text style={{fontSize:18}}>
 							{this.device_name}
 						</Text>
-						
-						<Text>
-							{device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
-						</Text>
-						 <Text style={{fontSize:18}}>
+						 <Text style={{fontSize:14}}>
 							{this.props.device.manufactured_data.hardware_type == "01" ? "Central Unit" : "Remote Unit" } {this.props.device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
 						</Text>
 					</View>
@@ -335,7 +331,7 @@ class StatusBox extends Component{
                 <ScrollView style={styles.pairContainer}>
 						<View style={styles.pairSectionsContainer}>
 							<View style={styles.titleContainer}>
-								<Text style={styles.title}>
+								<Text style={styles.miniTitle}>
 									Central Unit
 								</Text>
 							</View>

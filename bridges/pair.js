@@ -41,15 +41,17 @@ class PairBridge extends Component{
 		headerTintColor: 'white',
 	}	
 
-	componentWillMount() {
-		this.central_device = this.props.navigation.state.params.device
+	constructor(props) {
+		super(props);
+		this.fast_manager = props.navigation.state.params.fast_manager
+		this.central_device = props.navigation.state.params.device
 	}
 
 	componentDidMount() {
 		this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
 	}
 
-    showAlertConfirmation(scanner){
+    showAlertConfirmation(){
     	
     	let central_id = this.central_device.manufactured_data == "01" ? this.props.remote_device.manufactured_data.device_id :  this.central_device.manufactured_data.device_id 
     	let remote_id = this.central_device.manufactured_data == "02" ? this.central_device.manufactured_data.device_id : this.props.remote_device.manufactured_data.device_id
@@ -60,7 +62,7 @@ class PairBridge extends Component{
     		[
     		 	
     		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
-    		 	{text : "PAIR", onPress: () => this.pair(scanner) },
+    		 	{text : "PAIR", onPress: () => this.pair() },
     		]
     	)	
     }
@@ -95,16 +97,18 @@ class PairBridge extends Component{
     	
     }
 
-    pair(scanner){
-    	if(scanner){
-    		clearInterval(scanner)
-    	}
-		BleManager.stopScan()
-		  	.then(() => {
-		    // Success code 
-		    console.log('Scan stopped');
-		  });
+    componentWillUnmount() {
+    	this.stopScanning()
+    }
 
+	stopScanning(){
+		console.log("stopScanning()")
+		this.fast_manager.stopDeviceScan();
+		//this.pair()
+	}
+
+    pair(){
+    	this.fast_manager.stopDeviceScan();
 		var {remote_device,dispatch} = this.props
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
@@ -143,7 +147,12 @@ class PairBridge extends Component{
 		if(IS_EMPTY(remote_device))
 			var remote_content = (
 				<View style={{flexDirection: "row"}}>
-					<ScanRemoteUnits navigation={this.props.navigation} showAlertConfirmation={(scanner) => this.showAlertConfirmation(scanner)} current_device={current_device}/>
+					<ScanRemoteUnits 
+						navigation={this.props.navigation} 
+						showAlertConfirmation={() => this.showAlertConfirmation()} 
+						current_device={current_device}
+						fast_manager = {this.fast_manager}
+					/>
 					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 						<Text >
 							{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 

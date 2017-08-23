@@ -49,16 +49,18 @@ class ScanRemoteUnits extends Component {
     constructor(props) {
         super(props);
         this.devices = []
-        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
+        this.fast_manager = props.fast_manager
+        //bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
         this.current_device = this.props.current_device // this device was matched could be a central or a remote one
-        this.searchDevices()
+        //this.searchDevices()
+        this.scanDevices()
     }
 
     componentDidMount() {
         this.props.dispatch({type: "SHOW_REMOTE_CAMERA"})
     }
 
-    handleDiscoverPeripheral(data) {
+    /*handleDiscoverPeripheral(data) {
       
       var devices = this.devices;
 
@@ -72,26 +74,50 @@ class ScanRemoteUnits extends Component {
 
             }
         }
-    }
+    }*/
 
     getManufacturedData(device) {
         if (device) {
-            device.manufactured_data = constants.DIVIDE_MANUFACTURED_DATA(device.new_representation, device.id);
-            delete device.manufacturerData;
+            device.manufactured_data = constants.DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA.substring(14), device.id);
+            delete device.manufacturerData
+            delete device.CORRECT_DATA;
         }else{
           console.log("error on getManufacturedData device is null or 0")
         }
         return device;
     }
 
+    scanDevices(){
+        console.log("scanRemoteDevices()")
+        var devices = this.devices
+        this.fast_manager.startDeviceScan(null,null,(error,device) => {
+            if(error){
+                return
+            }
+
+            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+                
+                if (!constants.FIND_ID(devices, device.id)) {       
+                    var data = this.getManufacturedData(device)
+                    console.log("devices",data)
+                    devices.push(data)
+                    this.devices = devices
+                }                
+            }
+        })
+    }
+
+    /*   
     searchDevices(){
+
         BleManager.scan([], 600, true).then(() => {
             console.log('handleScan()');
         })
     }
+    */
 
     onSuccess(scan_result) {
-        Vibration.vibrate()
+        //Vibration.vibrate()
         var device_id = scan_result.data;
         this.scan_result_id = device_id
         var {
@@ -119,8 +145,7 @@ class ScanRemoteUnits extends Component {
                                 type: "REMOTE_DEVICE_MATCHED",
                                 remote_device: device
                             });
-                            console.log("this.scanning",this.scanning)
-                            this.props.showAlertConfirmation(this.scanning)
+                            this.props.showAlertConfirmation()
                             
                         }else{
                            Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    
@@ -142,7 +167,7 @@ class ScanRemoteUnits extends Component {
                                 remote_device: device
                             });
                             console.log("this.scanning",this.scanning)
-                            this.props.showAlertConfirmation(this.scanning)
+                            this.props.showAlertConfirmation()
                             
                         }else{
                            Alert.alert("Pairing Error","Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.");                    

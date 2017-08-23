@@ -16,7 +16,10 @@ import {
 
 import {
 	DEVICE_REGISTRATION_LINK,
-	DEVICE_REGISTRATE_LINK
+	DEVICE_REGISTRATE_LINK,
+	SESSION_START,
+	MAKE_ID,
+	GET_HEADERS
 } from './constants'
 import { StackNavigator } from 'react-navigation';
 import Coverflow from 'react-native-coverflow'
@@ -31,6 +34,8 @@ import Register from './bridges/register'
 const PushNotification = NativeModules.PushNotification
 const {width,height} = Dimensions.get("window")
 const Permissions = require('react-native-permissions')
+import Icon from 'react-native-vector-icons/FontAwesome';
+
 const image_styles = {
   container: {
     flex: 1,
@@ -94,16 +99,44 @@ class MainScreen extends Component {
 
   	componentWillMount() {
   		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
+  		this.getSessionKey()
   		this.checkRegister()
   	}
 
+  	getSessionKey(){
+  		let random_string = MAKE_ID()
+  		
+  		let body = JSON.stringify({
+  			random_string : random_string,
+  		})
+			let headers = 
+				{
+				    'Accept': 'application/json',
+				    'Content-Type': 'application/json',				
+				}
+
+  		fetch(SESSION_START,{
+  			method: "POST",
+  			headers: headers,
+  			body : body
+  		}).then(response => {
+  			var data = JSON.parse(response._bodyText) 
+  			
+  			if(data.status == "success"){
+  				this.session_key = data.data.session_key
+  			}else{
+  				Alert.alert("Error","Error connecting with the server.")
+  			}
+  		}).catch(error => Alert.alert("Error",error))
+
+  	}
+
   	sendPushNotification(){
-  		console.log("sendPushNotification()")
+  		//console.log("sendPushNotification()")
   		Permissions.checkMultiple(['contacts','phone_state','read_sms'])
   		.then(response => {
   			if((response.phone_state == "authorized") && (response.read_sms == "authorized")){
 				PushNotification.getBuildInfo(data => { //data is a json change on production
-					console.log("data",data)
 		  			this.sendInformation(data)
 		  		})  		  				
   			}else{
@@ -153,7 +186,7 @@ class MainScreen extends Component {
 				},  			
 	  			body: body	  			
 	  		}).then(data => {
-	  			console.log("data",data)
+	  			
 	  			var response = JSON.parse(data._bodyText)
 
 	  			if(response.status == "success"){
@@ -174,64 +207,6 @@ class MainScreen extends Component {
   		})
   	}
 
-  /*	sendInformation(info){
-  		console.log("sendInformation",info)
-  		var {dispatch} = this.props
-  		var device_details = info.model + "-" + info.android_version + "-" + info.language + "-" + info.country + "-" + info.app_version
-
-  		var body = JSON.stringify({
-  				"device_push_token" : info.token,
-  				"device_uuid" : info.device_id,
-  				"device_type" : "ANDROID",
-  				"device_title" : info.device_title,
-  				"device_details" : device_details,
-  		})
-		  	//device_uuid
-			//device_push_token
-
-  		console.log("body",body)
-  		fetch(DEVICE_REGISTRATION_LINK,{
-  			method: "POST",
-			headers: {
-			    'Accept': 'application/json',
-			    'Content-Type': 'application/json',				
-			},  			
-  			body: body
-  		}).then(data => {
-  			console.log("data",data)
-  			if(data.status == 200){
-
-  				var response = JSON.parse(data._bodyText)
-  				console.log("response on MainScreen",response)
-  				if(response.status == "success"){
-  					let data = response.data
-  					if(data.registered){
-  					//if(true){
-  						dispatch({type : "SHOW_MAIN_SCREEN"})
-  					}else{
-						fetch(DEVICE_REGISTRATE_LINK,{
-							method: "POST",
-							headers: {
-							    'Accept': 'application/json',
-							    'Content-Type': 'application/json',				
-							},  			
-				  			body: body
-						}).then(response => {
-							console.log("2",response)
-							this.props.dispatch({type:"SHOW_REGISTER_SCREEN",info : info})
-							//this.props.navigation.dispatch(goRegister)
-						}).catch(error => Alert.alert("Error",error))
-  					}
-  				}else{
-  					Alert.alert("Error","Server Response Error")
-  				}
-
-  			}else{
-  				Alert.alert("Error","Server error")
-  			}
-  		}).catch(e => console.log(e))
-  	}
-*/
 	openSureFiPage(url){
 		Linking.canOpenURL(url).then(supported => {
 			if (!supported) {
@@ -246,6 +221,9 @@ class MainScreen extends Component {
 		this.props.dispatch({type: "SHOW_REGISTER_SCREEN"})
 	}
 
+	navigateToLogin(){
+		this.props.navigation.navigate("Login",{session_key: this.session_key})
+	}
 
 	static navigationOptions = { title: 'Welcome', header: null };
   
@@ -277,15 +255,24 @@ class MainScreen extends Component {
 
 	renderMainScreen(){
 		const { navigate } = this.props.navigation;
-
 		return (
 			<Background>
 		  		<View style={styles.container}>
 			  			<View style={styles.circleContainer}>
 				  			<View style={styles.launchImage}>
-				  				<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:width-200,height:50,top:-15}}/>
+				  				<View style={{flexDirection:"row",alignItems:"flex-start",justifyContent:"flex-start"}}>
+					  				<View style={{alignItems:"center"}}>
+					  					<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:250,height:50,top:-30}}/>
+					  				</View>
+					  				<View style={{alignItems:"flex-end",right:-30}}>
+										<TouchableHighlight style={{top:-20}} onPress={() =>  this.navigateToLogin()}>
+											<Icon name="sign-in" size={30} color="white" />
+										</TouchableHighlight>
+					  				</View>
+				  				</View>
 				  			</View>
 			  			</View>
+
 			  			<Coverflow 
 			  				onChange={(index) => null} 
 			  				style={styles.coverflow}
@@ -367,6 +354,7 @@ class MainScreen extends Component {
   	render() {
   		
   		var {screen_status} = this.props
+  		//return this.renderMainScreen()
   		switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()
