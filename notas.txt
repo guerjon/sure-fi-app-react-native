@@ -33,7 +33,12 @@ The user don't need allow push notifications, it is allowed by defaul
 On android when starts the first activity, automaticly the first thread is created, this thread is the handler of the user interface.
 
 Algo que queremos recordar es que para hacer procesos que no requieren de la interfaz,  siempre es bueno ponerlos en otro thread y no user el thread principal
-ademas no queremos nunca que otros threads cambien directamente aspectos de la interfaz directamente
+ademas no queremos nunca que otros threads cambien directamente aspectos de la interfaz directamente ya que el Android Ui Toolkit no es thread-no-safe y trabajar en un entorno
+thread-no-safe con multiples thread siempre ira a un comportamiento impredecible.
+
+
+Procesos
+En android cuando una nueva aplicacion se habre se crea un nuevo proceso, en este procesos tambien se crea el thread principal, a este proceso podemos anadir diferentes threads
 
 
 

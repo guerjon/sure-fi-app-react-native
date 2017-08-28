@@ -11,7 +11,9 @@ import {
   	NativeEventEmitter,
   	Alert,
   	PermissionsAndroid,
-  	Animated
+  	Animated,
+  	TouchableWithoutFeedback,
+  	TouchableNativeFeedback
 } from 'react-native';
 
 import {
@@ -282,10 +284,10 @@ class MainScreen extends Component {
 			  			>
 							<View style={styles.textViewContainer}>
 								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableHighlight onPress={() => navigate("Bridges")} >
+									<TouchableNativeFeedback onPress={() => navigate("Bridges")} >
 										<Image source={require('./images/menu_bridge.imageset/menu_bridge.png')}>
 										</Image>
-									</TouchableHighlight>
+									</TouchableNativeFeedback>
 								</View>
 								<View style={styles.textView}>
 									<Text style={styles.text}>

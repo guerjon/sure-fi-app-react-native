@@ -43,18 +43,21 @@ class PairBridge extends Component{
 
 	constructor(props) {
 		super(props);
-		this.fast_manager = props.navigation.state.params.fast_manager
+		this.fast_manager = props.manager
 		this.central_device = props.navigation.state.params.device
 	}
 
+
 	componentDidMount() {
 		this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
+		this.props.dispatch({type: "SHOW_REMOTE_CAMERA"})
+		
 	}
 
     showAlertConfirmation(){
     	
-    	let central_id = this.central_device.manufactured_data == "01" ? this.props.remote_device.manufactured_data.device_id :  this.central_device.manufactured_data.device_id 
-    	let remote_id = this.central_device.manufactured_data == "02" ? this.central_device.manufactured_data.device_id : this.props.remote_device.manufactured_data.device_id
+    	let central_id = this.central_device.manufactured_data.hardware_type == "01" ? this.props.remote_device.manufactured_data.device_id :  this.central_device.manufactured_data.device_id 
+    	let remote_id = this.central_device.manufactured_data.hardware_type == "02" ? this.central_device.manufactured_data.device_id : this.props.remote_device.manufactured_data.device_id
     	this.props.dispatch({type: "HIDE_REMOTE_CAMERA"})
     	Alert.alert(
     		"Continue Pairing",
@@ -68,7 +71,8 @@ class PairBridge extends Component{
     }
 
     resetStack(){
-
+    	console.log("resetStack()")
+    	this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"pair"})
     	this.props.dispatch({type:"HIDE_CAMERA"})
 	    this.props.dispatch({
             type: "CENTRAL_DEVICE_MATCHED",
@@ -84,7 +88,7 @@ class PairBridge extends Component{
     					routeName: "DeviceControlPanel",
     					device : this.central_device,
     					tryToConnect : true,
-    					writePairingResult : true
+    					writePairResult : true,
     				})
     		]
     	})
@@ -108,6 +112,8 @@ class PairBridge extends Component{
 	}
 
     pair(){
+    	console.log("pair()")
+
     	this.fast_manager.stopDeviceScan();
 		var {remote_device,dispatch} = this.props
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
@@ -123,16 +129,23 @@ class PairBridge extends Component{
     	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
     	let remote_hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
 
+    	console.log("remote_device_id",remote_device_id)
+    	console.log("hardware_status",hardware_status)
+    	console.log("remote_hardware_status",remote_hardware_status)
+
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
+    		console.log("response 1",response)
     		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
     		.then(response => {
+    			console.log("respose 2",response)
+    			console.log(this.central_device.id)
     			WRITE_PAIRING(this.central_device.id,remote_id_bytes)
     			.then(response => {
+    				console.log("response 3",response)
 					this.central_device.manufactured_data.tx = remote_device.manufactured_data.device_id
-					this.resetStack()
-					/**/		    			
-		    			
+					this.props.dispatch({type: "SET_SHOULD_CONNECT",should_connect:true})
+					this.resetStack()	    			
     			}).catch(error => console.log(error))
     		}).catch(error => console.log("error",error))
     	}).catch(error => {
@@ -140,28 +153,44 @@ class PairBridge extends Component{
     	})
     }
 
+    getNoMatchedMessage(){
+
+        return (
+            <View style={{backgroundColor:"white"}}>
+                <Text>
+                    Device with code {this.props.scan_result_id} not found it.
+                </Text>
+            </View>
+        )
+    }
+
+
 	render(){
 		let current_device = this.central_device
 		let remote_device = this.props.remote_device
 
 		if(IS_EMPTY(remote_device))
 			var remote_content = (
-				<View style={{flexDirection: "row"}}>
-					<ScanRemoteUnits 
-						navigation={this.props.navigation} 
-						showAlertConfirmation={() => this.showAlertConfirmation()} 
-						current_device={current_device}
-						fast_manager = {this.fast_manager}
-					/>
-					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-						<Text >
-							{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 
-						</Text>
-						<Text style={{fontSize:22}}>
-							{current_device.manufactured_data.hardware_type == "01" ? "Scan Remote Unit" : "Scan Central Unit"} 
-							
-						</Text>
+				<View>
+					<View style={{flexDirection: "row"}}>
+						<ScanRemoteUnits 
+							navigation={this.props.navigation} 
+							showAlertConfirmation={() => this.showAlertConfirmation()} 
+							current_device={current_device}
+						/>
+
+						<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+							<Text >
+								{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 
+							</Text>
+							<Text style={{fontSize:22}}>
+								{current_device.manufactured_data.hardware_type == "01" ? "Scan Remote Unit" : "Scan Central Unit"} 
+							</Text>
+						</View>
 					</View>
+					<View style={{padding:20}}>
+                        {this.props.remote_device_status ? this.getNoMatchedMessage() : null}
+                    </View>
 				</View>
 			)
 		else{
@@ -245,10 +274,12 @@ class PairBridge extends Component{
 
 const mapStateToProps = state => ({
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
+  	scan_result_id : state.scanRemoteReducer.scan_result_id,
   	remote_device : state.scanRemoteReducer.remote_device,
   	devices : state.pairReducer.devices,
-  	device_status : state.setupCentralReducer.device_status
-
+  	device_status : state.setupCentralReducer.device_status,
+  	manager : state.scanCentralReducer.manager,
+  	remote_device_status : state.scanRemoteReducer.remote_device_status,
 });
 
 export default connect(mapStateToProps)(PairBridge);

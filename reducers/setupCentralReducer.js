@@ -17,7 +17,8 @@ const initialState = {
   show_modal : false,
   is_editing: false,
   device_name : "",
-  hopping_table : 0
+  hopping_table : 0,
+  action_from_disconnect : ""
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -146,6 +147,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         device_name : action.device_name
+      }
+    case "UPDATE_ACTION_FROM_DISCONNNECT":
+      return {
+        ...state,
+        action_from_disconnect : action.action_from_disconnect
       }
     default:
       return state

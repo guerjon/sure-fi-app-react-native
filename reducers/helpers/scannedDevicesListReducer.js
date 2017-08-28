@@ -5,6 +5,11 @@ const initialState = {
 
 export default function scannedDevicesListReducer (state = initialState, action) {
   switch (action.type) {
+    case "RESET_SCANNED_DEVICE_LIST":
+      return {
+        list_status : "hidden",
+        scanner: null
+      }
     case "SHOW_DEVICES_LIST":
       return {
         ...state,

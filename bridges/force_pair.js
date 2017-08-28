@@ -55,8 +55,8 @@ class ForcePair extends Component{
 		headerTintColor: 'white',
 	}	
 
-	componentWillMount() {
-		console.log(this.props)
+	constructor(props) {
+		super(props);
 		this.device = this.props.navigation.state.params.device
 		this.hardware_status = this.props.navigation.state.params.hardware_status.split("|") //this should be something like "0x|0x|FFFFFF|FF1FF1"
 		this.remote_device_id = this.hardware_status[3]
@@ -69,17 +69,12 @@ class ForcePair extends Component{
     resetStack(){
     	
     	this.props.dispatch({type:"HIDE_CAMERA"})
-		BleManager.stopScan()
-		  	.then(() => {
-		    // Success code 
-		    console.log('Scan stopped');
-		  });
-
+		
     	const resetActions = NavigationActions.reset({
     		index: 1,
     		actions : [
     			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device,tryToConnect:false})
+    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device,justForcePair:true})
     		]
     	})
 
@@ -97,6 +92,11 @@ class ForcePair extends Component{
     	WRITE_COMMAND(this.device.id,[0x20,type_of_device])
     	.then(() => {
     		WRITE_PAIRING(this.device.id,txUUID).then(() => {
+    			this.device.manufactured_data.device_state = "0003"
+    			this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: this.device
+                });
     			this.resetStack()
     		}).catch(error => console.log("error",error))
     	}).catch(error => console.log("error",error))

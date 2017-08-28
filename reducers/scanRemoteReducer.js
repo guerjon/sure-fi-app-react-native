@@ -14,7 +14,9 @@ const initialState = {
   manufactured_data : [],
   remote_device : {},
   scanning_status: "no_device_found",
-  camera_status : "hidden"
+  camera_status : "hidden",
+  remote_device_status : "",
+  scan_result_id : null
 }
 
 
@@ -22,11 +24,12 @@ export default function scanRemoteReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_REMOTE_REDUCER":
       return {
-        ...state,
         manufactured_data : [],
         remote_device : {},
-        scanning_status : "no_device_found",
-        devices : []
+        scanning_status: "no_device_found",
+        camera_status : "hidden",
+        remote_device_status : null,
+        scan_result_id : null
       }
     case "REMOTE_DEVICE_MATCHED":
       return {
@@ -37,7 +40,9 @@ export default function scanRemoteReducer (state = initialState, action) {
     case "REMOTE_DEVICE_NOT_MATCHED":
       return {
         ...state,
-        scanning_status : "device_scanned_not_matched"
+        scanning_status : "device_scanned_not_matched",
+        remote_device_status : "not_matched",
+        scan_result_id : action.scan_result_id
       }
     case "SCANNING_REMOTE_UNITS":
       return {

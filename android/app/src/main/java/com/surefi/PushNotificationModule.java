@@ -195,6 +195,7 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
         //sendIntent.addCategory(Intent.CATEGORY_DEFAULT);
 
         Intent smsIntent = new Intent(Intent.ACTION_SENDTO);
+        smsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // this fix the Calling startActivity on Android 5
         smsIntent.addCategory(Intent.CATEGORY_DEFAULT);
         smsIntent.setType("vnd.android-dir/mms-sms");
         smsIntent.setData(Uri.parse("sms:" + "14804007873"));
@@ -237,7 +238,6 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
             return capitalize(manufacturer) + " " + model;
         }
     }
-
 
     private String capitalize(String s) {
         if (s == null || s.length() == 0) {

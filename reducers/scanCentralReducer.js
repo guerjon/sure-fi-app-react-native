@@ -17,7 +17,13 @@ const initialState = {
   camera_status : "hidden",
   photo_data : {},
   show_permissions_modal : false,
-  show_serial_input : false
+  show_serial_input : false,
+  manager : {},
+  current_view : "",
+  justDeploy : false,
+  manual_disconnect : false,
+  should_connect : true,
+  interval : 0
 }
 
 
@@ -29,7 +35,15 @@ export default function scanCentralReducer (state = initialState, action) {
         manufactured_data : [],
         central_device : {},
         scanning_status : "",
-        photo_data : {}
+        camera_status : "hidden",
+        photo_data : {},
+        show_permissions_modal : false,
+        show_serial_input : false,
+        manager : {},
+        current_view : "",
+        justDeploy : false,
+        manual_disconnect : false,
+        interval : 0 
       }
     case "RESET_CAMERA":
       return {
@@ -129,6 +143,37 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         show_serial_input : false
+      }
+    case "SAVE_BLE_MANAGER":
+      return {
+        ...state,
+        manager : action.manager
+      }
+    case "CURRENT_VIEW":
+      return {
+        ...state,
+        current_view : action.current_view
+      }
+    case "SET_JUST_DEPLOY":
+      return {
+        ...state,
+        just_deploy : action.just_deploy
+      }
+    case "SET_MANUAL_DISCONNECT":
+      return {
+        ...state,
+        manual_disconnect : action.manual_disconnect,
+        
+      }
+    case "SET_SHOULD_CONNECT":
+      return {
+        ...state,
+        should_connect : action.should_connect
+      }
+    case "SET_INTERVAL":
+      return {
+        ...state,
+        interval : action.interval
       }
     default:
       return state

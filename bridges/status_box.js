@@ -89,27 +89,28 @@ class StatusBox extends Component{
 		)
 	}
 
-	tryDisconnect(id){
-		BleManager.disconnect()
-		.then(response => {
-			this.props.dispatch({
-				type : "DISCONNECT_CENTRAL_DEVICE"
-			})
-		}).catch(error => console.log("error",error))
-	}
-
-	disconnect(){
-		console.log("this.props.device.id",this.props.device.id)
-		setInterval(this.props.tryDisconnect(this.props.device.id),300)
-
-		BleManager.disconnect(this.props.device.id)
-		.then(response => {
-			this.props.dispatch({
-				type : "DISCONNECT_CENTRAL_DEVICE"
-			})
-		}).catch(error => console.log("error",error))
-	}
-
+	renderNormalConnecting(){
+		return (
+			<View>
+	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
+					<View style={{flexDirection:"row"}}>
+						<Text style={{padding: 10,margin:5}}>
+							Status
+						</Text >
+						<View style={{width:180,justifyContent:"center",alignItems:"center"}}>
+							<Text style={{fontSize:15}}>
+								Connecting
+							</Text>
+						</View>
+					</View>
+					<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
+						<ActivityIndicator />
+					</View>							
+				</View>
+			</View>
+		)
+	}	
+	
 	renderDisconnectingBox(){
 		return (
 			<View>
@@ -125,7 +126,7 @@ class StatusBox extends Component{
 					<View style={{flex:1}}>
 						<TouchableHighlight 
 							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-							onPress={()=> this.props.fastTryToConnect(this.props.device)}
+							onPress={()=> this.props.manualConnect(this.props.device)}
 						>
 							<Text style={styles.bigGreenButtonText}>
 								Connect
@@ -137,31 +138,12 @@ class StatusBox extends Component{
 		)
 	}
 
-    writeSecondService(device){
-        if(!this.connected){
-            BleManagerModule.retrieveServices(device.id,() => {
-                BleManager.write(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,device.manufactured_data.security_string,20).then((response) => {
-       	
-                    if(this.interval){
-                        clearInterval(this.interval)
-                        this.connected = true;
-                    }
-                    this.props.dispatch({
-                        type: "CONNECTED_CENTRAL_DEVICE"
-                    })
-                    this.props.readStatusCharacteristic(device)
-
-                }).catch(error => console.log("Error",error));
-            })
-        }
-    }	
-
-
-
     renderStatusDevice(){
     	var {device_status,remote_devices,remote_device_status,device} = this.props
 
     	switch(device_status){
+    		case "normal_connecting":
+    			return this.renderNormalConnecting()
 			case "connecting":
 				return this.renderConnectingBox()
 			case "disconnected":
@@ -182,7 +164,7 @@ class StatusBox extends Component{
 								<View style={{flex:1}}>
 									<TouchableHighlight 
 										style={{backgroundColor:"gray",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-										onPress={() => this.props.tryDiscconnect()}
+										onPress={() => this.props.manualDisconnect()}
 									>
 										<Text style={styles.bigGreenButtonText}>
 											Disconnect
@@ -235,10 +217,7 @@ class StatusBox extends Component{
 			else{
 				Alert.alert("Error!","The name is so large.")
 			}
-
-
     	}
-
     }
 
 

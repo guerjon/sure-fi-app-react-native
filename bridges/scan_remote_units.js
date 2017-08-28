@@ -30,7 +30,8 @@ import {
 } from '../styles/scan.js'
 import {
     styles,
-    first_color
+    first_color,
+    width
 } from '../styles/index'
 import Camera from 'react-native-camera';
 import {IS_CONNECTED} from '../action_creators'
@@ -49,7 +50,7 @@ class ScanRemoteUnits extends Component {
     constructor(props) {
         super(props);
         this.devices = []
-        this.fast_manager = props.fast_manager
+        this.fast_manager = props.manager
         //bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
         this.current_device = this.props.current_device // this device was matched could be a central or a remote one
         //this.searchDevices()
@@ -94,12 +95,11 @@ class ScanRemoteUnits extends Component {
             if(error){
                 return
             }
-
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
                 
                 if (!constants.FIND_ID(devices, device.id)) {       
                     var data = this.getManufacturedData(device)
-                    console.log("devices",data)
+                    console.log("device",data.manufactured_data)   
                     devices.push(data)
                     this.devices = devices
                 }                
@@ -116,10 +116,8 @@ class ScanRemoteUnits extends Component {
     }
     */
 
-    onSuccess(scan_result) {
-        //Vibration.vibrate()
-        var device_id = scan_result.data;
-        this.scan_result_id = device_id
+    matchDevice(device_id){
+        
         var {
             dispatch,
             navigation
@@ -181,12 +179,19 @@ class ScanRemoteUnits extends Component {
                 
                 dispatch({
                     type: "REMOTE_DEVICE_NOT_MATCHED",
+                    scan_result_id : this.scan_result_id
                 })
-
             }
         }
     }
 
+    onSuccess(scan_result) {
+        //Vibration.vibrate()
+        var device_id = scan_result.data.substr(-6).toUpperCase();
+        this.scan_result_id = device_id
+        this.matchDevice(device_id)
+
+    }
 
     stopScanning(scanning){
         if(scanning)
@@ -200,7 +205,7 @@ class ScanRemoteUnits extends Component {
     renderCamera(message,button) {
         if(this.props.camera_status == "showed"){
             return(
-                <View style={{paddingVertical:20}}>
+                <View>
                     <View>
                         <Camera
                             style={styles.preview_remote}
@@ -277,10 +282,13 @@ class ScanRemoteUnits extends Component {
 
 const mapStateToProps = state => ({
     remote_device: state.scanRemoteReducer.remote_device,
+    remote_device_status : state.scanRemoteReducer.remote_device_status,
     manufactured_data: state.scanRemoteReducer.manufactured_data,
     scanning_status: state.scanRemoteReducer.scanning_status,
     camera_status : state.scanRemoteReducer.camera_status,
-    scanner : state.pairReducer.scanner
+    scanner : state.pairReducer.scanner,
+    manager : state.scanCentralReducer.manager,
+    scan_result_id : state.scanRemoteReducer.scan_result_id
 })
 
 export default connect(mapStateToProps)(ScanRemoteUnits);

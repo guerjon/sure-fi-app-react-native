@@ -47,7 +47,8 @@ class Options extends Component{
 
 
 	constructor(props) {
-		super(props);		
+		super(props);	
+		this.device_status = this.props.device_status
 	}
 
 	showAlertUnpair(){
@@ -68,8 +69,8 @@ class Options extends Component{
     	let expected_status = 1
     	let rxUUID = device.manufactured_data.device_id
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
-    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
-    	let other_guy_status = "0" + this.props.device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
+    	let hardware_status = "0" + this.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
+    	let other_guy_status = "0" + this.device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
 
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
@@ -78,11 +79,14 @@ class Options extends Component{
     			WRITE_UNPAIR(device.id).then(response => {
 
 				device.manufactured_data.tx = "000000"
-
+				device.manufactured_data.device_state = "0001"
+				this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"unpair"})
 	    		this.props.dispatch({
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: device
                 });
+                this.device = device
+                this.props.dispatch({type: "SET_SHOULD_CONNECT",should_connect:true})
             	this.resetStack()// you don't have to do anything here since the BLE event onDisconnect handle the change
 	    		
     			}).catch(error => console.log(error))
@@ -99,14 +103,14 @@ class Options extends Component{
     	let expected_status = 1
     	let rxUUID = device.manufactured_data.device_id
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
-    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
+    	let hardware_status = "0" + this.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
  
     	console.log("hardware_status",hardware_status)
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
 			WRITE_FORCE_UNPAIR(device.id).then(response => {
 				device.manufactured_data.tx = "000000" // this is because we need recalculate the security string to connect again, same reason for the next dispatch
-
+				device.manufactured_data.device_state = "0001"
 	    		this.props.dispatch({
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: device
@@ -131,7 +135,7 @@ class Options extends Component{
     					device : this.props.device,
     					tryToConnect:true,
     					writeUnpairResult: true,
-    					force : true
+    					force : true,
     				}
     			)
     		]
@@ -149,9 +153,8 @@ class Options extends Component{
     			NavigationActions.navigate(
     				{
     					routeName: "DeviceControlPanel",
-    					device : this.props.device,
-    					tryToConnect:true,
-    					writeUnpairResult: true	
+    					device : this.device,
+    					writeUnpairResult: true,
     				}
     			)
     		]
@@ -387,7 +390,7 @@ class Options extends Component{
 	renderOptions(indicator){
 		switch(indicator){
 			case 0:
-			return null
+			return <ActivityIndicator/>
 			
 			case 1:
 			return <View>{this.renderUnpairedOptions()}</View>
@@ -413,6 +416,7 @@ class Options extends Component{
 	    	case 34:
 	        	return this.renderDeployedOptions()
 	    	default:
+	    		return <ActivityIndicator/>
 	        	
 		}
 	}

@@ -55,7 +55,6 @@ class SetupRemote extends Component{
 		super(props);
 		this.device = props.navigation.state.params.device;
 		this.dispatch = props.dispatch
-		
 	}
 
 	componentWillUnmount() {
@@ -110,15 +109,25 @@ class SetupRemote extends Component{
 
     resetStack(){
     	console.log("resetStack()")
-    	
+
+    	this.device.manufactured_data.device_state = "0004"
+    	this.props.dispatch({
+            type: "CENTRAL_DEVICE_MATCHED",
+            central_device: this.device,
+        });
+        this.props.dispatch({
+        	type: "SET_JUST_DEPLOY",
+        	just_deploy: true
+        })
+
     	const resetActions = NavigationActions.reset({
     		index: 1,
     		actions : [
     			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device,tryToConnect:false})
+    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device})
     		]
     	})
-
+    				
     	this.props.navigation.dispatch(resetActions)
     }
     
@@ -246,13 +255,18 @@ class SetupRemote extends Component{
 							<Text style={{marginVertical:10}}>
 								Description of {this.device.manufactured_data.hardware_type == "01" ? "Central Bridge" : "Remote Bridge"} Unit Installation
 							</Text>
-							<TextInput 
-								onChangeText = {(text) => this.checkText(text)}
-								style={{height: 90, width:width -20, borderColor: 'gray', borderWidth: 0.3,borderRadius:5,backgroundColor:"white"}} 
-								underlineColorAndroid="transparent"
-								placeholder={"Please provide a description... \n Example - \nThis Sure-Fi Unit is connected to a 4-Door controller from XYZ Company"}
-							>
-							</TextInput>
+							<View style={{width:width-40,height:80,margin:10,alignItems:"center",justifyContent:"center"}}>
+								<View style={{alignItems:"center",justifyContent:"center",height:80,width:width-40,backgroundColor:"white"}}>
+									<TextInput 
+										style={{flex:1,justifyContent:"center",fontSize:12,width:width-40}} 
+										keyboardType="default" 
+										underlineColorAndroid="transparent" 
+										onChangeText = {(text) => this.checkText(text)}
+										multiline = {true}
+										placeholder={"Please provide a description... \n Example - \nThis Sure-Fi Unit is connected to a 4-Door controller from XYZ Company"}
+									/>
+								</View>
+							</View>
 						</View>
 						{ this.props.show_remote_continue_button &&
 							<View>

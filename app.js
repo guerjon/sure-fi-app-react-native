@@ -34,17 +34,13 @@ const mapStateToProps = state => ({
 });
 
 export const AppNavigator = StackNavigator({
+	Bridges: {screen: Bridges},
 	Main: {screen: MainScreen,headerMode: 'screen'},
 	DeviceControlPanel : {screen : DeviceControlPanel},
 
-	
-	Bridges: {screen: Bridges},
-	
-	
-	
 	ForcePair : {screen : ForcePair},
 	FirmwareUpdate : {screen : FirmwareUpdate},
-	
+
 	PairBridge: {screen: PairBridge},
 	BridgesConfiguration : {screen : BridgesConfiguration},
 	ConfigureRadio : {screen : ConfigureRadio},
@@ -66,7 +62,7 @@ export const AppNavigator = StackNavigator({
 	SetupCentralExamples : {screen : SetupCentralExamples},
 	Register : {screen : Register},
 	BatteryLevel : {screen : BatteryLevel},
-	Login : {screen : Login}
+	Login : {screen : Login},
 	
 });
 

@@ -53,6 +53,11 @@ export default function configurationScanCentralReducer (state = initialState, a
       return {
          central_device : {}
       }
+    case "NORMAL_CONNECTING_CENTRAL_DEVICE":
+      return {
+        ...state,
+        central_device_status : "normal_connecting"
+      }
     case "CONNECTING_CENTRAL_DEVICE":
       return {
         ...state,

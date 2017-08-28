@@ -99,11 +99,14 @@ export const WRITE_COMMAND = (id,data) => {
 export const WRITE_PAIRING = (id,data) => {
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
+			console.log("1")
 			BleManager.write(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,data,20)
 			.then(response => {
+				console.log("response",response)
 				fulfill(response)
 			})
 			.catch(error => {
+				console.log("error",error)
 				reject(response)
 			})
 		})
