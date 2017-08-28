@@ -25,10 +25,7 @@
     "react-mixin": "^3.0.5",
     "react-native": "^0.44.0-rc.0",
     "react-native-ble-manager": "^3.3.0",
-<<<<<<< HEAD
     "react-native-ble-plx": "Polidea/react-native-ble-plx"  ,
-=======
->>>>>>> d2db0e976c76e981655382da58a866864f446e08
     "react-native-bluetooth-state": "^2.0.0",
     "react-native-camera": "git+https://github.com/lwansbrough/react-native-camera.git",
     "react-native-carousel": "^0.10.0",
@@ -42,16 +39,6 @@
     "react-native-pan-controller": "0.0.1",
     "react-native-permissions": "^1.0.0",
     "react-native-progress": "^3.2.1",
-<<<<<<< HEAD
-=======
-    "react-native-qrcode-scanner": "0.0.8",
-    "react-native-randombytes": "^2.2.0",
-    "react-native-smart-barcode": "^1.0.6",
-    "react-native-sms": "^1.4.2",
-    "react-native-splash-screen": "^2.0.0",
-    "react-native-tcp": "^1.0.1",
-    "react-native-timer": "^1.3.1",
->>>>>>> d2db0e976c76e981655382da58a866864f446e08
     "react-native-vector-icons": "^4.1.1",
     "react-navigation": "^1.0.0-beta.9",
     "react-redux": "^5.0.4",

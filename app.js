@@ -33,9 +33,12 @@ const mapStateToProps = state => ({
   nav: state.nav,
 });
 
+
+
+
 export const AppNavigator = StackNavigator({
-	Bridges: {screen: Bridges},
 	Main: {screen: MainScreen,headerMode: 'screen'},
+	Bridges: {screen: Bridges},
 	DeviceControlPanel : {screen : DeviceControlPanel},
 
 	ForcePair : {screen : ForcePair},
@@ -55,7 +58,6 @@ export const AppNavigator = StackNavigator({
 	ScanRemoteUnits: { screen: ScanRemoteUnits},	
 	ScanCentralUnits: { screen: ScanCentralUnits},
 	
-	
 	ConfigurationScanCentralUnits : {screen : ConfigurationScanCentralUnits},
 	ConfigurationScanRemoteUnits : {screen : ConfigurationScanRemoteUnits},
 	
@@ -66,7 +68,22 @@ export const AppNavigator = StackNavigator({
 	
 });
 
-
+/*const prevGetStateForActionHomeStack = AppNavigator.router.getStateForAction;
+AppNavigator.router.getStateForAction = (action, state) => {
+	console.log("state",state)
+	console.log("action",action)
+    if (state && action.type === 'ReplaceCurrentScreen') {
+      const routes = state.routes.slice(0, state.routes.length - 1);
+      routes.push(action);
+      return {
+        ...state,
+        routes,
+        index: routes.length - 1,
+      };
+    }
+    return prevGetStateForActionHomeStack(action, state);
+};
+*/
 
 class App extends Component{
 	render(){
@@ -76,5 +93,6 @@ class App extends Component{
 		)
 	}
 }
+
 
 export default connect(mapStateToProps)(App);

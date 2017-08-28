@@ -108,6 +108,7 @@ class SetupCentral extends Component{
 
 	componentWillMount() {
 		console.log("componentWillMount()",this.props)
+
 		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 		//this.props.dispatch({type: "RESET_REMOTE_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 
@@ -117,15 +118,19 @@ class SetupCentral extends Component{
 		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
 		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)
 		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
-		this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
+		//this.device.manufactured_data.security_string = GET_SECURITY_STRING(this.device.manufactured_data.device_id,this.device.manufactured_data.tx)
+
 	}
 
+/*
+
 	componentDidMount() {
+		console.log("componentDidMount()")
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 		let device_state = this.device.manufactured_data.device_state
 		let device  = this.device
-		console.log("device_state",device_state)
-		console.log("props.navigation.state",this.props.navigation.state)
+		//console.log("device_state",device_state)
+		//console.log("props.navigation.state",this.props.navigation.state)
 		switch(device_state){
 			case "0001":
 				this.handleUnpairState(device)
@@ -141,10 +146,11 @@ class SetupCentral extends Component{
 			break
 			default:
 			break
-		}		
+		}
 	}
-
+*/
 	componentWillUnmount() {
+		console.log("componentWillUnmount()")
 		this.handleDisconnected.remove()
 		this.handleCharacteristic.remove()
 		this.handleConnected.remove()
@@ -873,7 +879,7 @@ if(this.tryingToConnect){
 	}
 
 	render(){
-		return (
+		/*return (
 			<Background>
 				<ScrollView>
 					<View>
@@ -901,7 +907,8 @@ if(this.tryingToConnect){
 					</View>
 				</ScrollView>
 			</Background>
-		)
+		)*/
+		return <Text>oli</Text>
 	}
 }
 

@@ -55,6 +55,7 @@ class ScanCentralUnits extends Component {
     }
 
     componentDidMount() {
+        console.log("componentDidMount()")
         var {
             dispatch
         } = this.props;

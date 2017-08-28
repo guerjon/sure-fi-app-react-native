@@ -54,6 +54,7 @@ class Bridges extends Component{
     }
 
     componentWillMount() {  
+        console.log("componentWillMount()")
         this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
@@ -63,9 +64,9 @@ class Bridges extends Component{
 
 
 	componentDidMount() {
+        console.log("componentDidMount()")
 		if(this.props.current_view != "DeviceControlPanel"){
-			console.log("this.props.navigation.state",this.props.navigation.state)
-			console.log("componentDidMount()")	
+			//console.log("this.props.navigation.state",this.props.navigation.state)
 			this.checkMultiplePermissions()	
 		}
 	}
@@ -214,26 +215,32 @@ class Bridges extends Component{
 		}
 	}
 
+
 	goToDeviceControl(device){
 		console.log("goToDeviceControl()",device)
 		this.manager.stopDeviceScan()
-		this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
+        setTimeout(() => this.props.navigation.navigate(
+            "DeviceControlPanel",
+            {
+                device : device,
+                dispatch: this.props.dispatch,
+                manager : this.manager                
+            }
+        ),2)
 
-		const reset_stack = NavigationActions.reset({
-            index : 1,
-            actions : [
-                NavigationActions.navigate({routeName:"Main"}),
-                NavigationActions.navigate(
-                	{
-                		routeName:"DeviceControlPanel",
-                		device : device,
-                		dispatch: this.props.dispatch,
-                		manager : this.manager
-                	})
-            ],
-        })
+        this.props.navigation.goBack();
 
-        this.props.navigation.dispatch(reset_stack)
+
+        /*this.props.navigation.dispatch({
+            type: "ReplaceCurrentScreen",
+            routeName: "DeviceControlPanel",
+            params : {
+                device : device,
+                dispatch: this.props.dispatch,
+                manager : this.manager                
+            },
+            key: "DeviceControlPanel"
+        })*/
 	}
 
     requestMultiplePermissions(){
@@ -427,7 +434,7 @@ class Bridges extends Component{
 				{bluetoothIcon}
 			</TouchableHighlight>
 		*/
-		console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
+		//console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
 		if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{

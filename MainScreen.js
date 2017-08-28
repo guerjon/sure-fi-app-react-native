@@ -67,6 +67,7 @@ class FadeInView extends React.Component {
   }
 
   componentDidMount() {
+  	console.log("componentDidMount()")
     Animated.timing(                  // Animate over time
       this.state.fadeAnim,            // The animated value to drive
       {
@@ -100,6 +101,7 @@ class MainScreen extends Component {
   	}
 
   	componentWillMount() {
+  		console.log("componentWillMount()")
   		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
   		this.checkRegister()
