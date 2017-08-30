@@ -373,7 +373,6 @@ class MainScreen extends Component {
   			default:
   			return <ActivityIndicator />
   		}
-
   	}
 }
 

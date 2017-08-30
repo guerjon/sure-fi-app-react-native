@@ -95,6 +95,14 @@ app
 
 A pure function only depents of his parameters and never modify the value of the params, insted of this  return a new array o value object.  
 
+
+** A container does data fetching and then renders its corresponding subcomponent.
+Corresponding meaning a component that shares de same name
+
+StockWidgetContainer => StockWidget
+TagCloudContainer => TagCloud
+PartyPooperListContainer => PartyPooperList
+
 -----------------+--------------------------redux-----------------+--------------------------
 
 
@@ -353,3 +361,8 @@ On Sure-Fi bridges you need put some kind of elevation on the menus.
 
 -------------------------------------------------------------------- Material Design ---------------------------------------------------------------------------------------
 
+
+-------------------------------------------------------------------- React ---------------------------------------------------------------------------------------
+
+El componentDidMount que primero se renderiza es el de los hijos.
+-------------------------------------------------------------------- React ---------------------------------------------------------------------------------------

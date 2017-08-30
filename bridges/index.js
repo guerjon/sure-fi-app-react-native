@@ -54,7 +54,11 @@ class Bridges extends Component{
     }
 
     componentWillMount() {  
+<<<<<<< HEAD
         
+=======
+        console.log("componentWillMount()")
+>>>>>>> ed56243632d38a858d414022c96cb7be62d79511
         this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
@@ -72,7 +76,15 @@ class Bridges extends Component{
     }
 
 	componentDidMount() {
+<<<<<<< HEAD
 		this.checkMultiplePermissions()	
+=======
+        console.log("componentDidMount()")
+		if(this.props.current_view != "DeviceControlPanel"){
+			//console.log("this.props.navigation.state",this.props.navigation.state)
+			this.checkMultiplePermissions()	
+		}
+>>>>>>> ed56243632d38a858d414022c96cb7be62d79511
 	}
 	
 	checkMultiplePermissions(){
@@ -219,8 +231,10 @@ class Bridges extends Component{
 		}
 	}
 
+
 	goToDeviceControl(device){
 		console.log("goToDeviceControl()",device)
+<<<<<<< HEAD
 		this.stopScan()
 		this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
         this.props.navigator.dismissModal({
@@ -230,6 +244,31 @@ class Bridges extends Component{
         this.props.navigator.push({
             screen: "DeviceControlPanel",
         })
+=======
+		this.manager.stopDeviceScan()
+        setTimeout(() => this.props.navigation.navigate(
+            "DeviceControlPanel",
+            {
+                device : device,
+                dispatch: this.props.dispatch,
+                manager : this.manager                
+            }
+        ),2)
+
+        this.props.navigation.goBack();
+
+
+        /*this.props.navigation.dispatch({
+            type: "ReplaceCurrentScreen",
+            routeName: "DeviceControlPanel",
+            params : {
+                device : device,
+                dispatch: this.props.dispatch,
+                manager : this.manager                
+            },
+            key: "DeviceControlPanel"
+        })*/
+>>>>>>> ed56243632d38a858d414022c96cb7be62d79511
 	}
 
     requestMultiplePermissions(){
@@ -423,8 +462,12 @@ class Bridges extends Component{
 				{bluetoothIcon}
 			</TouchableHighlight>
 		*/
+<<<<<<< HEAD
 
 		console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
+=======
+		//console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
+>>>>>>> ed56243632d38a858d414022c96cb7be62d79511
 		if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
