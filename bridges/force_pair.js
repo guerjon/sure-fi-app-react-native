@@ -57,29 +57,14 @@ class ForcePair extends Component{
 
 	constructor(props) {
 		super(props);
-		this.device = this.props.navigation.state.params.device
-		this.hardware_status = this.props.navigation.state.params.hardware_status.split("|") //this should be something like "0x|0x|FFFFFF|FF1FF1"
-		this.remote_device_id = this.hardware_status[3]
+		this.device = this.props.device
+		this.hardware_status = this.props.hardware_status.split("|") //this should be something like "0x|0x|FFFFFF|FF1FF1"
+		this.remote_device_id =   this.hardware_status[3]
 	}
 
 	componentDidMount() {
 		this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
 	}
-
-    resetStack(){
-    	
-    	this.props.dispatch({type:"HIDE_CAMERA"})
-		
-    	const resetActions = NavigationActions.reset({
-    		index: 1,
-    		actions : [
-    			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device,justForcePair:true})
-    		]
-    	})
-
-    	this.props.navigation.dispatch(resetActions)
-    }
 
     forcePair(){
     	let txUUID = HEX_TO_BYTES(this.remote_device_id)
@@ -97,7 +82,9 @@ class ForcePair extends Component{
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: this.device
                 });
-    			this.resetStack()
+                this.props.dispatch({type:"HIDE_CAMERA"})
+                this.props.navigator.dismissModal();
+                this.props.getCloudStatus(this.device)
     		}).catch(error => console.log("error",error))
     	}).catch(error => console.log("error",error))
     }
@@ -203,8 +190,9 @@ const mapStateToProps = state => ({
   	remote_matched : state.scanRemoteReducer.remote_device_matched,
   	remote_device : state.scanRemoteReducer.remote_device,
   	devices : state.pairReducer.devices,
-  	device_status : state.setupCentralReducer.device_status
-
+  	device_status : state.setupCentralReducer.device_status,
+  	hardware_status : state.setupCentralReducer.hardware_status,
+  	device: state.scanCentralReducer.central_device,
 });
 
 export default connect(mapStateToProps)(ForcePair);

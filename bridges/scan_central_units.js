@@ -63,19 +63,6 @@ class ScanCentralUnits extends Component {
         this.scan_result = this.props.scan_result
     }
 
-    resetStack(){
-        console.log("resetStack()")
-        const resetActions = NavigationActions.reset({
-            index: 1,
-            actions : [
-                NavigationActions.navigate({routeName: "Main"}),
-                NavigationActions.navigate({routeName: "Bridges"})
-            ]
-        })
-
-        this.props.navigation.dispatch(resetActions)
-    }    
-
     onSuccess(scan_result) {
 
         if(this.scanning){

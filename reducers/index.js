@@ -1,6 +1,5 @@
 import { combineReducers } from 'redux'
 import appData from './dataReducer'
-import nav from './navReducer'
 import pairReducer from './pairReducer'
 import scanRemoteReducer from './scanRemoteReducer'
 import scanCentralReducer from './scanCentralReducer'
@@ -27,7 +26,6 @@ import loginReducer from './loginReducer'
 
 const rootReducer = combineReducers({
     appData,
-    nav,
     pairReducer,
     scanCentralReducer,
     scanRemoteReducer,

@@ -30,7 +30,10 @@ import {
 import { 
 	PUSH_CLOUD_STATUS,
 	WRITE_UNPAIR,
-	WRITE_FORCE_UNPAIR
+	WRITE_FORCE_UNPAIR,
+	CONNECT,
+	READ_STATUS,
+	DISCONNECT
 } from '../action_creators/index'
 
 
@@ -49,6 +52,7 @@ class Options extends Component{
 	constructor(props) {
 		super(props);	
 		this.device_status = this.props.device_status
+		this.device = this.props.device
 	}
 
 	showAlertUnpair(){
@@ -64,13 +68,24 @@ class Options extends Component{
 	}
 
     unPair() {
+    	console.log("unPair()")
+
+
+    	READ_STATUS(this.device.id)
+    	.then(response => {
+	    	this.pushStatusToCloud(response[0])
+    	})
+    }
+
+	pushStatusToCloud(device_status){
     	var {device} = this.props
     	let device_id = device.manufactured_data.device_id
     	let expected_status = 1
     	let rxUUID = device.manufactured_data.device_id
+
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
-    	let hardware_status = "0" + this.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
-    	let other_guy_status = "0" + this.device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
+    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
+    	let other_guy_status = "0" + device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
 
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
@@ -78,23 +93,29 @@ class Options extends Component{
     		.then(response => {
     			WRITE_UNPAIR(device.id).then(response => {
 
-				device.manufactured_data.tx = "000000"
-				device.manufactured_data.device_state = "0001"
-				this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"unpair"})
-	    		this.props.dispatch({
-                    type: "CENTRAL_DEVICE_MATCHED",
-                    central_device: device
-                });
-                this.device = device
-                this.props.dispatch({type: "SET_SHOULD_CONNECT",should_connect:true})
-            	this.resetStack()// you don't have to do anything here since the BLE event onDisconnect handle the change
-	    		
+					device.manufactured_data.tx = "000000"
+					device.manufactured_data.device_state = "0001"
+					device.writeUnpairResult = true
+			    	this.props.dispatch({
+			            type: "CENTRAL_DEVICE_MATCHED",
+			            central_device: device,
+			        });
+
+	                this.props.dispatch({
+				        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
+				    })	
+	                DISCONNECT(device.id)
+	                .then(() => {
+	                	setTimeout(() => this.props.fastTryToConnect(device),1000) 	
+	                })
+	                .catch(error => console.log("error",error))
+
     			}).catch(error => console.log(error))
     		})
     		.catch(error => console.log(error))
 			
     	}).catch(error => console.log("error",error))
-    }
+	}
 
     forceUnPair(){
     	console.log("forceUnPair()")
@@ -115,52 +136,12 @@ class Options extends Component{
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: device
                 });
-            	this.resetStacktoForce()// you don't have to do anything here since the BLE event onDisconnect handle the change
-	    		
+            	this.props.navigator.dismissModal();
+	    		this.props.getCloudStatus(device)
+
     		}).catch(error => console.log(error))
     	}).catch(error => console.log("error",error))
 
-    }
-
-    resetStacktoForce(){
-
-        console.log("resetStacktoForce()")
-    	const resetActions = NavigationActions.reset({
-    		index: 1,
-    		actions : [
-    			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate(
-    				{
-    					routeName: "DeviceControlPanel",
-    					device : this.props.device,
-    					tryToConnect:true,
-    					writeUnpairResult: true,
-    					force : true,
-    				}
-    			)
-    		]
-    	})
-
-    	this.props.navigation.dispatch(resetActions)	
-    }
-
-    resetStack(){
-    	console.log("resetStack()")
-    	const resetActions = NavigationActions.reset({
-    		index: 1,
-    		actions : [
-    			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate(
-    				{
-    					routeName: "DeviceControlPanel",
-    					device : this.device,
-    					writeUnpairResult: true,
-    				}
-    			)
-    		]
-    	})
-
-    	this.props.navigation.dispatch(resetActions)
     }
 
     getPairBridgeOption(){

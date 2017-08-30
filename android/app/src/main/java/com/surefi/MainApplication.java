@@ -9,46 +9,38 @@ import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 import com.polidea.reactnativeble.BlePackage;
 import com.oblador.vectoricons.VectorIconsPackage;
-import com.cboy.rn.splashscreen.SplashScreenReactPackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
 import it.innove.BleManagerPackage;
-
+import com.reactnativenavigation.NavigationApplication;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainApplication extends Application implements ReactApplication {
+public class MainApplication extends NavigationApplication implements ReactApplication {
 
-  private final ReactNativeHost mReactNativeHost = new ReactNativeHost(this) {
-    @Override
-    public boolean getUseDeveloperSupport() {
-      return BuildConfig.DEBUG;
-    }
+   @Override
+   public boolean isDebug() {
+       // Make sure you are using BuildConfig from your own application
+       return BuildConfig.DEBUG;
+   }
 
-    @Override
-    protected List<ReactPackage> getPackages() {
-      return Arrays.<ReactPackage>asList(
-              new MainReactPackage(),
+   protected List<ReactPackage> getPackages() {
+       // Add additional packages you require here
+       // No need to add RnnPackage and MainReactPackage
+       return Arrays.<ReactPackage>asList(
               new VectorIconsPackage(),
-              new SplashScreenReactPackage(),
               new RNFetchBlobPackage(),
               new RCTCameraPackage(),
               new BleManagerPackage(),
               new PushNotificationsPackage(),
               new BluetoothPackage(),
-              new BlePackage()
-      );
-    }
-  };
+              new BlePackage()        
+       );
+   }
 
-  @Override
-  public ReactNativeHost getReactNativeHost() {
-    return mReactNativeHost;
-  }
+     @Override
+     public List<ReactPackage> createAdditionalReactPackages() {
+         return getPackages();
+     }
 
-  @Override
-  public void onCreate() {
-    super.onCreate();
-    SoLoader.init(this, /* native exopackage */ false);
-  }
 }

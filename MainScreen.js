@@ -25,7 +25,6 @@ import {
 } from './constants'
 import { StackNavigator } from 'react-navigation';
 import Coverflow from 'react-native-coverflow'
-import SplashScreen from 'react-native-splash-screen'
 import {styles} from './styles'
 import { connect } from 'react-redux';
 import RNFirebase from 'react-native-firebase'
@@ -100,9 +99,9 @@ class MainScreen extends Component {
   	}
 
   	componentWillMount() {
-  		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
+  		/*this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
-  		this.checkRegister()
+  		this.checkRegister()*/
   	}
 
   	getSessionKey(){
@@ -224,7 +223,15 @@ class MainScreen extends Component {
 	}
 
 	navigateToLogin(){
-		this.props.navigation.navigate("Login",{session_key: this.session_key})
+		this.props.navigator.push({screen : "Login",passProps:{session_key: this.session_key}})
+	}
+
+	openScanModal(){
+		this.props.navigator.showModal({
+			screen : "Bridges",
+			title: "Scan Sure-Fi Bridge",
+			animationType: 'slide-up'
+		})
 	}
 
 	static navigationOptions = { title: 'Welcome', header: null };
@@ -256,7 +263,6 @@ class MainScreen extends Component {
 	}
 
 	renderMainScreen(){
-		const { navigate } = this.props.navigation;
 		return (
 			<Background>
 		  		<View style={styles.container}>
@@ -284,7 +290,7 @@ class MainScreen extends Component {
 			  			>
 							<View style={styles.textViewContainer}>
 								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableNativeFeedback onPress={() => navigate("Bridges")} >
+									<TouchableNativeFeedback onPress={() => this.openScanModal()} >
 										<Image source={require('./images/menu_bridge.imageset/menu_bridge.png')}>
 										</Image>
 									</TouchableNativeFeedback>
@@ -354,9 +360,9 @@ class MainScreen extends Component {
 	}
 
   	render() {
-  		
+  		console.log("this.props",this.props)
   		var {screen_status} = this.props
-  		//return this.renderMainScreen()
+  		return this.renderMainScreen()
   		switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()
@@ -367,6 +373,7 @@ class MainScreen extends Component {
   			default:
   			return <ActivityIndicator />
   		}
+
   	}
 }
 
@@ -381,3 +388,4 @@ const mapStateToProps = state => ({
 
 
 export default connect(mapStateToProps)(MainScreen)
+//export default MainScreen

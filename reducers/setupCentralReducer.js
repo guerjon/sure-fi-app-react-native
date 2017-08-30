@@ -18,7 +18,9 @@ const initialState = {
   is_editing: false,
   device_name : "",
   hopping_table : 0,
-  action_from_disconnect : ""
+  action_from_disconnect : "",
+  write_pair_result : false,
+  hardware_status : null
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -152,6 +154,16 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         action_from_disconnect : action.action_from_disconnect
+      }
+    case "SET_WRITE_PAIR_RESULT":
+      return {
+        ...state,
+        write_pair_result : action.write_pair_result
+      }
+    case "SET_HARDWARE_STATUS":
+      return {
+        ...state,
+        hardware_status : action.hardware_status
       }
     default:
       return state

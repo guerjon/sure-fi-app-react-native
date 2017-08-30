@@ -54,20 +54,25 @@ class Bridges extends Component{
     }
 
     componentWillMount() {  
+        
         this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
         this.props.dispatch({type :"SHOW_CAMERA"})
+
     }
 
+    componentWillUnmount() {
+        this.stopScan()
+    }
+
+    stopScan(){
+        this.manager.stopDeviceScan();
+    }
 
 	componentDidMount() {
-		if(this.props.current_view != "DeviceControlPanel"){
-			console.log("this.props.navigation.state",this.props.navigation.state)
-			console.log("componentDidMount()")	
-			this.checkMultiplePermissions()	
-		}
+		this.checkMultiplePermissions()	
 	}
 	
 	checkMultiplePermissions(){
@@ -216,24 +221,15 @@ class Bridges extends Component{
 
 	goToDeviceControl(device){
 		console.log("goToDeviceControl()",device)
-		this.manager.stopDeviceScan()
+		this.stopScan()
 		this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
-
-		const reset_stack = NavigationActions.reset({
-            index : 1,
-            actions : [
-                NavigationActions.navigate({routeName:"Main"}),
-                NavigationActions.navigate(
-                	{
-                		routeName:"DeviceControlPanel",
-                		device : device,
-                		dispatch: this.props.dispatch,
-                		manager : this.manager
-                	})
-            ],
+        this.props.navigator.dismissModal({
+            animationType: 'slide-down'
         })
 
-        this.props.navigation.dispatch(reset_stack)
+        this.props.navigator.push({
+            screen: "DeviceControlPanel",
+        })
 	}
 
     requestMultiplePermissions(){
@@ -427,6 +423,7 @@ class Bridges extends Component{
 				{bluetoothIcon}
 			</TouchableHighlight>
 		*/
+
 		console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
 		if(this.props.show_permissions_modal){
             return this.renderModal()

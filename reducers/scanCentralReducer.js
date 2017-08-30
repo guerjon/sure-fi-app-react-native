@@ -23,7 +23,8 @@ const initialState = {
   justDeploy : false,
   manual_disconnect : false,
   should_connect : true,
-  interval : 0
+  interval : 0,
+  indicator_number : null
 }
 
 
@@ -174,6 +175,11 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         interval : action.interval
+      }
+    case "SET_INDICATOR_NUMBER":
+      return {
+        ...state,
+        indicator_number : action.indicator_number
       }
     default:
       return state

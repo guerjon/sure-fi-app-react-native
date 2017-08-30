@@ -22,7 +22,8 @@ import {
 	SUREFI_CMD_WRITE_UUID
 } from '../constants'
 import {
-	PUSH_CLOUD_STATUS
+	PUSH_CLOUD_STATUS,
+	READ_STATUS
 } from '../action_creators/index'
 import {COMMAND_MAKE_DEPLOY} from '../commands'
 import {
@@ -43,17 +44,18 @@ var {width,height} = Dimensions.get('window')
 
 class SetupRemote extends Component{
 	
-	static navigationOptions ={
+	/*static navigationOptions ={
 		title : "Deploy Sure-Fi Bridge",
 		headerStyle: {backgroundColor: first_color},
 		headerTitleStyle : {color :"white"},
 		headerBackTitleStyle : {color : "white",alignSelf:"center"},
 		headerTintColor: 'white',
-	}
+	}*/
 
 	constructor(props) {
 		super(props);
-		this.device = props.navigation.state.params.device;
+		console.log("props",props)
+		this.device = props.device;
 		this.dispatch = props.dispatch
 	}
 
@@ -78,7 +80,6 @@ class SetupRemote extends Component{
 
 	      .catch(err => console.error(err));		
 	}
-
 
     renderCamera() {
         return (
@@ -107,28 +108,20 @@ class SetupRemote extends Component{
         )
     }
 
-    resetStack(){
-    	console.log("resetStack()")
+    smartGoBack(){
+    	console.log("smartGoBack()")
 
     	this.device.manufactured_data.device_state = "0004"
     	this.props.dispatch({
             type: "CENTRAL_DEVICE_MATCHED",
             central_device: this.device,
         });
-        this.props.dispatch({
-        	type: "SET_JUST_DEPLOY",
-        	just_deploy: true
-        })
+        this.props.navigator.dismissModal();
+    	this.props.getCloudStatus(this.device)
+    }
 
-    	const resetActions = NavigationActions.reset({
-    		index: 1,
-    		actions : [
-    			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate({routeName: "DeviceControlPanel",device : this.device})
-    		]
-    	})
-    				
-    	this.props.navigation.dispatch(resetActions)
+    goBack(){
+    	this.props.navigator.dismissAllModals()
     }
     
     showAlertDeploy(){
@@ -144,15 +137,20 @@ class SetupRemote extends Component{
     }
 
     deploy(){
-    	let device_status = this.props.device_status
-    	console.log(device_status)
+    	READ_STATUS(this.device.id)
+    	.then(response => {
+	    	this.pushStatusToCloud(response[0])
+
+    	})
+    	.catch(error => console.log("error",error))
+    }
+
+    pushStatusToCloud(device_status){
     	let expected_status = device_status + 1
     	let rxUUID = this.device.manufactured_data.device_id.toUpperCase()
     	let txUUID = IS_EMPTY(this.props.remote_device) ? this.device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
     	let device_id = this.device.manufactured_data.device_id
     	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
-    	console.log("device_id",device_id)
-    	console.log("hardware_status",hardware_status)
     	
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
@@ -169,18 +167,17 @@ class SetupRemote extends Component{
 							"Deployment Complete",
 							message,
 							[
-								{text : "Ok",onPress: () => this.resetStack()}
+								{text : "Ok",onPress: () => this.smartGoBack()}
 							],
 							{ cancelable: false }
 						)
-
-	    			
-	    			
 	    		}).catch(error => console.log("error on Write Central",error))
 	    	})    		
     	})
     	.catch(error => console.log("error",error))
     }
+
+
 
     checkText(text){
     	var {dispatch} = this.props
@@ -196,6 +193,16 @@ class SetupRemote extends Component{
     		dispatch({type: "HIDE_REMOTE_CONTINUE_BUTTON"})
 
     	}
+    }
+
+    goToExamples(){
+    	this.props.navigator.showModal({
+    		screen : "SetupCentralExamples",
+    		title: "Examples Central",
+    		navigatorStyle: {
+    			screenBackgroundColor: "white"
+    		},
+    	})
     }
 
     renderIndex(){
@@ -244,7 +251,7 @@ class SetupRemote extends Component{
 									Take a picture of {this.device.manufactured_data.hardware_type == "01" ? "Central Bridge" : "Remote Bridge"}  the Sure-Fi Bridge and ensure that you can clearly see what system/devices it is connected to.
 									See examples images below
 								</Text>
-								<TouchableHighlight onPress={() => this.props.navigation.navigate("SetupCentralExamples")} style={{padding:10}} >
+								<TouchableHighlight onPress={() => this.goToExamples()} style={{padding:10}} >
 									<Text style={styles.link} >
 										Examples
 									</Text>
@@ -349,7 +356,8 @@ const mapStateToProps = state => ({
 	remote_photo_data : state.setupRemoteReducer.remote_photo_data,
 	remote_unit_description : state.setupRemoteReducer.remote_unit_description,
 	device_status : state.setupCentralReducer.device_status,
-	remote_device : state.scanRemoteReducer.remote_device
+	remote_device : state.scanRemoteReducer.remote_device,
+	device: state.scanCentralReducer.central_device,
 });
 
 export default connect(mapStateToProps)(SetupRemote);

@@ -164,11 +164,19 @@ export const READ_STATUS = id => {
 
 export const DISCONNECT = id => {
 	return new Promise((fulfill,reject) => {
-		console.log("la promesa se resolvera")
 		BleManager.disconnect(id)
 		.then(response => {
 			fulfill("Disconnected: " + id)
 		})
 		.catch(error => console.log("error",error))
 	})
+}
+
+export const CONNECT = (device) => {
+		IS_CONNECTED(device.id)
+		.then(response => {
+			if(!response)
+				BleManager.connect(device.id).then(response => {})
+		})
+		.catch(error => console.log("Error",error))
 }

@@ -25,7 +25,10 @@ import ScanRemoteUnits from './scan_remote_units'
 import Background from '../helpers/background'
 import {
 	PUSH_CLOUD_STATUS,
-	WRITE_PAIRING
+	WRITE_PAIRING,
+	CONNECT,
+	READ_STATUS,
+	DISCONNECT
 } from '../action_creators/index'
 
 const BleManagerModule = NativeModules.BleManager;
@@ -44,7 +47,7 @@ class PairBridge extends Component{
 	constructor(props) {
 		super(props);
 		this.fast_manager = props.manager
-		this.central_device = props.navigation.state.params.device
+		this.central_device = props.device
 	}
 
 
@@ -78,43 +81,29 @@ class PairBridge extends Component{
             type: "CENTRAL_DEVICE_MATCHED",
             central_device: this.central_device
         });
-
-    	const resetActions = NavigationActions.reset({
-    		index: 1,
-    		actions : [
-    			NavigationActions.navigate({routeName: "Main"}),
-    			NavigationActions.navigate(
-    				{
-    					routeName: "DeviceControlPanel",
-    					device : this.central_device,
-    					tryToConnect : true,
-    					writePairResult : true,
-    				})
-    		]
-    	})
-
-
-		BleManager.stopScan()
-		.then(() => {
-		    this.props.navigation.dispatch(resetActions)
-		});
-    	
+		this.props.navigator.dismissModal()    	
     }
 
     componentWillUnmount() {
-    	this.stopScanning()
+    	this.fast_manager.stopDeviceScan();
     }
-
-	stopScanning(){
-		console.log("stopScanning()")
-		this.fast_manager.stopDeviceScan();
-		//this.pair()
-	}
 
     pair(){
     	console.log("pair()")
 
     	this.fast_manager.stopDeviceScan();
+
+    	READ_STATUS(this.central_device.id)
+    	.then(response => {
+	    	this.pushStatusToCloud(response[0])
+
+    	})
+    	.catch(error => console.log("error",error))
+    }
+
+    pushStatusToCloud(response){
+    	console.log("pushStatusToCloud()",response)
+
 		var {remote_device,dispatch} = this.props
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
@@ -126,26 +115,37 @@ class PairBridge extends Component{
     	let remote_rxUUID = remote_device.manufactured_data.device_id
     	let remote_txUUID = this.central_device.manufactured_data.device_id
 
-    	let hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
-    	let remote_hardware_status = "0" + this.props.device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
-
-    	console.log("remote_device_id",remote_device_id)
-    	console.log("hardware_status",hardware_status)
-    	console.log("remote_hardware_status",remote_hardware_status)
+		let device_status = response
+    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+    	let remote_hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
 
     	PUSH_CLOUD_STATUS(device_id,hardware_status)
     	.then(response => {
-    		console.log("response 1",response)
+    		
     		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
     		.then(response => {
-    			console.log("respose 2",response)
-    			console.log(this.central_device.id)
     			WRITE_PAIRING(this.central_device.id,remote_id_bytes)
     			.then(response => {
-    				console.log("response 3",response)
 					this.central_device.manufactured_data.tx = remote_device.manufactured_data.device_id
-					this.props.dispatch({type: "SET_SHOULD_CONNECT",should_connect:true})
-					this.resetStack()	    			
+					this.central_device.manufactured_data.device_state = "0003";
+					this.central_device.writePairResult = true
+
+		    		this.props.dispatch({
+	                    type: "CENTRAL_DEVICE_MATCHED",
+	                    central_device: this.central_device
+	                });
+
+	                this.props.dispatch({
+				        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
+				    })	
+
+		    		this.props.navigator.dismissModal();
+	                
+	                DISCONNECT(this.central_device.id)
+	                .then(() => {
+	                	setTimeout(() => this.props.fastTryToConnect(this.central_device),1000) 	
+	                })
+
     			}).catch(error => console.log(error))
     		}).catch(error => console.log("error",error))
     	}).catch(error => {
@@ -280,6 +280,7 @@ const mapStateToProps = state => ({
   	device_status : state.setupCentralReducer.device_status,
   	manager : state.scanCentralReducer.manager,
   	remote_device_status : state.scanRemoteReducer.remote_device_status,
+  	device: state.scanCentralReducer.central_device,
 });
 
 export default connect(mapStateToProps)(PairBridge);
