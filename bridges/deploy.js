@@ -44,13 +44,12 @@ var {width,height} = Dimensions.get('window')
 
 class SetupRemote extends Component{
 	
-	/*static navigationOptions ={
-		title : "Deploy Sure-Fi Bridge",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}*/
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }
 
 	constructor(props) {
 		super(props);

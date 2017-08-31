@@ -1,8 +1,13 @@
 package com.surefi;
 
-import android.app.Application;
-
 import com.facebook.react.ReactApplication;
+//import com.tkporter.sendsms.SendSMSPackage;
+//import com.reactnativecomponent.barcode.RCTCapturePackage;
+//import com.bitgo.randombytes.RandomBytesPackage;
+import com.oblador.keychain.KeychainPackage;
+import com.github.xfumihiro.react_native_image_to_base64.ImageToBase64Package;
+import io.invertase.firebase.RNFirebasePackage;
+import io.invertase.firebase.analytics.RNFirebaseAnalyticsPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -34,7 +39,8 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new BleManagerPackage(),
               new PushNotificationsPackage(),
               new BluetoothPackage(),
-              new BlePackage()        
+              new BlePackage(),
+              new KeychainPackage()  
        );
    }
 

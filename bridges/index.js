@@ -1,18 +1,18 @@
 import React, {Component} from 'react'
 import {
-  	Text,
-  	View,
-  	Image,
-  	ScrollView,
-  	TouchableHighlight,
-  	FlatList,
-  	Alert,
-  	NativeModules,
-  	NativeEventEmitter,
-  	TextInput,
-  	PermissionsAndroid,
-  	Modal
-	} from 'react-native';
+    Text,
+    View,
+    Image,
+    ScrollView,
+    TouchableHighlight,
+    FlatList,
+    Alert,
+    NativeModules,
+    NativeEventEmitter,
+    TextInput,
+    PermissionsAndroid,
+    Modal
+    } from 'react-native';
 
 import {styles,first_color,width,option_blue} from '../styles/index.js'
 import  {connect} from 'react-redux';
@@ -24,11 +24,11 @@ import { NavigationActions } from 'react-navigation'
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
 import SlowBleManager from 'react-native-ble-manager'
 import {
- 	SUREFI_SEC_SERVICE_UUID,
- 	SUREFI_SEC_HASH_UUID,
- 	ARRAY_BUFFER_TO_BASE64,
- 	MATCH_DEVICE,
- 	FIND_ID,
+    SUREFI_SEC_SERVICE_UUID,
+    SUREFI_SEC_HASH_UUID,
+    ARRAY_BUFFER_TO_BASE64,
+    MATCH_DEVICE,
+    FIND_ID,
     DIVIDE_MANUFACTURED_DATA,
  } from '../constants' 
 
@@ -38,14 +38,14 @@ const refreshIcon = (<Icon name="refresh" size={30} color="black"/>)
 const serialIcon = (<Icon name="keyboard-o" size={40} color="black"/>)
 const cameraIcon = (<Icon name="camera" size={40} color="white" />)
 class Bridges extends Component{
-	
-	static navigationOptions ={
-		title : "Scan Sure-Fi Code",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
+    
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait',
+        title : "Scan Device"
+    }
     
     constructor(props) {
         super(props);
@@ -54,11 +54,7 @@ class Bridges extends Component{
     }
 
     componentWillMount() {  
-<<<<<<< HEAD
         
-=======
-        console.log("componentWillMount()")
->>>>>>> ed56243632d38a858d414022c96cb7be62d79511
         this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
@@ -75,19 +71,11 @@ class Bridges extends Component{
         this.manager.stopDeviceScan();
     }
 
-	componentDidMount() {
-<<<<<<< HEAD
-		this.checkMultiplePermissions()	
-=======
-        console.log("componentDidMount()")
-		if(this.props.current_view != "DeviceControlPanel"){
-			//console.log("this.props.navigation.state",this.props.navigation.state)
-			this.checkMultiplePermissions()	
-		}
->>>>>>> ed56243632d38a858d414022c96cb7be62d79511
-	}
-	
-	checkMultiplePermissions(){
+    componentDidMount() {
+        this.checkMultiplePermissions() 
+    }
+    
+    checkMultiplePermissions(){
         console.log("checkMultiplePermissions()")
         let permissions = PermissionsAndroid.PERMISSIONS
         var { dispatch } = this.props;
@@ -119,8 +107,8 @@ class Bridges extends Component{
         .catch(error => console.log("Error",error))        
     }
 
-	continueToBluetoothState(){
-		console.log("continueToBluetoothState()")
+    continueToBluetoothState(){
+        console.log("continueToBluetoothState()")
         this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
         this.props.dispatch({type: "NO_DEVICE_FOUND"})
         
@@ -136,7 +124,7 @@ class Bridges extends Component{
           });        
     }
 
- 	requireCameraPermission(response){
+    requireCameraPermission(response){
         //console.log("requireCameraPermission()",response)
         Permissions.request('camera')
         .then(response => {
@@ -159,25 +147,14 @@ class Bridges extends Component{
             }else if (response == "restricted"){
                 this.storageActivateFromSettingsAlert()
             }else{
-                this.resetStack()
+                this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
+                this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
+                this.props.dispatch({type: "RESET_PAIR_REDUCER"})
+                this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
+                this.props.dispatch({type :"SHOW_CAMERA"})
             }
         })
     }
-
-    resetStack(){
-        console.log("resetStack()")
-        const resetActions = NavigationActions.reset({
-            index: 1,
-            actions : [
-                NavigationActions.navigate({routeName: "Main"}),
-                NavigationActions.navigate({routeName: "Bridges"})
-            ]
-        })
-
-        this.props.navigation.dispatch(resetActions)
-    }    
-
-
 
     showCameraAlert(response){
         console.log("showCameraAlert()")
@@ -211,65 +188,39 @@ class Bridges extends Component{
         Alert.alert("Upps!","Looks like you has chosen the don't show anymore option, to activate the storage permissions you should do it since configuration.")
     }
 
-	showHelpAlert(){
-		Alert.alert(
-			"Instructions",
-			"1. Locate the Qr Code found on your Sure-Fi Bridge \n\n "+
-			"2. Using the viewfinder on this screen bring the CR Conde into focus. You may have to move the bridge closer or farther away from your device \n\n" +
-			"3. When the code has been scanned,select \"Continue\" to connect the Sure-Fi Bridge."
-		)
-	}
+    showHelpAlert(){
+        Alert.alert(
+            "Instructions",
+            "1. Locate the Qr Code found on your Sure-Fi Bridge \n\n "+
+            "2. Using the viewfinder on this screen bring the CR Conde into focus. You may have to move the bridge closer or farther away from your device \n\n" +
+            "3. When the code has been scanned,select \"Continue\" to connect the Sure-Fi Bridge."
+        )
+    }
 
-	showOrHideDevicesList(){
-		var {list_status,dispatch} = this.props;
-		if(list_status == "showed"){
-			dispatch({type : "HIDE_DEVICES_LIST"})
-		}
+    showOrHideDevicesList(){
+        var {list_status,dispatch} = this.props;
+        if(list_status == "showed"){
+            dispatch({type : "HIDE_DEVICES_LIST"})
+        }
 
-		if(list_status == "hidden"){
-			dispatch({type : "SHOW_DEVICES_LIST"})
-		}
-	}
+        if(list_status == "hidden"){
+            dispatch({type : "SHOW_DEVICES_LIST"})
+        }
+    }
 
-
-	goToDeviceControl(device){
-		console.log("goToDeviceControl()",device)
-<<<<<<< HEAD
-		this.stopScan()
-		this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
+    goToDeviceControl(device){
+        console.log("goToDeviceControl()",device)
+        this.stopScan()
+        this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
         this.props.navigator.dismissModal({
             animationType: 'slide-down'
         })
 
         this.props.navigator.push({
             screen: "DeviceControlPanel",
+            title : "Device Details"
         })
-=======
-		this.manager.stopDeviceScan()
-        setTimeout(() => this.props.navigation.navigate(
-            "DeviceControlPanel",
-            {
-                device : device,
-                dispatch: this.props.dispatch,
-                manager : this.manager                
-            }
-        ),2)
-
-        this.props.navigation.goBack();
-
-
-        /*this.props.navigation.dispatch({
-            type: "ReplaceCurrentScreen",
-            routeName: "DeviceControlPanel",
-            params : {
-                device : device,
-                dispatch: this.props.dispatch,
-                manager : this.manager                
-            },
-            key: "DeviceControlPanel"
-        })*/
->>>>>>> ed56243632d38a858d414022c96cb7be62d79511
-	}
+    }
 
     requestMultiplePermissions(){
         let permissions = PermissionsAndroid.PERMISSIONS
@@ -292,15 +243,15 @@ class Bridges extends Component{
                 this.props.dispatch({type: "SHOW_ACCEPT_PERMITIONS_MODAL"})
             }
         })
-    }	
+    }   
 
     startScanning(){
-    	console.log("startScanning()")
+        console.log("startScanning()")
     
         var devices = this.props.devices
         this.stared_scanning = true
         this.manager.startDeviceScan(null,null,(error,device) => {
-        	
+            
             if(error){
                 return
             }
@@ -318,10 +269,10 @@ class Bridges extends Component{
     }
 
     filterRemoteDevices(devices){
-    	let remote_revices = devices.filter(device => {
-    		return device.manufactured_data.hardware_type == "02"
-    	})
-    	return remote_revices
+        let remote_revices = devices.filter(device => {
+            return device.manufactured_data.hardware_type == "02"
+        })
+        return remote_revices
     }
 
     getManufacturedData(device) {
@@ -336,14 +287,14 @@ class Bridges extends Component{
     }
 
 
-	renderDeviceList(){
-		if(this.props.scanning_status != "")
-			return <ScannedDevicesList manager={this.manager} devices={this.devices}/>
-		else
-			return null 
-	}
+    renderDeviceList(){
+        if(this.props.scanning_status != "")
+            return <ScannedDevicesList manager={this.manager} devices={this.devices}/>
+        else
+            return null 
+    }
 
-	searchDeviceBySerial(id){
+    searchDeviceBySerial(id){
         var device_id = id.toUpperCase();
         this.scan_result = device_id
         if(id.length == 6){
@@ -393,24 +344,24 @@ class Bridges extends Component{
                 }
             }   
             this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : null })
-        } 	
+        }   
     }
 
 
-	showOrHideSerialInput(){
-		if(this.props.show_serial_input){
-			this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
-		}else{
-			this.props.dispatch({type:"SHOW_SERIAL_INPUT"})
-		}
-	}
+    showOrHideSerialInput(){
+        if(this.props.show_serial_input){
+            this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
+        }else{
+            this.props.dispatch({type:"SHOW_SERIAL_INPUT"})
+        }
+    }
 
-	closeModalAndRequestPermissions(){
-		this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
-		this.requestMultiplePermissions()
-	}
+    closeModalAndRequestPermissions(){
+        this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
+        this.requestMultiplePermissions()
+    }
 
-	renderModal(){
+    renderModal(){
         return (
             <Modal 
                 animationType={"slide"}
@@ -452,86 +403,82 @@ class Bridges extends Component{
         )
     }
 
-	render(){
+    render(){
 
-		/*
-			<TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
-				{refreshIcon}
-			</TouchableHighlight>
-			<TouchableHighlight style={{marginLeft:25}} onPress={() => this.showOrHideDevicesList()}>
-				{bluetoothIcon}
-			</TouchableHighlight>
-		*/
-<<<<<<< HEAD
+        /*
+            <TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
+                {refreshIcon}
+            </TouchableHighlight>
+            <TouchableHighlight style={{marginLeft:25}} onPress={() => this.showOrHideDevicesList()}>
+                {bluetoothIcon}
+            </TouchableHighlight>
+        */
 
-		console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
-=======
-		//console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
->>>>>>> ed56243632d38a858d414022c96cb7be62d79511
-		if(this.props.show_permissions_modal){
+        console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
+        if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
-			return(
-				<Background>
-					<ScrollView style={{flex:1,marginHorizontal:10}}>
+            return(
+                <Background>
+                    <ScrollView style={{flex:1,marginHorizontal:10}}>
 
-						<View style={{height:250,alignItems:"center",marginBottom:120}}>
-							<ScanCentralUnits 
-								navigation={this.props.navigation} 
-								goToDeviceControl={(device)=> this.goToDeviceControl(device)}
-								scanResult = {this.scan_result}
-								manager = {this.manager}
-								requestMultiplePermissions = {() => this.requestMultiplePermissions()}
-								stopScan = {() => this.stopScan()}
-							/>
-						</View>
-						<View style={{flexDirection:"row"}}>
-							<View style={{alignItems:"center",justifyContent:"center",flex:1,flexDirection:"row"}}>	
-								<View>
-									<TouchableHighlight style={{marginRight: 30}} elevation={5} onPress={() => this.showOrHideSerialInput()} >
-										{serialIcon}
-									</TouchableHighlight>
-								</View>
-								<View>
-									<Image  
-										source={require('../images/instruction_image_1.imageset/instruction_image.png')} 
-										style={{width:80,height:100}}
-									/>	
-								</View>
-								<View>
-									<TouchableHighlight style={{marginLeft: 30}} elevation={5} onPress={() => this.showHelpAlert()} >
-										{helpIcon}
-									</TouchableHighlight>
-								</View>
-							</View>
-						</View>
-						<View>
-						{ this.props.show_serial_input && (
-							<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
-								<View style={{width:width-200,height:50,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
-									<View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200}}>
-										<TextInput 
-											maxLength={6}
-											style={{flex:1,justifyContent:"center",fontSize:25,width:width-200}} 
-											underlineColorAndroid="transparent" 
-											onChangeText={(t) => this.searchDeviceBySerial(t)}
+                        <View style={{height:250,alignItems:"center",marginBottom:120}}>
+                            <ScanCentralUnits 
+                                navigation={this.props.navigation} 
+                                goToDeviceControl={(device)=> this.goToDeviceControl(device)}
+                                scanResult = {this.scan_result}
+                                manager = {this.manager}
+                                requestMultiplePermissions = {() => this.requestMultiplePermissions()}
+                                stopScan = {() => this.stopScan()}
+                            />
+                        </View>
+                        <View style={{flexDirection:"row"}}>
+                            <View style={{alignItems:"center",justifyContent:"center",flex:1,flexDirection:"row"}}> 
+                                <View>
+                                    <TouchableHighlight style={{marginRight: 30}} elevation={5} onPress={() => this.showOrHideSerialInput()} >
+                                        {serialIcon}
+                                    </TouchableHighlight>
+                                </View>
+                                <View>
+                                    <Image  
+                                        source={require('../images/instruction_image_1.imageset/instruction_image.png')} 
+                                        style={{width:80,height:100}}
+                                    />  
+                                </View>
+                                <View>
+                                    <TouchableHighlight style={{marginLeft: 30}} elevation={5} onPress={() => this.showHelpAlert()} >
+                                        {helpIcon}
+                                    </TouchableHighlight>
+                                </View>
+                            </View>
+                        </View>
+                        <View>
+                        { this.props.show_serial_input && (
+                            <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
+                                <View style={{width:width-200,height:50,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
+                                    <View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200}}>
+                                        <TextInput 
+                                            maxLength={6}
+                                            style={{flex:1,justifyContent:"center",fontSize:25,width:width-200}} 
+                                            underlineColorAndroid="transparent" 
+                                            onChangeText={(t) => this.searchDeviceBySerial(t)}
                                             placeholder ="FFFFFF"
-										/>
-									</View>
-								</View>
-							</View>
-						)
-						}
-						</View>
-						 <ScrollView>
-							{this.renderDeviceList() } 
-						</ScrollView>
-					</ScrollView>
-				</Background>
+                                        />
+                                    </View>
+                                </View>
+                            </View>
+                        )
+                        }
+                        </View>
+                         <ScrollView>
+                            {this.renderDeviceList() } 
+                        </ScrollView>
+                    </ScrollView>
+                </Background>
 
-			);	
-		}
-	}
+            );  
+        }
+    }
 }
 
 const mapStateToProps = state => ({

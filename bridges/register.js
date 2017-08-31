@@ -23,6 +23,7 @@ import {
 	FINISH_USER_REGISTRATION
 } from '../constants'
 
+
 var {width,height} = Dimensions.get('window')
 var validator = require("email-validator");
 const Permissions = require('react-native-permissions')

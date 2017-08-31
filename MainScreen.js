@@ -32,10 +32,12 @@ import { NavigationActions } from 'react-navigation'
 import ActivityIndicator from './helpers/centerActivityIndicator'
 import Background from './helpers/background'
 import Register from './bridges/register'
+import Icon from 'react-native-vector-icons/FontAwesome';
+//import * as KeyChain from 'react-native-keychain'
 const PushNotification = NativeModules.PushNotification
 const {width,height} = Dimensions.get("window")
 const Permissions = require('react-native-permissions')
-import Icon from 'react-native-vector-icons/FontAwesome';
+
 
 const image_styles = {
   container: {
@@ -99,9 +101,9 @@ class MainScreen extends Component {
   	}
 
   	componentWillMount() {
-  		/*this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
+  		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
-  		this.checkRegister()*/
+  		this.checkRegister()
   	}
 
   	getSessionKey(){
@@ -155,21 +157,12 @@ class MainScreen extends Component {
   		.catch(error => Alert.alert("Error",error))
   	}
 
-  	checkSettingsFile(){
-  		PushNotification.getSettingsUUID(response => {
-  			if(response){
-
-  			}else{
-
-  			}
-  		})
-  	}
-
   	checkRegister(){
   		var {dispatch} = this.props
 
   		PushNotification.getBasicInfo(info => {
   			this.info = info
+
   			var device_details = info.model + "-" + info.android_version + "-" + info.language + "-" + info.country + "-" + info.app_version
 	  		var body = JSON.stringify({
 	  				"device_push_token" : info.token,
@@ -179,6 +172,8 @@ class MainScreen extends Component {
 	  				"device_details" : device_details,
 	  		})
 	  		
+	  		console.log("body",body)
+
 	  		fetch(DEVICE_REGISTRATION_LINK,{
 	  			method: "POST",
 				headers: {
@@ -187,9 +182,11 @@ class MainScreen extends Component {
 				},  			
 	  			body: body	  			
 	  		}).then(data => {
-	  			
-	  			var response = JSON.parse(data._bodyText)
 
+				console.log("response",data)
+
+	  			var response = JSON.parse(data._bodyText)
+	  			
 	  			if(response.status == "success"){
   					let data = response.data
   					if(data.registered){
@@ -197,7 +194,7 @@ class MainScreen extends Component {
   					//if(false){
   						dispatch({type : "SHOW_MAIN_SCREEN"})
   					}else{
-  						this.props.dispatch({type:"SHOW_REGISTER_SCREEN",info : info})
+  						dispatch({type:"SHOW_REGISTER_SCREEN",info : info})
   						dispatch({type: "SHOW_WELCOME_SCREEN"})
   					}
   				}else{
@@ -223,7 +220,14 @@ class MainScreen extends Component {
 	}
 
 	navigateToLogin(){
-		this.props.navigator.push({screen : "Login",passProps:{session_key: this.session_key}})
+		this.props.navigator.push(
+			{
+				screen : "Login",
+				title : "Login",
+				passProps:{
+					session_key: this.session_key
+				}
+			})
 	}
 
 	openScanModal(){

@@ -35,16 +35,27 @@ class UpdateFirmwareCentral extends Component{
 	componentDidMount() {
 		this.dispatch = this.props.dispatch
 		this.firmware_file = this.props.firmware_file
-		this.navigate = this.props.navigation.navigate
 		this.dispatch({type: "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER"})
 	}
 
 	navigateToFirmwareUpdate(kind){
 		if(kind == "application" || kind == "radio")
-			this.navigate("FirmwareUpdate")
+			this.props.navigator.showModal({
+				screen : "FirmwareUpdate",
+				title : "Firmware Update"
+			})
 		else
-			this.navigate("BluetoothFirmwareUpdate")
+			this.props.navigator.showModal({
+				screen : "BluetoothFirmwareUpdate",
+				title : "Bluetooth Firmware Update"
+			})
+	}
 
+	goToSelectFirmware(){
+		this.props.navigator.showModal({
+			screen : "SelectFirmwareCentral",
+			title : "Select Firmware Central"
+		})
 	}
 
 	render(){
@@ -79,7 +90,7 @@ class UpdateFirmwareCentral extends Component{
 					>	
 						<View style={styles.mainContainer}>
 							<View style={{alignItems:"center",justifyContent:"center"}}>
-								<TouchableHighlight onPress={() => this.navigate("SelectFirmwareCentral")} style={{margin:60}}>
+								<TouchableHighlight onPress={() => this.goToSelectFirmware()} style={{margin:60}}>
 									<View style={{flexDirection:"row"}}>
 										<Text>
 											Firmware Selected :

@@ -65,28 +65,21 @@ var rows_to_write = 0
 
 class UpdateFirmwareCentral extends Component {
 
-    static navigationOptions = ({navigation,screenProps}) => ({
-        title: "Update Firmware",
-        headerStyle: {
-            backgroundColor: first_color
-        },
-        headerTitleStyle: {
-            color: "white"
-        },
-        headerBackTitleStyle: {
-            color: "white",
-            alignSelf: "center"
-        },
-        headerTintColor: 'white',
-        //headerRight: <TouchableHighlight onPress={() => navigation.state.params.changeView()}><Text style={{color:"white",margin:10,fontSize:16}}>Change View</Text></TouchableHighlight> 
-    })
+
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }   
 
     constructor(props) {
     	super(props);
-    	this.device = props.navigation.state.params.device
+    	this.device = props.central_device
         application_firmware_files = {}
         radio_firmware_files = {}
         bluetooth_firmware_files = {}
+
     }
 
     componentWillMount() {
@@ -94,8 +87,6 @@ class UpdateFirmwareCentral extends Component {
         let dispatch = this.props.dispatch
 
         dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
-        //dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"})
-        props.navigation.setParams({ changeView:() => this.changeView()});
     }
 
     componentDidMount() {
@@ -182,7 +173,7 @@ class UpdateFirmwareCentral extends Component {
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
-                    console.log("bt_files",this.bt_files)
+                    //console.log("bt_files",this.bt_files)
                     let app_version = parseFloat(this.application_files[0].firmware_version)
                     let radio_version = parseFloat(this.radio_files[0].firmware_version)
                     let bt_version = parseFloat(this.bt_files[0].firmware_version)
@@ -264,36 +255,15 @@ class UpdateFirmwareCentral extends Component {
 
     handleDisconnectedPeripheral(){
        this.resetStack()
+       
     }
 
     resetStack(){
-        
-        let device = !IS_EMPTY(this.central_device) ? this.central : this.props.navigation.state.params.device
-
-        if(this.props.current_update == "bt"){
-            const resetActions = NavigationActions.reset({
-                    index: 1,
-                    actions : [
-                        NavigationActions.navigate({routeName: "Main"}),
-                        NavigationActions.navigate({routeName: "DeviceControlPanel",device : device,tryToConnect:true})
-                    ]
-                })
-            this.props.navigation.dispatch(resetActions)
-        }else{
-
-            const resetActions = NavigationActions.reset({
-                index: 1,
-                actions : [
-                    NavigationActions.navigate({routeName: "Main"}),
-                    NavigationActions.navigate({routeName: "DeviceControlPanel",device : device,intentionalDisconnect:true})
-                ]
-            })
-            this.props.navigation.dispatch(resetActions)
-        }         
+       this.props.navigator.dismissModal() 
     }
 
     getTab(tab){
-        let device = this.props.navigation.state.params.device
+        let device = this.device
         var {application_firmware_files,radio_firmware_files,bluetooth_firmware_files} = this.props
         switch(tab){
             case "charging":
@@ -301,16 +271,14 @@ class UpdateFirmwareCentral extends Component {
             case "app":
             return (
                 <AppFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
+                    device={device}  
                     resetStack={() => this.resetStack()}
                     firmware_files = {application_firmware_files}
                 />)
             case "radio":
             return (
                 <RadioFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
+                    device={device}  
                     resetStack={() => this.resetStack()}
                     firmware_files = {radio_firmware_files}
                 />
@@ -318,8 +286,7 @@ class UpdateFirmwareCentral extends Component {
             case "bluetooth":
             return (
                 <BluetoothFirmwareUpdate 
-                    device={device} 
-                    navigation={this.props.navigation} 
+                    device={device}  
                     resetStack={() => this.resetStack()}
                     firmware_files = {bluetooth_firmware_files}
                 />
@@ -453,7 +420,7 @@ class UpdateFirmwareCentral extends Component {
 
     renderUpdateComponent(){
         let current_update = this.props.current_update
-        let device = this.props.navigation.state.params.device
+        let device = this.device
         let selected_version = this.props.selected_version
         let content = null
 
@@ -462,8 +429,7 @@ class UpdateFirmwareCentral extends Component {
                 let app_firmware_file = this.props.selected_files.app_files
                 content = (
                     <AppFirmwareUpdate 
-                        device={device} 
-                        navigation={this.props.navigation} 
+                        device={device}  
                         resetStack={() => this.resetStack()}
                         viewKind = {this.props.view_kind} 
                         firmwareFile = {app_firmware_file}
@@ -474,15 +440,9 @@ class UpdateFirmwareCentral extends Component {
                 case "radio":
                 let radio_firmware_file = this.props.selected_files.radio_files
                 
-                /*
-                    console.log(device)
-                    console.log(radio_firmware_file)
-                    console.log(this.props.view_kind)
-                */
                 content = (
                     <RadioFirmwareUpdate
-                        device={device} 
-                        navigation={this.props.navigation} 
+                        device={device}  
                         resetStack={() => this.resetStack()}
                         viewKind = {this.props.view_kind}
                         firmwareFile = {radio_firmware_file}
@@ -494,8 +454,7 @@ class UpdateFirmwareCentral extends Component {
                 let bt_firmware_file = this.props.selected_files.bt_files
                 content = (
                     <BluetoothFirmwareUpdate 
-                        device={device} 
-                        navigation={this.props.navigation} 
+                        device={device}  
                         resetStack={() => this.resetStack()}
                         viewKind = {this.props.view_kind}
                         firmwareFile = {bt_firmware_file}

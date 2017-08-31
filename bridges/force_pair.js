@@ -47,13 +47,12 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class ForcePair extends Component{
 	
-	static navigationOptions ={
-		title : "Force Pair Sure-Fi Bridge",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}	
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }
 
 	constructor(props) {
 		super(props);

@@ -83,6 +83,13 @@ var interval = 0;
 
 class SetupCentral extends Component{
 	
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }
+
 	constructor(props) {
 		super(props);
 		this.device = props.device
@@ -660,7 +667,9 @@ class SetupCentral extends Component{
 			this.props.navigator.showModal(
 				{
 					screen:"PairBridge",
-					passProps:{fastTryToConnect:fastTryToConnect}
+					title : "Pair Sure-Fi Device",
+					passProps:{fastTryToConnect:fastTryToConnect},
+					
 				}
 			)
 		}else{
@@ -673,21 +682,30 @@ class SetupCentral extends Component{
 		var getCloudStatus = (device) => this.getCloudStatus(device)
 		this.props.navigator.showModal({
 		  	screen: 'Deploy', // unique ID registered with Navigation.registerScreen
+		  	title: "Deploy Sure-Fi Bridge",
 			passProps:
 			{
-				getCloudStatus:getCloudStatus 
+				getCloudStatus:getCloudStatus
 			}
 		});
 	}
 
 	goToFirmwareUpdate(){
 		this.handleCharacteristic.remove()
-		this.props.navigator.showModal({screen:"FirmwareUpdate"})
+		this.props.navigator.showModal({
+			screen:"FirmwareUpdate",
+			title : "Firmware Update",
+		})
 	}
 
 	goToConfigureRadio(){
 		this.handleCharacteristic.remove()
-		this.props.navigator.showModal({screen:"ConfigureRadio"})
+		this.props.navigator.showModal(
+			{
+				screen:"ConfigureRadio",
+				title: "Configure Radio"
+			}
+		)
 	}
 
 	goToForcePair(){
@@ -696,6 +714,7 @@ class SetupCentral extends Component{
 		this.props.navigator.showModal(
 		{
 			screen:"ForcePair",
+			title: "Force Pair",
 			passProps:
 			{
 				getCloudStatus:getCloudStatus 

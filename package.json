@@ -35,6 +35,7 @@
     "react-native-firebase": "^2.1.2",
     "react-native-http": "github:tradle/react-native-http#834492d",
     "react-native-image-to-base64": "^0.1.0",
+    "react-native-keychain": "2.0.0-rc",
     "react-native-material-bottom-navigation": "^0.5.1",
     "react-native-navigation": "^1.1.205",
     "react-native-pan-controller": "0.0.1",
@@ -44,8 +45,6 @@
     "react-native-randombytes": "^2.2.0",
     "react-native-smart-barcode": "^1.0.6",
     "react-native-sms": "^1.4.2",
-    "react-native-splash-screen": "^2.0.0",
-    "react-native-tcp": "^1.0.1",
     "react-native-timer": "^1.3.1",
     "react-native-vector-icons": "^4.1.1",
     "react-navigation": "^1.0.0-beta.9",
@@ -81,7 +80,6 @@
     "_stream_passthrough": "readable-stream/passthrough",
     "stream": "stream-browserify",
     "zlib": "browserify-zlib",
-    "net": "react-native-tcp",
     "path": "path-browserify"
   },
   "browser": {

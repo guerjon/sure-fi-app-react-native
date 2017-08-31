@@ -136,7 +136,6 @@ class Options extends Component{
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: device
                 });
-            	this.props.navigator.dismissModal();
 	    		this.props.getCloudStatus(device)
 
     		}).catch(error => console.log(error))

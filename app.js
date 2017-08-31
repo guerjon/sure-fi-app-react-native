@@ -18,7 +18,8 @@ Navigation.startSingleScreenApp({
     screen : "MainScreen",
     title: 'MainScreen',
     navigatorStyle : {
-      navBarHidden : true
+      navBarHidden : true,
+      orientation: 'portrait'
     },
     navigatorButtons: {},
     passProps: {},

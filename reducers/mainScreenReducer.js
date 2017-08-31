@@ -3,7 +3,8 @@ const initialState = {
   contacts_permission : "undetermined",
   phone_state_permission : "undetermined",
   sms_permission : "undetermined",
-  info : {}
+  info : {},
+
 }
 
 export default function dataReducer (state = initialState, action) {
