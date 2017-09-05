@@ -19,6 +19,7 @@ import BleManager from "react-native-ble-manager"
 import { NavigationActions } from 'react-navigation'
 import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
+import * as KeyChain from 'react-native-keychain'
 import { 
 	LOADING,
 	PAIR_SUREFI_SERVICE,
@@ -37,6 +38,7 @@ import {
 } from '../action_creators/index'
 
 
+const next_step = <Text style={{alignSelf:"center"}}>Next Step </Text>
 
 class Options extends Component{
 	
@@ -53,6 +55,12 @@ class Options extends Component{
 		super(props);	
 		this.device_status = this.props.device_status
 		this.device = this.props.device
+		this.user_status = this.props.user_status
+		console.log("user_status",this.user_status)
+	}
+
+	componentWillMount() {
+
 	}
 
 	showAlertUnpair(){
@@ -132,6 +140,7 @@ class Options extends Component{
 			WRITE_FORCE_UNPAIR(device.id).then(response => {
 				device.manufactured_data.tx = "000000" // this is because we need recalculate the security string to connect again, same reason for the next dispatch
 				device.manufactured_data.device_state = "0001"
+				
 	    		this.props.dispatch({
                     type: "CENTRAL_DEVICE_MATCHED",
                     central_device: device
@@ -146,12 +155,7 @@ class Options extends Component{
     getPairBridgeOption(){
 		return (
 			<View style={{marginBottom:50}}>
-				
-				<Text style={{alignSelf:"center"}}>
-					Next Step
-				</Text>
-				
-				
+				{next_step}
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
 					<View style={{
 						flexDirection:"row",
@@ -191,23 +195,20 @@ class Options extends Component{
     }
 
     getConfigureRadioOption(){
-    	if(this.props.user_type == "admin")
-	    	return (
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
-					<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
-						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
-						</View>
-						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
-								Configure Radio
-							</Text>
-						</View>
+    	return (
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
+				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
+					<View style={styles.white_touchable_highlight_image_container}>
+						<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
 					</View>
-				</TouchableHighlight>	
-	    	)
-	   	else
-	   		return null
+					<View style={styles.white_touchable_text_container}>
+						<Text style={styles.white_touchable_text}>
+							Configure Radio
+						</Text>
+					</View>
+				</View>
+			</TouchableHighlight>	
+    	)
     }
 
     getDeployCentralUnitOption(){
@@ -233,9 +234,7 @@ class Options extends Component{
 
     	return (
     		<View style={{marginBottom:50}}>
-				<Text style={{alignSelf:"center"}}>
-					Next Step
-				</Text>    		
+				{next_step}
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToDeploy()}>
 					<View style={{
 						flexDirection:"row",
@@ -255,6 +254,54 @@ class Options extends Component{
 			</View>
     	)
     }
+
+    getOperatingValuesOption(){
+    	return (
+    		<View>
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToOperationValues()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",	
+					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Operation Values
+							</Text>
+						</View>
+					</View>
+				</TouchableHighlight>
+    		</View>
+    	)
+    }
+
+    getInstructionalVideos(){
+    	return (
+    		<View>
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToInstructionalVideos()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",	
+					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Instructional Videos
+							</Text>
+						</View>
+					</View>
+				</TouchableHighlight>
+    		</View>
+    	)
+    }
+
+
 
     getUnPairBridgeOption(){
     	return (
@@ -277,8 +324,6 @@ class Options extends Component{
 		return (
 			<View style={{marginTop:10}}>
 				{this.getPairBridgeOption()}
-				{this.getUpdateFirwmareOption()}
-				{this.getConfigureRadioOption()}
 			</View>
 		)
 	}
@@ -288,8 +333,6 @@ class Options extends Component{
 			<View style={{marginTop:10}}>
 				{this.getDeployCentralUnitOption()}
 				{this.getUnPairBridgeOption()}
-				{this.getUpdateFirwmareOption()}
-				{this.getConfigureRadioOption()}
 			</View>
 		)		
 	}
@@ -298,8 +341,6 @@ class Options extends Component{
 		return (
 			<View style={{marginTop:10}}>
 				{this.getUnPairBridgeOption()}
-				{this.getUpdateFirwmareOption()}
-				{this.getConfigureRadioOption()}
 			</View>
 		)
 	}
@@ -312,7 +353,6 @@ class Options extends Component{
 				<Text style={{alignSelf:"center"}}>
 					Next Step
 				</Text>
-				
 				
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToForcePair()}>
 					<View style={{
@@ -367,7 +407,28 @@ class Options extends Component{
 		)   
 	}
 
+	renderAdditionalOptions(user_status){
+		if(user_status == "logged")
+		return (
+			<View>
+				{this.getInstructionalVideos()}
+				{this.getUpdateFirwmareOption()}
+				{this.getConfigureRadioOption()}
+				{this.getOperatingValuesOption()}
+			</View>
+		)
+		else
+			return(
+				<View>
+					{this.getInstructionalVideos()}
+					{this.getUpdateFirwmareOption()}
+				</View>
+			)
+	}
+
+
 	renderOptions(indicator){
+
 		switch(indicator){
 			case 0:
 			return <ActivityIndicator/>
@@ -402,15 +463,30 @@ class Options extends Component{
 	}
 
 	render(){	
+		console.log("this.props.user_status",this.props.user_status)
+		console.log("indicator",this.props.indicator)
+		
 		var options = this.renderOptions(this.props.indicatorNumber)
-		return <View>{options}</View>
+		var additional_options = this.renderAdditionalOptions(this.props.user_status)
+
+		return (
+			<View>
+				<View>
+					{options}
+				</View>
+				<View>
+					{additional_options}
+				</View>
+			</View>
+		)
 	}
 }
 
 const mapStateToProps = state => ({
 	device_status : state.setupCentralReducer.device_status,
 	central_device: state.scanCentralReducer.central_device,
-	remote_device : state.scanRemoteReducer.remote_device
+	remote_device : state.scanRemoteReducer.remote_device,
+	user_status : state.mainScreenReducer.user_status
 });
 
 export default connect(mapStateToProps)(Options);

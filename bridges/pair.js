@@ -175,7 +175,7 @@ class PairBridge extends Component{
 						<ScanRemoteUnits 
 							navigation={this.props.navigation} 
 							showAlertConfirmation={() => this.showAlertConfirmation()} 
-							current_device={current_device}
+							master_device={current_device}
 						/>
 
 						<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
@@ -187,9 +187,6 @@ class PairBridge extends Component{
 							</Text>
 						</View>
 					</View>
-					<View style={{padding:20}}>
-                        {this.props.remote_device_status ? this.getNoMatchedMessage() : null}
-                    </View>
 				</View>
 			)
 		else{

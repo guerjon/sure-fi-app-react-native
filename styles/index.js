@@ -205,13 +205,14 @@ export  const styles = StyleSheet.create({
     },
     white_touchable_highlight: {
       backgroundColor:"white",
-      flexDirection:"column"
+      flexDirection:"column",
+     
     },
     white_touchable_highlight_inner_container: {
       flexDirection:"row",
       padding:5,
       alignItems:"center",
-      borderBottomWidth:0.5
+     
     },
     white_touchable_highlight_image_container: {
       flex:0.5

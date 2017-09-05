@@ -83,7 +83,7 @@ class AppFirmwareUpdate extends Component{
 
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
-				console.log("file response on app",res)
+				//console.log("file response on app",res)
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -124,13 +124,13 @@ class AppFirmwareUpdate extends Component{
 
 		switch(response){
 			case 1:
-				console.log("BleRsp_FirmwareVersion")
+				//console.log("BleRsp_FirmwareVersion")
 				return
 			case 2:
-				console.log("BleRsp_QosConfig")
+				//console.log("BleRsp_QosConfig")
 				return
 			case 3:
-				console.log("BleRsp_UpdateStartSuccess")
+				//console.log("BleRsp_UpdateStartSuccess")
 				this.startRow()
 				return								
 			case 4: 

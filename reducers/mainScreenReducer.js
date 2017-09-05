@@ -4,7 +4,7 @@ const initialState = {
   phone_state_permission : "undetermined",
   sms_permission : "undetermined",
   info : {},
-
+  user_status : "logout"
 }
 
 export default function dataReducer (state = initialState, action) {
@@ -39,6 +39,18 @@ export default function dataReducer (state = initialState, action) {
         ...state,
         screen_status : "show_register_screen",
         info : action.info
+      }
+    case "SET_USER_INFO":
+      return {
+        ...state,
+        user : action.user,
+        password : action.password,
+        status : action.status
+      }
+    case "SET_USER_STATUS":
+      return {
+        ...state,
+        user_status : action.user_status
       }
     default:
       return state

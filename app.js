@@ -4,9 +4,9 @@ import {registerScreens} from './screens';
 import {createStore, applyMiddleware} from "redux";
 import {Provider} from "react-redux";
 import thunk from "redux-thunk";
+import reducers from "./reducers";
 
 const createStoreWithMiddleware = applyMiddleware(thunk)(createStore);
-import reducers from "./reducers";
 const store = createStoreWithMiddleware(reducers);
 
 // screen related book keeping

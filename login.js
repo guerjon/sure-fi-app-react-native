@@ -8,7 +8,7 @@ import {
   	Alert,
   	TouchableHighlight
 } from 'react-native'
-import {styles,first_color,width,success_green} from './styles/index.js'
+import {styles,first_color,width,success_green,option_blue} from './styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	USER_LOGIN,
@@ -17,8 +17,12 @@ import {
 } from './constants'
 var validator = require("email-validator");
 import Icon from 'react-native-vector-icons/FontAwesome';
-import Background from './helpers/background'
+import Background from './helpers/background';
+import * as KeyChain from 'react-native-keychain';
+import {UserInfo,AccountInformation} from './helpers/user_info'
+
 const api_key = "52a9"
+
 
 
 class Login extends Component{
@@ -36,37 +40,24 @@ class Login extends Component{
 	}
 
 	componentWillMount() {
-		var random_string = MAKE_ID()
-		var body = JSON.stringify({
-			"API_KEY" : api_key,
-			"random_string" : random_string
-		})
+		let user = this.props.user
+		let password = this.props.password
 
-		fetch(SESSION_START,{
-			headers: {
-    			'Accept': 'application/json',
-    			'Content-Type': 'application/json',
-  			},			
-			method : "POST",
-			body: body
-
-		}).then(response => {
-			console.log("response",response)
-			var data = JSON.parse(response._bodyInit) 
-			
-			this.session_key = data.data.session_key
-			this.props.dispatch({type : "SET_REGISTRATION_TOKEN", session_token: this.session_key})
-		})
+		console.log("user",user)
+		console.log("password",password)
+		
+		if(user)
+			this.login(user,password)
 	}
 
-	login(){
-		if(validator.validate(this.email)){
+	login(email,password){
+		console.log("login()",email,password)
+		if(validator.validate(email)){
 			let body = JSON.stringify({
-				user_login: this.email,
-				user_password: this.password,
-				session_key : this.session_key 
+				user_login: email,
+				user_password: password,
+				session_key : this.session_key
 			})
-			console.log("body",body)
 			let headers = 
 				{
 				    'Accept': 'application/json',
@@ -79,11 +70,16 @@ class Login extends Component{
 				headers : headers
 			})
 			.then(response => {
-				console.log(response)
+				
 				var data = JSON.parse(response._bodyInit)
+
 				if(data.status == "success"){
 					this.user_data = data.data.user_data
-					this.props.dispatch({type: "USER_LOGIN",user_login_status:"loggin",user: this.user_data})
+					this.props.dispatch({type: "SET_USER_DATA",user_data:this.user_data})
+					this.props.dispatch({type: "SET_USER_STATUS",user_status : "logged"})
+					if(email != null && password != null ){
+						KeyChain.setGenericPassword(email,password)
+					}
 
 				}else{
 					Alert.alert("Error",data.msg)
@@ -95,63 +91,121 @@ class Login extends Component{
 		}
 	}
 
-	render(){	
-		return(
-			<Background>
-				<View style={{marginVertical:20}}>
-					<View>
-						<Text style={styles.device_control_title}>
-							USER LOGIN
-						</Text>							
-					</View>
-					<View style={{backgroundColor:"white"}}>
-						<View style={{margin:50}}>
-							<View style={{height:40,borderWidth:0.5,marginVertical:10,flexDirection:"row"}}>
-								<View style={{flex:0.2}}>
-									<Icon name="user" size={30} color="gray" style={{margin:5}}/>
-								</View>
-								<View style={{width:200,height:200,flex:0.8}}>
-									<TextInput
-										onChangeText={t => this.email = t } 
-										underlineColorAndroid="transparent"
-										keyboardType = "email-address"
-										placeholder = "Email address"
-									/>
-								</View>
-							</View>
+	logout(){
+		console.log("logout()")
+		KeyChain.resetGenericPassword()
+		.then(response => {
+			this.props.dispatch({type: "SET_USER_DATA",user_data: null})
+			this.props.dispatch({type: "SET_USER_STATUS",user_status : "logout"})
+		})
+	}
 
-							<View style={{height:40,borderWidth:0.5,marginVertical:10,flexDirection:"row"}}>
-								<View style={{flex:0.2}}>
-									<Icon name="lock" size={30} color="gray" style={{margin:5}}/>
-								</View>
-								<View style={{width:200,height:200,flex:0.8}}>
-									<TextInput 
-										secureTextEntry={true}
-										password={true}
-										style={{height:40,width:200}}
-										onChangeText={t => this.password = t} 
-										underlineColorAndroid="transparent"
-										placeholder = "Password"
-									/>
-								</View>
+	getLoginInputs(){
+		return (
+			<View style={{marginVertical:20}}>
+				<View>
+					<Text style={styles.device_control_title}>
+						USER LOGIN
+					</Text>							
+				</View>
+				<View style={{backgroundColor:"white"}}>
+					<View style={{margin:50}}>
+						<View style={{height:40,borderWidth:0.5,marginVertical:10,flexDirection:"row"}}>
+							<View style={{flex:0.2}}>
+								<Icon name="user" size={30} color="gray" style={{margin:5}}/>
 							</View>
-							<View style={{marginTop:20}}>
-								<TouchableHighlight onPress={() => this.login()} style={{backgroundColor: success_green,height:40,alignItems:"center",justifyContent:"center"}}>
-									<Text style={styles.bigGreenButtonText}>
-										Log In
-									</Text>
-								</TouchableHighlight>
+							<View style={{width:200,height:200,flex:0.8}}>
+								<TextInput
+									onChangeText={t => this.email = t } 
+									underlineColorAndroid="transparent"
+									keyboardType = "email-address"
+									placeholder = "Email address"
+								/>
 							</View>
+						</View>
+
+						<View style={{height:40,borderWidth:0.5,marginVertical:10,flexDirection:"row"}}>
+							<View style={{flex:0.2}}>
+								<Icon name="lock" size={30} color="gray" style={{margin:5}}/>
+							</View>
+							<View style={{width:200,height:200,flex:0.8}}>
+								<TextInput 
+									secureTextEntry={true}
+									password={true}
+									style={{height:40,width:200}}
+									onChangeText={t => this.password = t} 
+									underlineColorAndroid="transparent"
+									placeholder = "Password"
+								/>
+							</View>
+						</View>
+						<View style={{marginTop:20}}>
+							<TouchableHighlight onPress={() => this.login(this.email,this.password)} style={{backgroundColor: success_green,height:40,alignItems:"center",justifyContent:"center"}}>
+								<Text style={styles.bigGreenButtonText}>
+									Log In
+								</Text>
+							</TouchableHighlight>
 						</View>
 					</View>
 				</View>
+			</View>
+		)
+	}
+
+	getUserInformation(user){
+		return (
+			<ScrollView>
+				<View style={{marginVertical:20}}>
+					<Text style={styles.device_control_title}>
+						USER DETAILS
+					</Text>					
+					<UserInfo email={user.user_email} last_name={user.user_last_name} first_name={user.user_first_name} />
+				</View>
+				<View style={{marginBottom:20}}>
+					<Text style={styles.device_control_title}>
+						ACCOUNT INFORMATION
+					</Text>
+					<AccountInformation 
+						user_login={user.user_login} 
+						user_key={user.user_key}
+						user_type={user.user_type}
+						user_auth_level={user.user_auth_level}
+					/>
+					<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center",borderBottomWidth:0.3,}} onPress={() => this.logout()}>
+						<View style={{padding:15,flexDirection:"row"}}>
+							<View style={{flex:1,alignItems:"center"}}>
+								<Text style={{fontSize:16,color:option_blue}}>
+									Log Out
+								</Text>
+							</View>
+						</View>
+					</TouchableHighlight>					
+				</View>
+			</ScrollView>
+		)
+		
+	}
+
+	render(){
+		let user = this.props.user_data
+		if(user != null){
+			var content = this.getUserInformation(user)
+		}else{
+			var content = this.getLoginInputs()
+		}
+
+		return(
+			<Background>
+				{content}
 			</Background>
 		);	
 	}
 }
 
 const mapStateToProps = state => ({
-	session_token : state.loginReducer.session_token
+	session_token : state.loginReducer.session_token,
+	user_login_status : state.loginReducer.session_token,
+	user_data : state.loginReducer.user_data
 });
 
 export default connect(mapStateToProps)(Login);

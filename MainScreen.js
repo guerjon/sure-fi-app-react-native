@@ -33,7 +33,7 @@ import ActivityIndicator from './helpers/centerActivityIndicator'
 import Background from './helpers/background'
 import Register from './bridges/register'
 import Icon from 'react-native-vector-icons/FontAwesome';
-//import * as KeyChain from 'react-native-keychain'
+import * as KeyChain from 'react-native-keychain'
 const PushNotification = NativeModules.PushNotification
 const {width,height} = Dimensions.get("window")
 const Permissions = require('react-native-permissions')
@@ -131,7 +131,6 @@ class MainScreen extends Component {
   				Alert.alert("Error","Error connecting with the server.")
   			}
   		}).catch(error => Alert.alert("Error",error))
-
   	}
 
   	sendPushNotification(){
@@ -172,7 +171,7 @@ class MainScreen extends Component {
 	  				"device_details" : device_details,
 	  		})
 	  		
-	  		console.log("body",body)
+	  		//console.log("body",body)
 
 	  		fetch(DEVICE_REGISTRATION_LINK,{
 	  			method: "POST",
@@ -183,7 +182,7 @@ class MainScreen extends Component {
 	  			body: body	  			
 	  		}).then(data => {
 
-				console.log("response",data)
+				//console.log("response",data)
 
 	  			var response = JSON.parse(data._bodyText)
 	  			
@@ -192,7 +191,8 @@ class MainScreen extends Component {
   					if(data.registered){
   					//if(true){
   					//if(false){
-  						dispatch({type : "SHOW_MAIN_SCREEN"})
+  						this.checkLogin()
+  						
   					}else{
   						dispatch({type:"SHOW_REGISTER_SCREEN",info : info})
   						dispatch({type: "SHOW_WELCOME_SCREEN"})
@@ -203,6 +203,22 @@ class MainScreen extends Component {
 	  		})
 
   		})
+  	}
+
+
+  	checkLogin(){
+		KeyChain
+		.getGenericPassword()
+		.then(credentials => {
+			this.user = credentials.username
+			this.password = credentials.password
+			this.props.dispatch({type: "SET_USER_STATUS",user_status : "logged"})
+		})
+		.catch(error => {
+			this.props.dispatch({type: "USER_LOGIN",user: null,password:null,status:"logout"})
+		})
+
+		this.props.dispatch({type : "SHOW_MAIN_SCREEN"})
   	}
 
 	openSureFiPage(url){
@@ -225,7 +241,9 @@ class MainScreen extends Component {
 				screen : "Login",
 				title : "Login",
 				passProps:{
-					session_key: this.session_key
+					session_key: this.session_key,
+					user: this.user,
+					password: this.password
 				}
 			})
 	}
@@ -364,9 +382,9 @@ class MainScreen extends Component {
 	}
 
   	render() {
-  		console.log("this.props",this.props)
+  		//console.log("this.props",this.props)
   		var {screen_status} = this.props
-  		return this.renderMainScreen()
+  		//return this.renderMainScreen()
   		switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()

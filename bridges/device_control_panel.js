@@ -75,10 +75,12 @@ import {
 import {WhiteRow} from './white_row'
 //import {BleManager} as FastBleManager from 'react-native-ble-plx';
 import BleManager from 'react-native-ble-manager'
+import {WhiteRowLink} from '../helpers/white_row_link'
 const helpIcon = (<Icon name="info-circle" size={30} color="black" />)
 const backIcon = (<Icon name="arrow-left" size={30} color="white"/> )
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
 var interval = 0;
 
 class SetupCentral extends Component{
@@ -358,13 +360,14 @@ class SetupCentral extends Component{
 				}
 
 			}else{ //all correct on the device, we need know if was a pair or unpair before
+				this.show_notification = false
 				this.props.dispatch({type:"SET_INDICATOR_NUMBER",indicator_number: current_device_status})
 				if(current_device_status != current_status_on_cloud){
 	    			this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
 	    		}
 			}
 
-    		//this.getAllInfo(device)
+    		this.getAllInfo(device)
 		})
 		.catch(error => console.log("error",error))
     }
@@ -564,9 +567,7 @@ class SetupCentral extends Component{
 	}
 
 	renderInfo(){
-		if(this.props.user_type != "admin")
-			var admin_values = null
-		else
+		if(this.props.user_status == "logged")
 			var admin_values = (
 				<View>
 					<View>
@@ -587,6 +588,8 @@ class SetupCentral extends Component{
 					</View>
 				</View>
 			)
+		else
+			var admin_values = null
 
 		if(this.props.central_device_status == "connecting")
 			return null
@@ -607,13 +610,10 @@ class SetupCentral extends Component{
 						<Text style={styles.device_control_title}>
 							OTHER COMMANDS
 						</Text>
-						<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => this.resetBoard()}>
-							<View style={{padding:15,flexDirection:"row"}}>
-								<Text style={{fontSize:16,color:option_blue}}>
-									RESET APPLICATION BOARD
-								</Text>
-							</View>
-						</TouchableHighlight>						
+						<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
+						<WhiteRowLink name="ENABLE DEBUG MODE" callback={() => this.resetBoard()}/>
+						<WhiteRowLink name="GET LAST PACKET TIME" callback={() => this.resetBoard()}/>
+						<WhiteRowLink name="RESET CAUSES" callback={() => this.resetBoard()}/>
 					</View>
 				</View>	
 			)
@@ -635,8 +635,12 @@ class SetupCentral extends Component{
 				goToFirmwareUpdate={() => this.goToFirmwareUpdate()}
 				goToConfigureRadio={() => this.goToConfigureRadio()}
 				goToForcePair={() => this.goToForcePair()}
+				goToInstructionalVideos = {() => this.goToInstructionalVideos()}
+				goToOperationValues = {() => this.goToOperationValues()}
 				device_status = {this.props.central_device_status}
 				fastTryToConnect = {(device) => this.fastTryToConnect(device)}
+				getCloudStatus = {(device) => this.getCloudStatus(device)}
+
 			/>
 		}
 		
@@ -837,7 +841,8 @@ const mapStateToProps = state => ({
   	should_connect : state.scanCentralReducer.should_connect,
   	interval : state.scanCentralReducer.interval,
   	indicator_number : state.scanCentralReducer.indicator_number,
-  	write_pair_result : state.scanCentralReducer.write_pair_result
+  	write_pair_result : state.scanCentralReducer.write_pair_result,
+  	user_status : state.mainScreenReducer.user_status
 });
 
 

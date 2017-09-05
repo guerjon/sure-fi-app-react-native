@@ -130,12 +130,11 @@ class ConfigureRadio extends Component {
 
 	constructor(props) {
 		super(props);
-		this.device = this.props.navigation.state.params.device
+		this.device = this.props.device
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 	}
 
 	componentWillMount() {
-		this.props.navigation.setParams({ handleSave:() => this.update() });
 		this.handlerUpdate = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',(data) => this.handleCharacteristicNotification(data));
 	}
 
@@ -208,7 +207,7 @@ class ConfigureRadio extends Component {
 				bandWidthReverse.get(band_width),
 				powerOptionsReverse.get(power),
 				parseInt(retry_count),
-				heartbeatPeriodReverse.get(heartbeat_period),
+				heartbeatPeriodReverse.get(heartbeat_period), // change one byte to two bytes now is a 16 
 				acknowledmentsReverse.get(acknowledments)
 			]
 		)
@@ -526,7 +525,8 @@ const mapStateToProps = state => ({
     band_width : state.setupCentralReducer.band_width,
     retry_count : state.setupCentralReducer.retry_count,
     heartbeat_period: state.setupCentralReducer.heartbeat_period,
-    acknowledments : state.setupCentralReducer.acknowledments
+    acknowledments : state.setupCentralReducer.acknowledments,
+    device: state.scanCentralReducer.central_device,
 });
 
 export default connect(mapStateToProps)(ConfigureRadio)

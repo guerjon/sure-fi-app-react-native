@@ -15,11 +15,10 @@ public class MainActivity extends SplashActivity {
         TextView textView = new TextView(this);
         
         view.setGravity(Gravity.CENTER);
-
-        textView.setTextColor(Color.parseColor("#FFFFFF"));
+        textView.setTextColor(Color.parseColor("#2BC7F1"));
         textView.setText("Sure-Fi");
         textView.setGravity(Gravity.CENTER);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 40);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 60);
         
         view.addView(textView);
 
