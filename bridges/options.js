@@ -288,7 +288,7 @@ class Options extends Component{
 						alignItems:"center",	
 					}}>
 						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
+							<Image source={require('../images/menu_video.imageset/menu_video.png')} style={styles.white_touchable_highlight_image}/>
 						</View>
 						<View style={styles.white_touchable_text_container}>
 							<Text style={styles.white_touchable_text}>
@@ -465,7 +465,7 @@ class Options extends Component{
 	render(){	
 		console.log("this.props.user_status",this.props.user_status)
 		console.log("indicator",this.props.indicator)
-		
+
 		var options = this.renderOptions(this.props.indicatorNumber)
 		var additional_options = this.renderAdditionalOptions(this.props.user_status)
 

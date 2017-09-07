@@ -134,10 +134,7 @@ class ScanCentralUnits extends Component {
 
         if(this.props.camera_status == "showed")
             return(
-                <View>
-                    <View>
-                        <View style={{margin:5,backgroundColor:"white",width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
-                    </View>    
+                <View style={{marginVertical:10}}>
                     <View>
                         <Camera
                             style={styles.preview}
@@ -149,7 +146,7 @@ class ScanCentralUnits extends Component {
                         >
                         </Camera>
                     </View>
-                    <View style={{flexDirection:"row",height:40}}>
+                    <View style={{flexDirection:"row"}}>
                         {button}
                     </View>                    
                 </View>
@@ -164,16 +161,11 @@ class ScanCentralUnits extends Component {
         var {photo_data} = this.props
         //console.log("photo_data",photo_data)
         return (
-            <View>
-                <View>
-                <View>
-                    <View style={{margin:5,width:styles.width,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}></View>
-                </View> 
-                </View> 
-                <View style={{width: width -20 , height: height-490,backgroundColor:"white",alignItems:"center",justifyContent:"center"}}>
+            <View style={{marginVertical:10}}>
+                <View style={{width: width -20 , height: height-450,backgroundColor:"white",alignItems:"center",justifyContent:"center"}}>
                     <View style={{margin:5,alignItems:"center",justifyContent:"center",borderRadius:10}}>{message}</View>
                 </View>
-                <View style={{flexDirection:"row",height:40}}>
+                <View style={{flexDirection:"row"}}>
                     {button}
                 </View>  
             </View>
@@ -233,10 +225,6 @@ class ScanCentralUnits extends Component {
             </View>
         )
     }
-
-
-
-
 
     render() {
         var {

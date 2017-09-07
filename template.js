@@ -10,6 +10,7 @@ import { connect } from 'react-redux';
 import { 
 	LOADING,
 } from '../constants'
+import Background from './helpers/background'
 
 class Template extends Component{
 	
@@ -24,16 +25,14 @@ class Template extends Component{
 	render(){	
 		return(
 			<ScrollView style={styles.pairContainer}>
-				<Image  
-					source={require('../images/temp_background.imageset/temp_background.png')} 
-					style={styles.image_complete_container}
-				>	
+				<Background>
 					<View style={styles.pairSectionsContainer}>
 						<Text>
 							Hola
 						</Text>
 					</View>
 				</Image>
+				</Background>
 			</ScrollView>
 		);	
 	}

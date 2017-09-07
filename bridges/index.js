@@ -11,7 +11,8 @@ import {
     NativeEventEmitter,
     TextInput,
     PermissionsAndroid,
-    Modal
+    Modal,
+    ActivityIndicator
     } from 'react-native';
 
 import {styles,first_color,width,option_blue} from '../styles/index.js'
@@ -22,7 +23,9 @@ import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
+import { YouTubeStandaloneAndroid } from 'react-native-youtube';
 import SlowBleManager from 'react-native-ble-manager'
+
 import {
     SUREFI_SEC_SERVICE_UUID,
     SUREFI_SEC_HASH_UUID,
@@ -37,21 +40,85 @@ const bluetoothIcon = (<Icon name="bluetooth" size={30} color="black" />)
 const refreshIcon = (<Icon name="refresh" size={30} color="black"/>)
 const serialIcon = (<Icon name="keyboard-o" size={40} color="black"/>)
 const cameraIcon = (<Icon name="camera" size={40} color="white" />)
+const fab_buttons_background = 'white'
 class Bridges extends Component{
     
+    static navigatorButtons = {
+        rightButtons: [
+
+        ],
+        fab: {
+            collapsedId: 'options',
+            collapsedIcon: require('../images/options-icon.png'),
+            expendedId: 'clear',
+            expendedIcon: require('../images/options-icon-open.png'),
+            backgroundColor: fab_buttons_background,
+            actions: [
+                {
+                    id: 'keyboard',
+                    icon: require('../images/keyboard_icon.imageset/keyboard_icon.png'),
+                    backgroundColor: fab_buttons_background
+                },
+                {
+                    icon : require('../images/info_icon.imageset/info_icon.png'),
+                    id: "help",
+                    backgroundColor: fab_buttons_background,
+                    buttonFontSize: 14,
+                },
+                {
+                    icon : require('../images/youtube-icon.png'),
+                    id: "youtube",
+                    backgroundColor: fab_buttons_background,
+                    buttonFontSize: 30,
+                },
+                {
+                    icon: require('../images/bluetooth-icon.png'),
+                    id: "devices",
+                    backgroundColor: fab_buttons_background
+                }
+            ]
+        }            
+    }
+
+
     static navigatorStyle = {
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
         navBarButtonColor: "white",
         orientation: 'portrait',
-        title : "Scan Device"
+        title : "Scan Device",
     }
     
     constructor(props) {
         super(props);
+         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
         this.manager = new BleManager();
         this.stared_scanning = false
+
     }
+
+    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
+        console.log("event",event)
+        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
+            switch(event.id){
+                case "keyboard":
+                    this.renderSelectedOption('keyboard')
+                break
+                case "help":
+                    this.showHelpAlert()
+                break
+                case "youtube":
+                    this.showYouTubeVideo()
+                break
+                case "devices":
+                    this.renderSelectedOption('devices')
+                break
+                default:
+                break
+            }
+        }
+    }
+
 
     componentWillMount() {  
         
@@ -60,7 +127,7 @@ class Bridges extends Component{
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
         this.props.dispatch({type :"SHOW_CAMERA"})
-
+        this.props.dispatch({type :"SHOW_QR_IMAGE"})
     }
 
     componentWillUnmount() {
@@ -71,10 +138,22 @@ class Bridges extends Component{
         this.manager.stopDeviceScan();
     }
 
+    showYouTubeVideo(){
+        YouTubeStandaloneAndroid.playVideo({
+          apiKey: 'AIzaSyAoR0l9zJjYcbwIsmt4lSHuVI4x447JWVQ',     // Your YouTube Developer API Key
+          videoId: 'ICawolrEJtQ',     // YouTube video ID
+          autoplay: true,             // Autoplay the video
+          startTime: 120,             // Starting point of video (in seconds)
+        })
+          .then(() => console.log('Standalone Player Exited'))
+          .catch(errorMessage => console.error(errorMessage))                
+    }
+
     componentDidMount() {
         this.checkMultiplePermissions() 
     }
     
+
     checkMultiplePermissions(){
         console.log("checkMultiplePermissions()")
         let permissions = PermissionsAndroid.PERMISSIONS
@@ -120,7 +199,6 @@ class Bridges extends Component{
           .catch((error) => {
             // Failure code 
             Alert.alert("You need turn on the bluetooth to connect the Sure-Fi Bridge.")
-            
           });        
     }
 
@@ -197,17 +275,6 @@ class Bridges extends Component{
         )
     }
 
-    showOrHideDevicesList(){
-        var {list_status,dispatch} = this.props;
-        if(list_status == "showed"){
-            dispatch({type : "HIDE_DEVICES_LIST"})
-        }
-
-        if(list_status == "hidden"){
-            dispatch({type : "SHOW_DEVICES_LIST"})
-        }
-    }
-
     goToDeviceControl(device){
         console.log("goToDeviceControl()",device)
         this.stopScan()
@@ -251,8 +318,10 @@ class Bridges extends Component{
         var devices = this.props.devices
         this.stared_scanning = true
         this.manager.startDeviceScan(null,null,(error,device) => {
-            
+            //console.log("device",device)
             if(error){
+                //console.log("error",error)
+                Alert.alert("Error",)
                 return
             }
 
@@ -287,11 +356,48 @@ class Bridges extends Component{
     }
 
 
-    renderDeviceList(){
-        if(this.props.scanning_status != "")
-            return <ScannedDevicesList manager={this.manager} devices={this.devices}/>
-        else
-            return null 
+    renderDeviceList(list_status){
+        if(list_status == "showed"){
+            if(this.props.scanning_status != ""){
+                return <ScannedDevicesList manager={this.manager} devices={this.devices}/>
+            }else{
+                return <ActivityIndicator/>
+            }
+        }
+        return null
+    }
+
+
+    renderSerialInput(show_serial_input){
+        if(show_serial_input)
+            return(
+                <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
+                    <View style={{width:width-200,height:50,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
+                        <View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200}}>
+                            <TextInput 
+                                maxLength={6}
+                                style={{flex:1,justifyContent:"center",fontSize:25,width:width-200}} 
+                                underlineColorAndroid="transparent" 
+                                onChangeText={(t) => this.searchDeviceBySerial(t)}
+                                placeholder ="FFFFFF"
+                            />
+                        </View>
+                    </View>
+                </View>
+            )
+
+        return null
+    }
+
+    renderQrImage(show_qr_image){
+        if(show_qr_image)
+            return (
+                <Image  
+                    source={require('../images/instruction_image_1.imageset/instruction_image.png')} 
+                    style={{width:150,height:180}}
+                />
+            )       
+        return null
     }
 
     searchDeviceBySerial(id){
@@ -361,6 +467,24 @@ class Bridges extends Component{
         this.requestMultiplePermissions()
     }
 
+    renderSelectedOption(option){
+        console.log("renderSelectedOption()",option)
+        var { dispatch } = this.props;
+        dispatch({type:"HIDE_SERIAL_INPUT"})
+        dispatch({type : "HIDE_DEVICES_LIST"})
+        dispatch({type: "HIDE_QR_IMAGE"})
+
+        if(option == "keyboard"){
+            dispatch({type:"SHOW_SERIAL_INPUT"})
+        }else if(option == "devices"){
+            dispatch({type:"SHOW_DEVICES_LIST"})
+        }else{
+            dispatch({type: "SHOW_QR_IMAGE"})
+        }
+
+    }
+
+
     renderModal(){
         return (
             <Modal 
@@ -404,25 +528,14 @@ class Bridges extends Component{
     }
 
     render(){
-
-        /*
-            <TouchableHighlight style={{marginLeft:25}} onPress={() => this.researchDevices()}>
-                {refreshIcon}
-            </TouchableHighlight>
-            <TouchableHighlight style={{marginLeft:25}} onPress={() => this.showOrHideDevicesList()}>
-                {bluetoothIcon}
-            </TouchableHighlight>
-        */
-
-        console.log("this.props.show_permissions_modal",this.props.show_permissions_modal)
+        console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
         if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
             return(
                 <Background>
-                    <ScrollView style={{flex:1,marginHorizontal:10}}>
-
-                        <View style={{height:250,alignItems:"center",marginBottom:120}}>
+                    <View style={{flex:1,marginHorizontal:10}}>
+                        <View style={{alignItems:"center",height:350}}>
                             <ScanCentralUnits 
                                 navigation={this.props.navigation} 
                                 goToDeviceControl={(device)=> this.goToDeviceControl(device)}
@@ -432,50 +545,20 @@ class Bridges extends Component{
                                 stopScan = {() => this.stopScan()}
                             />
                         </View>
-                        <View style={{flexDirection:"row"}}>
-                            <View style={{alignItems:"center",justifyContent:"center",flex:1,flexDirection:"row"}}> 
-                                <View>
-                                    <TouchableHighlight style={{marginRight: 30}} elevation={5} onPress={() => this.showOrHideSerialInput()} >
-                                        {serialIcon}
-                                    </TouchableHighlight>
-                                </View>
-                                <View>
-                                    <Image  
-                                        source={require('../images/instruction_image_1.imageset/instruction_image.png')} 
-                                        style={{width:80,height:100}}
-                                    />  
-                                </View>
-                                <View>
-                                    <TouchableHighlight style={{marginLeft: 30}} elevation={5} onPress={() => this.showHelpAlert()} >
-                                        {helpIcon}
-                                    </TouchableHighlight>
-                                </View>
-                            </View>
-                        </View>
-                        <View>
-                        { this.props.show_serial_input && (
-                            <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
-                                <View style={{width:width-200,height:50,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
-                                    <View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200}}>
-                                        <TextInput 
-                                            maxLength={6}
-                                            style={{flex:1,justifyContent:"center",fontSize:25,width:width-200}} 
-                                            underlineColorAndroid="transparent" 
-                                            onChangeText={(t) => this.searchDeviceBySerial(t)}
-                                            placeholder ="FFFFFF"
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        )
-                        }
-                        </View>
-                         <ScrollView>
-                            {this.renderDeviceList() } 
-                        </ScrollView>
-                    </ScrollView>
-                </Background>
+                        <View style={{alignItems:"center"}}>
+                            {this.renderSerialInput(this.props.show_serial_input)}
 
+                        </View> 
+                        <View style={{alignItems:"center"}}>    
+                            {this.renderQrImage(this.props.show_qr_image)}
+                        </View>                        
+                        <View>
+                            <ScrollView>
+                                {this.renderDeviceList(this.props.list_status) } 
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Background>
             );  
         }
     }
@@ -488,6 +571,7 @@ const mapStateToProps = state => ({
     show_serial_input : state.scanCentralReducer.show_serial_input,
     current_view : state.scanCentralReducer.current_view,
     show_permissions_modal : state.scanCentralReducer.show_permissions_modal,
+    show_qr_image : state.scanCentralReducer.show_qr_image
 })
 
 export default connect(mapStateToProps)(Bridges)

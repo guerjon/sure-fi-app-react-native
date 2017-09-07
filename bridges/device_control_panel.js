@@ -34,7 +34,8 @@ import {
 	PRETY_VERSION,
 	BYTES_TO_HEX,
 	SUREFI_SEC_SERVICE_UUID,
-	SUREFI_SEC_HASH_UUID
+	SUREFI_SEC_HASH_UUID,
+	BYTES_TO_INT
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -398,6 +399,10 @@ class SetupCentral extends Component{
 			    	.then(response => {
 				    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
 				    	.then(response => {
+					    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
+					    	.then(response => {
+
+					    	}).catch(error => console.log("error",error))
 
 				    	}).catch(error => console.log("error",error))
 
@@ -426,11 +431,12 @@ class SetupCentral extends Component{
 	}
 
 	handleCharacteristicNotification(data){
-		///console.log("handleCharacteristicNotification",data)
-		let value = data.value[0]
+		console.log("handleCharacteristicNotification",data.value)
+		var value = data.value[0]
 		
 		switch(value){
 			case 1 : //app firmware version
+				console.log("no mas")
 				if(data.value.length == 3){
 					this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(data.value[1].toString() +"." + data.value[2].toString())  })
 				}
@@ -502,10 +508,102 @@ class SetupCentral extends Component{
 					)
 				}
 				break
+			case 0x1B:
+				if(data.value[1]){ // debug mode is enabled
+					WRITE_COMMAND(this.device.id,[0x28,0x00])
+					.then(response => {
+						Alert.alert("Debug Mode Disabled")
+						this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: false})
+
+					})
+					.catch(error =>  Alert.alert("Error",error))
+				} else{
+					WRITE_COMMAND(this.device.id,[0x28,0x01])
+					.then(response => {
+						Alert.alert("Debug Mode Enabled")	
+						this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: true})
+					})
+					.catch(error =>  Alert.alert("Error",error))
+				}
+				break
+			case 0x1C:
+				console.log("data",data)
+				data.value.shift()
+
+				var miliseconds = BYTES_TO_INT(data.value)
+				console.log(miliseconds)
+
+				if(miliseconds){
+					if(miliseconds > 1000){
+						var seconds = miliseconds / 1000	
+						
+						if(seconds > 60){
+							var minutes = seconds / 60
+							
+							if(minutes > 60){
+								var hours = minutes / 60
+								
+								if(hours > 24){
+									var days = hours / 24
+									Alert.alert("Last Connection","The last connection was made about " + days + " days")	
+								}else{
+									Alert.alert("Last Connection","The last connection was made about " + hours + " hours")		
+								}
+							}else{
+								Alert.alert("Last Connection","The last connection was made about " + minutes + " minutes")	
+							}
+						}else{
+							Alert.alert("Last Connection","The last connection was made about " +seconds+ " seconds.")	
+						}
+					}else{
+						Alert.alert("Last Connection","The last connection was made about just now")	
+					}
+				}else{
+					Alert.alert("Last Connection no registred")	
+				}
+			break;
+			case 0x1A:
+				data.value.shift()
+				this.handleResetCauseNotification(data.value)
+			break;
 			default:
 				console.log("No options found to: " + value)
 			return
 		}		
+	}
+
+	handleResetCauseNotification(values){
+        let powerOn       = values[0] 
+        let brownOut      = values[1]
+        let wakeFromIdle  = values[2]
+        let wakeFromSleep = values[3]
+        let watchdogTimer = values[4]
+        let deadmanTimer  = values[5]
+        let softwareReset = values[6]
+        let externalReset = values[7]
+
+        Alert.alert(
+        	"Reset Causes",
+        	"Power on - " + powerOn + "\n" +
+        	"Brown Out - "  + brownOut + "\n" +
+        	"Wake from Idle - "  +wakeFromIdle + "\n" +
+        	"Wake from Sleep - "  +wakeFromSleep + "\n" +
+        	"Watchdog Timer - "  +watchdogTimer + "\n" +
+        	"Deadman Timer - "  + deadmanTimer + "\n" +
+        	"Software Reset - "  + softwareReset + "\n" +
+        	"External Reset - "  + externalReset + "\n", 
+        	[
+        		{text: "Continue",onPress: () => {}},
+        		{text: "Clear", onPress: () => this.clearResetCauses(), style: 'cancel'}
+        	]
+        )
+	}
+
+	clearResetCauses(){
+		WRITE_COMMAND(this.device.id,[0x27])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))		
 	}
 
 	disconnectOnBack(){
@@ -566,6 +664,28 @@ class SetupCentral extends Component{
 		.catch(error =>  Alert.alert("Error",error))
 	}
 
+	getDebugModeStatus(){
+		WRITE_COMMAND(this.device.id,[0x29])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))		
+	}
+
+
+	getLastPackageTime(){
+		WRITE_COMMAND(this.device.id,[0x2A])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))		
+	}
+
+	getResetCauses(){
+		WRITE_COMMAND(this.device.id,[0x26])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))
+	}
+
 	renderInfo(){
 		if(this.props.user_status == "logged")
 			var admin_values = (
@@ -611,9 +731,9 @@ class SetupCentral extends Component{
 							OTHER COMMANDS
 						</Text>
 						<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
-						<WhiteRowLink name="ENABLE DEBUG MODE" callback={() => this.resetBoard()}/>
-						<WhiteRowLink name="GET LAST PACKET TIME" callback={() => this.resetBoard()}/>
-						<WhiteRowLink name="RESET CAUSES" callback={() => this.resetBoard()}/>
+						<WhiteRowLink name="DEBUG MODE"  callback={() => this.getDebugModeStatus()}/>
+						<WhiteRowLink name="GET LAST PACKET TIME" callback={() => this.getLastPackageTime()}/>
+						<WhiteRowLink name="RESET CAUSES" callback={() => this.getResetCauses()}/>
 					</View>
 				</View>	
 			)
@@ -724,6 +844,15 @@ class SetupCentral extends Component{
 				getCloudStatus:getCloudStatus 
 			}
 		})
+	}
+
+
+	goToInstructionalVideos(){
+		Alert.alert("Videos on process","Videos coming soon.")
+	}
+
+	goToOperationValues(){
+		Alert.alert("Operation Values","Comming Soon.");
 	}
 
 	closeModal(){
@@ -842,7 +971,8 @@ const mapStateToProps = state => ({
   	interval : state.scanCentralReducer.interval,
   	indicator_number : state.scanCentralReducer.indicator_number,
   	write_pair_result : state.scanCentralReducer.write_pair_result,
-  	user_status : state.mainScreenReducer.user_status
+  	user_status : state.mainScreenReducer.user_status,
+  	debug_mode_status : state.setupCentralReducer.debug_mode_status
 });
 
 

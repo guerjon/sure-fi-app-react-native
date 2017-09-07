@@ -134,8 +134,8 @@ export  const styles = StyleSheet.create({
     preview: {
       justifyContent: 'flex-end',
       alignItems: 'center',
-      width:width-20,
-      height: 200
+      width:width-40,
+      height: width-40,
     },
     preview_remote : {
       justifyContent: 'flex-end',

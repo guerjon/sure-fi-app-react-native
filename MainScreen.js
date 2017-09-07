@@ -252,6 +252,14 @@ class MainScreen extends Component {
 		this.props.navigator.showModal({
 			screen : "Bridges",
 			title: "Scan Sure-Fi Bridge",
+			animationType: 'slide-up',
+		})
+	}
+
+	openVideosModal(){
+		this.props.navigator.push({
+			screen : "Videos",
+			title : "Will it Transmit?",
 			animationType: 'slide-up'
 		})
 	}
@@ -296,7 +304,7 @@ class MainScreen extends Component {
 					  				</View>
 					  				<View style={{alignItems:"flex-end",right:-30}}>
 										<TouchableHighlight style={{top:-20}} onPress={() =>  this.navigateToLogin()}>
-											<Icon name="sign-in" size={30} color="white" />
+											<Icon name="user-circle" size={30} color="white" />
 										</TouchableHighlight>
 					  				</View>
 				  				</View>
@@ -313,58 +321,55 @@ class MainScreen extends Component {
 							<View style={styles.textViewContainer}>
 								<View style={{alignItems:"center",justifyContent:"center"}}>
 									<TouchableNativeFeedback onPress={() => this.openScanModal()} >
-										<Image source={require('./images/menu_bridge.imageset/menu_bridge.png')}>
+										<Image source={require('./images/menu_data.imageset/menu_data.png')}>
 										</Image>
 									</TouchableNativeFeedback>
 								</View>
 								<View style={styles.textView}>
 									<Text style={styles.text}>
-										Access Control
-									</Text>
-									<Text style={styles.text}>
-										Bridges
+										Wiegand Wire
 									</Text>
 								</View>
 							</View>
 
 							<View style={styles.textViewContainer}>
 								<View>
-									<Image source={require('./images/menu_hvac.imageset/menu_hvac.png')} >
+									<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
 									</Image>
 								</View>
 								<View>
 								</View>
 								<View style={styles.textView}>
 									<Text style={styles.text}>
-										HVAC Systems
+										Thermostat Wire Replacement
 									</Text>
 								</View>
 							</View>							
 
 							<View style={styles.textViewContainer}>
 								<View>
-									<Image source={require('./images/menu_help.imageset/menu_help.png')} >
+									<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
 									</Image>
 								</View>
 								<View>
 								</View>
 								<View style={styles.textView}>
 									<Text style={styles.text}>
-										Help / Troubleshooting
+										Wiegand Wire Replacement
 									</Text>
 								</View>
 							</View>
 							<View style={styles.textViewContainer}>
-								<TouchableHighlight onPress={() => this.openSureFiPage("http://sure-fi.com/")}>
+								<TouchableHighlight onPress={() => this.openVideosModal()}>
 									<View>
 										<View>
-											<Image source={require('./images/menu_web.imageset/menu_web.png')} >
+											<Image source={require('./images/menu_video.imageset/menu_video.png')} >
 											</Image>
 										</View>
 										<View style={styles.textView}>
 											
 												<Text style={styles.text}>
-													Visit Sure-Fi.com
+													Will it Transmit?
 												</Text>
 										</View>
 									</View>
@@ -384,7 +389,7 @@ class MainScreen extends Component {
   	render() {
   		//console.log("this.props",this.props)
   		var {screen_status} = this.props
-  		//return this.renderMainScreen()
+  		return this.renderMainScreen()
   		switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()

@@ -18,6 +18,7 @@ const initialState = {
   photo_data : {},
   show_permissions_modal : false,
   show_serial_input : false,
+  show_qr_image: true,
   manager : {},
   current_view : "",
   justDeploy : false,
@@ -144,6 +145,16 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         show_serial_input : false
+      }
+    case "SHOW_QR_IMAGE":
+      return {
+        ...state,
+        show_qr_image : true
+      }
+    case "HIDE_QR_IMAGE":
+      return {
+        ...state,
+        show_qr_image: false
       }
     case "SAVE_BLE_MANAGER":
       return {

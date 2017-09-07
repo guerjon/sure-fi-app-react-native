@@ -105,6 +105,19 @@ export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{
 	return ((byte_1 & 0xff) << 8) | (byte_2 & 0xff); 
 }
 
+export const FOUR_BYTES_TO = (byte_1,byte_2,byte_3,byte_4) =>{
+	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 18) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
+
+}
+
+export const BYTES_TO_INT = array => { //big endian
+	var result = ((array[array.length - 1]) | 
+              (array[array.length - 2] << 8) | 
+              (array[array.length - 3] << 16) | 
+              (array[array.length - 4] << 24));
+	return result
+}
+
 export const HEX_TO_BYTES = (hex) => {
 	for (var bytes = [], c = 0; c < hex.length; c += 2) {
 		var sub = hex.substr(c, 2);

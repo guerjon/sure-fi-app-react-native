@@ -3,6 +3,9 @@ package com.surefi;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.inprogress.reactnativeyoutube.ReactNativeYouTube;
+import com.tkporter.sendsms.SendSMSPackage;
+import com.reactnativecomponent.barcode.RCTCapturePackage;
 //import com.tkporter.sendsms.SendSMSPackage;
 //import com.reactnativecomponent.barcode.RCTCapturePackage;
 //import com.bitgo.randombytes.RandomBytesPackage;
@@ -42,8 +45,9 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new PushNotificationsPackage(),
               new BluetoothPackage(),
               new BlePackage(),
-              new KeychainPackage()
-                       
+              new KeychainPackage(),
+              new ReactNativeYouTube()
+
        );
    }
 
