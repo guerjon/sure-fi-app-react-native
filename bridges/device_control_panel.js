@@ -469,6 +469,10 @@ class SetupCentral extends Component{
 			case 18 : //bluetooth firmware version
 				this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[1].toString() + "." + data.value[2].toString()) })
 				break
+			case 0x11:
+				data.value.shift()
+				this.goToOperationValues(data.value)
+				break
 			case 0x14: //Voltage
 				
 				let v1 = ((data.value[1] & 0xff) << 8) | (data.value[2] & 0xff);  
@@ -756,7 +760,7 @@ class SetupCentral extends Component{
 				goToConfigureRadio={() => this.goToConfigureRadio()}
 				goToForcePair={() => this.goToForcePair()}
 				goToInstructionalVideos = {() => this.goToInstructionalVideos()}
-				goToOperationValues = {() => this.goToOperationValues()}
+				getOperationValues = {() => this.getOperationValues()}
 				device_status = {this.props.central_device_status}
 				fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 				getCloudStatus = {(device) => this.getCloudStatus(device)}
@@ -851,8 +855,21 @@ class SetupCentral extends Component{
 		Alert.alert("Videos on process","Videos coming soon.")
 	}
 
-	goToOperationValues(){
-		Alert.alert("Operation Values","Comming Soon.");
+	getOperationValues(){
+		WRITE_COMMAND(this.device.id,[0x19])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))
+	}
+
+	goToOperationValues(values){
+		this.props.navigator.showModal({
+			screen : "OperationValues",
+			title : "Operation Values",
+			passProps: {
+				values: values
+			}
+		})
 	}
 
 	closeModal(){

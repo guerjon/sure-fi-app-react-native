@@ -31,7 +31,6 @@ class Template extends Component{
 							Hola
 						</Text>
 					</View>
-				</Image>
 				</Background>
 			</ScrollView>
 		);	

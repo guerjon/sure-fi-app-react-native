@@ -258,7 +258,7 @@ class Options extends Component{
     getOperatingValuesOption(){
     	return (
     		<View>
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToOperationValues()}>
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.getOperationValues()}>
 					<View style={{
 						flexDirection:"row",
 						padding:5,
