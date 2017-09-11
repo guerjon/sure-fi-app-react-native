@@ -14,14 +14,14 @@ import Background from './helpers/background'
 
 class Template extends Component{
 	
-	static navigationOptions ={
-		title : "Template",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }
 
+    
 	render(){	
 		return(
 			<ScrollView style={styles.pairContainer}>

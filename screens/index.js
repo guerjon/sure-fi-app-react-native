@@ -22,8 +22,10 @@ import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
 import RadioConfiguration from '../bridges/radio/index'
 import OperationValues from '../bridges/operation_values'
+import Relay from '../bridges/relay'
 import Login from '../login'
 import Videos from '../videos'
+
 
 
 export function registerScreens(store,Provider){
@@ -51,4 +53,5 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('Login', () => Login,store,Provider)
 	Navigation.registerComponent('Videos',() => Videos,store,Provider)
 	Navigation.registerComponent('OperationValues', () => OperationValues,store,Provider)
+	Navigation.registerComponent('Relay',() => Relay,store,Provider)
 }

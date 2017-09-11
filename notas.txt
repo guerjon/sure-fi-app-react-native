@@ -41,6 +41,83 @@ Procesos
 En android cuando una nueva aplicacion se habre se crea un nuevo proceso, en este procesos tambien se crea el thread principal, a este proceso podemos anadir diferentes threads
 
 
+*** Fundamentals ***
+
+Hay cuantro tipos de componentes en todas las apps
+
+- actividades
+- servicios
+	-- Hay dos tipos de servicios los que necesitan todos los recursos para que siempre jale y siempre este funcionando asi como por ejemplo tocar musica
+	notese que este tipo de servicio no tiene que tener la app abierta.
+	Y el otro tipo es aquel que puede correr en el background pero no es tan critico y si se detiene no existe mucho problema para el usuario.
+
+- broadcast receivers
+	Este tipo de componente nos permite hacer eventos para que en un tiempo postereor sean manejados sin necesidad de que la aplicacino este corriendo en el dispositivo
+	por ejemplo una notificacion de facebook, o una llamada de messenger, son eventos que los maneja la aplicacion y la mayoria de las veces crean push notifications
+	o algun tipo de mensaje para manejarla.
+
+
+- content providers
+	Los contenedores nos permite guardar datos permanentemente en la app, estos pueden ser bases de datos en el dispositivo, en un servidor etc...
+
+
+
+Un sistema unico de android es que una aplicacion puede empezar a correr una actividad en otra aplicacion, no directamente pero el mismo sistema de Android maneja la peticion
+si tiene un mensaje lo entrega al siguiente proceso, en detalle lo que pasa es esto.
+
+	Se crea mi aplicaci'on A
+	La aplicacion A necesita de una actividad que esta en la aplicaci'on B (por ejemplo tomar una foto)
+	La aplicacion A atraves del sistema de Android pide que la aplicacion B empiece ese proceso,
+	El sistema de android le pide a la aplicacion B que empiece ese proceso ( el proceso se empieza pero para el usuario parece que esta dentro de la aplicacion A)
+	Notese que se crearon 2 diferentes procesos uno para la aplicacion A y otro para la aplicacion B 
+
+Intent
+	Un intent es la forma en la que ligamos los componentes Actividad, Servicios y Brodcaster recivers, los intent nos permiten que interactuemos con otras aplicaciones y recursos,
+	por ejemplo despues de creada una actividad quieres acceder a los contactos entonces con el Intent lanzas la otra actividad para que te de los contactos o para mostrarselos 
+	al usuario para que elija uno, si lo elige entonces el resultado tambien lo regresara con un Intent y la primera actividad continuara ya con el dato.
+	Por otro lado el Intent para los Brodcasters receivers solo nos sirven para definir el tipo de Brodcaster, es decir solo van a tener un string adentro que identifica al 
+	brodcaster receiver.
+
+
+ContentResolver 
+	A diferencia de las actividades, servicios y Brodcaster receivers los content Providers no usan a Intent ellos son activados con un ContentResolver 
+
+
+Activando cada tipo de elemento
+
+	Activity 
+		Las actividades se inician con startActivity() o con startActivityForResult()
+	Services 
+		Los servicios ahora se activan con JobScheduler, en las versiones viejitas tienes que usar Intent y llamar a startService() este servicios se liga con bindService()
+	Brodcast
+		Estas madres igual con el Intent se activan usando metodos como sendBroadcast(), sendOrderedBroadcast() or sendStickyBroadcast()
+	Providers
+		Llamando a query() en un ContentResolver podemos pues realizar a quer jaja
+
+
+ManifestFile
+	
+	Hay 4 cosas que el manifest se encarga de tener o que pueden estar declaradas ahi.
+		* Permisos, todos los permisos de las cosas que se necesiten usar para la aplicacion <uses-permission ... >
+		* Declara el minimo numero de API que requiere la app     <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="22" />
+		* Declara hardware o software que requiera la app  <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+		* Declara librerias que necesitan ser ligadas ?? (nunca he visto una ligada) 
+
+
+Platform Architecture
+
+	- La base de Android es Linux, por linux podemos usar caracteristicas chidas
+	- Abstraccion de hardware, Depues sigue el La capa de abstracion de hardware, aqui hay multiples librerias donde cada una implementa una interfaz para un tipo de hardware especifico. cuando se 	
+		requiere linux carga la libreria para su posterior uso
+	- Android Run Time, cada app tiene su proceso y en este proceso se corre una instancia de Android Run time, este android Runtime escribe maquinas virtiales que ejecutan archivos Dex
+		los DEX es un bytecode que pueden correr en la plataforma de android.
+	- Native C / C++ libraries, muchas de las librerias que ya trae android estan construidas en estos lenguajes y se puede ejecutar codigo c o c++ usando Android NDK
+	- Java Api Framework pues es esto con lo que trabajamos todos los dias el api de java que esta disponible para todos los usuarios.
+	- Systems Apps, todas las apps que ya vienen pre-instaladas y podemos usar, como la app para enviar un mensaje, el navegador etc... claro siempre se puede volver a crear lo que se necesite.
+
+
+MinSdk
+
 
 -----------------+--------------------------redux-----------------+--------------------------
 the state, i mean the entire object is of the whole application is stored in an object tree within a single store. 
@@ -52,8 +129,6 @@ to make a state change we have to make a dispatch to the store
 store.dispatch({
 	//action	
 });
-
-
 
 when a createStore is made, yoy have to pass a redux on in 
 

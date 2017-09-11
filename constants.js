@@ -137,6 +137,9 @@ export const UINT8TOSTRING = (u8a) => {
 	return c.join("");
 }
 
+const checkHex = (n) => {return/^[0-9A-Fa-f]{1,64}$/.test(n)}
+
+export const Hex2Bin = (n) => {if(!checkHex(n))return 0;return parseInt(n,16).toString(2)}
 
 export const longToByteArray = (long) => {
 	// we want to represent the input as a 8-bytes array

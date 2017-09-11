@@ -431,12 +431,11 @@ class SetupCentral extends Component{
 	}
 
 	handleCharacteristicNotification(data){
-		console.log("handleCharacteristicNotification",data.value)
 		var value = data.value[0]
 		
 		switch(value){
 			case 1 : //app firmware version
-				console.log("no mas")
+				
 				if(data.value.length == 3){
 					this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(data.value[1].toString() +"." + data.value[2].toString())  })
 				}
@@ -469,10 +468,6 @@ class SetupCentral extends Component{
 			case 18 : //bluetooth firmware version
 				this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[1].toString() + "." + data.value[2].toString()) })
 				break
-			case 0x11:
-				data.value.shift()
-				this.goToOperationValues(data.value)
-				break
 			case 0x14: //Voltage
 				
 				let v1 = ((data.value[1] & 0xff) << 8) | (data.value[2] & 0xff);  
@@ -482,16 +477,16 @@ class SetupCentral extends Component{
 				this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
 				break
 			case 0x16: // pair result
-					if(data.value[1] == 2){
-						Alert.alert(
-							"Pairing Complete",
-							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
-						)
-					}else{
-						Alert.alert(
-							"Error !! something was wrong on the pairing process","Connect to the other bridge to fix it."
-						)
-					}
+				if(data.value[1] == 2){
+					Alert.alert(
+						"Pairing Complete",
+						"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
+					)
+				}else{
+					Alert.alert(
+						"Error !! something was wrong on the pairing process","Connect to the other bridge to fix it."
+					)
+				}
 				break
 			case 0x17:
 				if(this.props.force){ //this comes from the file options method resetStacktoForce
@@ -512,6 +507,15 @@ class SetupCentral extends Component{
 					)
 				}
 				break
+			case 0x18:
+				data.value.shift()
+				this.updateRelayValues(data.value)
+				break
+			case 0x19:
+
+				data.value.shift()
+				this.goToOperationValues(data.value)
+				break				
 			case 0x1B:
 				if(data.value[1]){ // debug mode is enabled
 					WRITE_COMMAND(this.device.id,[0x28,0x00])
@@ -748,7 +752,7 @@ class SetupCentral extends Component{
 
 	renderOptions(device,central_device_status,indicator_number){
 		if(central_device_status == "connecting")
-			return null
+			return <ActivityIndicator/>
 
 		if(!IS_EMPTY(device) &&  central_device_status == "connected" && indicator_number){
 			return <Options 
@@ -764,11 +768,12 @@ class SetupCentral extends Component{
 				device_status = {this.props.central_device_status}
 				fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 				getCloudStatus = {(device) => this.getCloudStatus(device)}
+				getRelayValues = {() => this.getRelayValues()}
 
 			/>
 		}
 		
-		return null
+		return <ActivityIndicator/>
 	}
 
 	renderNotification(show_notification,indicator_number){
@@ -836,6 +841,28 @@ class SetupCentral extends Component{
 		)
 	}
 
+    updateRelayValues(values){
+    	let props = this.props
+    	let dispatch = props.dispatch
+    	
+    	dispatch({type: "SET_SLIDER_VALUE",slider_value: values[0]})
+    	dispatch({type: "SET_RELAY_IMAGE_1_STATUS",relay_1_image_status : values[1]})
+    	dispatch({type: "SET_RELAY_IMAGE_2_STATUS",relay_2_image_status : values[2]})
+
+    	this.goToRelay()
+    }
+
+	goToRelay(){
+
+		this.props.navigator.showModal({
+			screen: "Relay",
+			title: "Relay Settings",
+			passProps: {
+				getRelayValues : () => this.getRelayValues()
+			}
+		})
+	}
+
 	goToForcePair(){
 		this.handleCharacteristic.remove()
 		var getCloudStatus = (device) => this.getCloudStatus(device)
@@ -856,10 +883,17 @@ class SetupCentral extends Component{
 	}
 
 	getOperationValues(){
-		WRITE_COMMAND(this.device.id,[0x19])
+		WRITE_COMMAND(this.device.id,[0x25])
 		.then(response => {
 		})
 		.catch(error =>  Alert.alert("Error",error))
+	}
+
+	getRelayValues(){
+		WRITE_COMMAND(this.device.id,[0x24])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))		
 	}
 
 	goToOperationValues(values){

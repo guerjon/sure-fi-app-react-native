@@ -11,6 +11,7 @@ const small_font_size = 12
 const medium_font_size = 18
 const cancel_red = "red"
 export const first_color = "#2a323d"
+export const red_error = "#FF0000"
 export const option_blue = "#5AB0E3"
 export const link_color  = "#000099" 
 

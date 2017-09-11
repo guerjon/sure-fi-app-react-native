@@ -42,25 +42,12 @@ const next_step = <Text style={{alignSelf:"center"}}>Next Step </Text>
 
 class Options extends Component{
 	
-	static navigationOptions ={
-		title : "Template",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
-
-
 	constructor(props) {
 		super(props);	
 		this.device_status = this.props.device_status
 		this.device = this.props.device
 		this.user_status = this.props.user_status
 		console.log("user_status",this.user_status)
-	}
-
-	componentWillMount() {
-
 	}
 
 	showAlertUnpair(){
@@ -301,7 +288,22 @@ class Options extends Component{
     	)
     }
 
-
+    getRelayDefaults(){
+    	return (
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.getRelayValues()}>
+				<View style={styles.white_touchable_highlight_inner_container}>
+					<View style={styles.white_touchable_highlight_image_container}>
+						<Image source={require('../images/menu_relay.imageset/menu_relay.png')} style={styles.white_touchable_highlight_image}/>
+					</View>
+					<View style={styles.white_touchable_text_container}>
+						<Text style={styles.white_touchable_text}>
+							Relay Defaults
+						</Text>
+					</View>
+				</View>
+			</TouchableHighlight>
+    	)    
+   	}
 
     getUnPairBridgeOption(){
     	return (
@@ -415,6 +417,7 @@ class Options extends Component{
 				{this.getUpdateFirwmareOption()}
 				{this.getConfigureRadioOption()}
 				{this.getOperatingValuesOption()}
+				{this.getRelayDefaults()}
 			</View>
 		)
 		else
@@ -475,7 +478,14 @@ class Options extends Component{
 					{options}
 				</View>
 				<View>
-					{additional_options}
+					<View style={{alignItems:"center"}}>
+						<Text style={{padding:10,fontSize:18}}>
+							ADDITIONAL OPTIONS
+						</Text>
+					</View>
+					<View>	
+						{additional_options}
+					</View>
 				</View>
 			</View>
 		)

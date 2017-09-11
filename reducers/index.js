@@ -23,6 +23,8 @@ import registerReducer from './registerReducer'
 import mainScreenReducer from './mainScreenReducer'
 import loginReducer from './loginReducer'
 import videosReducer from './videos'
+import operationValuesReducer from './operationValuesReducer'
+import relayReducer from './relayReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -46,7 +48,9 @@ const rootReducer = combineReducers({
     bluetoothFirmwareUpdateReducer,
     batteryLevelReducer,
     loginReducer,
-    videosReducer
+    videosReducer,
+    operationValuesReducer,
+    relayReducer
 })
 
 export default rootReducer
