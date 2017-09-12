@@ -38,7 +38,7 @@ import {
 } from '../action_creators/index'
 
 
-const next_step = <Text style={{alignSelf:"center"}}>Next Step </Text>
+const next_step = <Text style={styles.device_control_title_container}>NEXT STEP</Text>
 
 class Options extends Component{
 	
@@ -141,8 +141,12 @@ class Options extends Component{
 
     getPairBridgeOption(){
 		return (
-			<View style={{marginBottom:50}}>
-				{next_step}
+			<View style={{marginBottom:20}}>
+				<View style={styles.device_control_title_container}>
+					<Text style={styles.device_control_title}>
+						NEXT STEP
+					</Text>
+				</View>			
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
 					<View style={{
 						flexDirection:"row",
@@ -256,7 +260,7 @@ class Options extends Component{
 						</View>
 						<View style={styles.white_touchable_text_container}>
 							<Text style={styles.white_touchable_text}>
-								Operation Values
+								Operating Values
 							</Text>
 						</View>
 					</View>
@@ -289,6 +293,7 @@ class Options extends Component{
     }
 
     getRelayDefaults(){
+    	if(this.props.central_device.manufactured_data.device_state == "0004")
     	return (
 			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.getRelayValues()}>
 				<View style={styles.white_touchable_highlight_inner_container}>
@@ -303,6 +308,8 @@ class Options extends Component{
 				</View>
 			</TouchableHighlight>
     	)    
+
+    	return null
    	}
 
     getUnPairBridgeOption(){
@@ -324,7 +331,7 @@ class Options extends Component{
 
 	renderUnpairedOptions(){
 		return (
-			<View style={{marginTop:10}}>
+			<View>
 				{this.getPairBridgeOption()}
 			</View>
 		)
@@ -332,7 +339,7 @@ class Options extends Component{
 
 	renderPairedOptions(){
 		return (
-			<View style={{marginTop:10}}>
+			<View>
 				{this.getDeployCentralUnitOption()}
 				{this.getUnPairBridgeOption()}
 			</View>
@@ -341,7 +348,7 @@ class Options extends Component{
 
 	renderDeployedOptions(){
 		return (
-			<View style={{marginTop:10}}>
+			<View>
 				{this.getUnPairBridgeOption()}
 			</View>
 		)
@@ -466,7 +473,7 @@ class Options extends Component{
 	}
 
 	render(){	
-		console.log("this.props.user_status",this.props.user_status)
+		//console.log("this.props.user_status",this.props.user_status)
 		console.log("indicator",this.props.indicator)
 
 		var options = this.renderOptions(this.props.indicatorNumber)
@@ -478,8 +485,8 @@ class Options extends Component{
 					{options}
 				</View>
 				<View>
-					<View style={{alignItems:"center"}}>
-						<Text style={{padding:10,fontSize:18}}>
+					<View style={styles.device_control_title_container}>
+						<Text style={styles.device_control_title}>
 							ADDITIONAL OPTIONS
 						</Text>
 					</View>

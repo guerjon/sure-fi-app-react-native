@@ -38,6 +38,11 @@ class StatusBox extends Component{
 		super(props);
 		this.connected = false
 		this.input_text = ""
+		this.device = props.device
+		this.device_status = props.device_status
+		this.indicator_number = props.indicator_number
+		this.power_voltage = props.power_voltage
+		
 	}
 
 	componentDidMount() {
@@ -123,19 +128,22 @@ class StatusBox extends Component{
 							"Disconnected"
 						</Text>
 					</View>
-					<View style={{flex:1}}>
-						<TouchableHighlight 
-							style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-							onPress={()=> this.props.manualConnect(this.props.device)}
-						>
-							<Text style={styles.bigGreenButtonText}>
-								Connect
-							</Text>
-						</TouchableHighlight>
-					</View>							
 				</View>
 			</View>
 		)
+/*
+	<View style={{flex:1}}>
+		<TouchableHighlight 
+			style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+			onPress={()=> this.props.manualConnect(this.props.device)}
+		>
+			<Text style={styles.bigGreenButtonText}>
+				Connect
+			</Text>
+		</TouchableHighlight>
+	</View>							
+*/
+
 	}
 
     renderStatusDevice(){
@@ -149,35 +157,49 @@ class StatusBox extends Component{
 			case "disconnected":
 	            return this.renderDisconnectingBox();
 			case "connected":
+				console.log("this.props.options_loaded",this.props.options_loaded)
+				if (this.props.options_loaded) 
  				return(
 					<View>
 						<View style={{backgroundColor:"white"}}>
-				            <View style={{flexDirection: "row",margin:10}}>
-								<View style={{flex:1,flexDirection:"row"}}>
-									<Text style={{padding: 10,margin:5}}>
-										Status
+				            <View style={{margin:10}}>
+								<View style={{
+									justifyContent:"center",
+									alignItems:"center",
+									flexDirection: "row"
+								}}>
+									<Text style={{padding: 2,fontSize:18}}>
+										Status:
 									</Text >
-									<Text style={{color: "#00DD00",padding: 10,margin: 5}}> 
+									<Text style={{color: "#00DD00",padding: 2,fontSize:18}}> 
 										Connected
 									</Text>
-								</View>
-								<View style={{flex:1}}>
-									<TouchableHighlight 
-										style={{backgroundColor:"gray",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-										onPress={() => this.props.manualDisconnect()}
-									>
-										<Text style={styles.bigGreenButtonText}>
-											Disconnect
-										</Text>
-									</TouchableHighlight>
 								</View>
 							</View>
 						</View>
 					</View>	            	
 	            )
+ 				else
+ 					return this.renderNormalConnecting()
+
 	        default:
 	        	return <Text>Error</Text>
     	}
+
+		/*
+			<View style={{flex:1}}>
+				<TouchableHighlight 
+					style={{backgroundColor:"gray",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
+					onPress={() => this.props.manualDisconnect()}
+				>
+					<Text style={styles.bigGreenButtonText}>
+						Disconnect
+					</Text>
+				</TouchableHighlight>
+			</View>
+
+		*/
+
     }
 	
     updateName(){
@@ -231,7 +253,8 @@ class StatusBox extends Component{
 
 	render(){	
 		var {device} = this.props;
-		
+		console.log("datos",this.device_status,this.indicator_number,this.power_voltage)
+
 		if(this.props.is_editing){
 			var content = (
 				<View style={styles.touchableSectionInner}>
@@ -266,11 +289,11 @@ class StatusBox extends Component{
 			var content = (
 				<View style={styles.touchableSectionInner}>
 					<View style={{flex:0.2}}>
-					<Image 
-						source={require('../images/bridge_icon.imageset/bridge_icon.png')} 
-						style={styles.touchableSectionInnerImage}
-					>
-					</Image>
+						<Image 
+							source={require('../images/bridge_icon.imageset/bridge_icon.png')} 
+							style={styles.touchableSectionInnerImage}
+						>
+						</Image>
 					</View>
 					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.5}}>
 						<Text style={{fontSize:18}}>
@@ -291,54 +314,26 @@ class StatusBox extends Component{
 
 		}
 
-		if (!IS_EMPTY(device)) {
-            return (
-                <ScrollView style={styles.pairContainer}>
-						<View style={styles.pairSectionsContainer}>
-							<View style={styles.touchableSectionContainer}>
-								<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-									{content}
-								</View>
-							</View>					
-							{this.renderStatusDevice()}
-						</View>
-				</ScrollView>
-            );
+        return (
+            <ScrollView >
+					<View>
+						<View style={styles.touchableSectionContainer}>
+							<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+								{content}
+							</View>
+						</View>					
+						{this.renderStatusDevice()}
+					</View>
+			</ScrollView>
+        );
 
-        } else {
-            return (
-                <ScrollView style={styles.pairContainer}>
-						<View style={styles.pairSectionsContainer}>
-							<View style={styles.titleContainer}>
-								<Text style={styles.miniTitle}>
-									Central Unit
-								</Text>
-							</View>
-							<View style={styles.touchableSectionContainer}>
-								<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-									<View style={styles.touchableSectionInner}>
-										<Image 
-											source={require('../images/hardware_select.imageset/hardware_select.png')} 
-											style={styles.touchableSectionInnerImage}
-										>
-										</Image>
-										<Text style={styles.touchableSectionInnerText}>
-											Select Central Unit
-										</Text>
-									</View>
-								</View>
-							</View>
-							{this.renderStatusDevice()}
-						</View>
-				</ScrollView>
-            );
-        }
 	}
 }
 
 const mapStateToProps = state => ({
 	is_editing : state.setupCentralReducer.is_editing,
-	device_name : state.setupCentralReducer.device_name
+	device_name : state.setupCentralReducer.device_name,
+	options_loaded : state.setupCentralReducer.options_loaded
 })
 
 export default connect(mapStateToProps)(StatusBox);

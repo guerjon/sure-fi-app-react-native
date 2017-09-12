@@ -96,9 +96,9 @@ android {
     defaultConfig {
         applicationId "com.surefi"
         minSdkVersion 18
-        targetSdkVersion 22
-        versionCode 11
-        versionName "1.11"
+        targetSdkVersion 23
+        versionCode 13
+        versionName "1.13"
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }

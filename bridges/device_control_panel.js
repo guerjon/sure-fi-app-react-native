@@ -115,7 +115,10 @@ class SetupCentral extends Component{
 		this.checkDeviceState()
 	}
 
+
+
 	componentWillUnmount() {
+		this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
 		this.handleDisconnected.remove()
 		this.handleCharacteristic.remove()
 		this.handleConnected.remove()
@@ -351,12 +354,12 @@ class SetupCentral extends Component{
     		console.log("current_device_status",current_device_status)
     		console.log("expected_status",expected_status)
 			if(current_device_status != expected_status){ //something was wrong and is need show a notification
-				console.log("1")
+				//console.log("1")
 				this.show_notification = true
 				let indicator_number = ((parseInt(current_device_status) * 10)  +  parseInt(expected_status.substr(1)))
 				this.props.dispatch({type:"SET_INDICATOR_NUMBER",indicator_number:indicator_number })
 				if(current_device_status != current_status_on_cloud){
-					console.log("2")
+					//console.log("2")
 					this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
 				}
 
@@ -399,10 +402,6 @@ class SetupCentral extends Component{
 			    	.then(response => {
 				    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
 				    	.then(response => {
-					    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
-					    	.then(response => {
-
-					    	}).catch(error => console.log("error",error))
 
 				    	}).catch(error => console.log("error",error))
 
@@ -475,6 +474,7 @@ class SetupCentral extends Component{
 				let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
 				let battery_voltage = CALCULATE_VOLTAGE(v2).toFixed(2) 
 				this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
+				this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: true})
 				break
 			case 0x16: // pair result
 				if(data.value[1] == 2){
@@ -535,7 +535,7 @@ class SetupCentral extends Component{
 				}
 				break
 			case 0x1C:
-				console.log("data",data)
+				//console.log("data",data)
 				data.value.shift()
 
 				var miliseconds = BYTES_TO_INT(data.value)
@@ -699,17 +699,21 @@ class SetupCentral extends Component{
 			var admin_values = (
 				<View>
 					<View>
-						<Text style={styles.device_control_title}>
-							CURRENT VERSION
-						</Text>
+						<View style={styles.device_control_title_container}>
+							<Text style={styles.device_control_title}>
+								CURRENT VERSION
+							</Text>
+						</View>
 						<WhiteRow name="Application" value={PRETY_VERSION(this.props.app_version) }/>
 						<WhiteRow name="Radio" value={PRETY_VERSION(this.props.radio_version) }/>
 						<WhiteRow name="Bluetooth" value ={PRETY_VERSION(this.props.bluetooth_version) }/>
 					</View>
 					<View>
-						<Text style={styles.device_control_title}>
-							CURRENT RADIO SETTINGS
-						</Text>
+						<View style={styles.device_control_title_container}>
+							<Text style={styles.device_control_title}>
+								CURRENT RADIO SETTINGS
+							</Text>
+						</View>
 						<WhiteRow name="Spreading Factor" value ={this.props.spreading_factor}/>
 						<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
 						<WhiteRow name="Power" value ={this.props.power}/>
@@ -718,26 +722,25 @@ class SetupCentral extends Component{
 			)
 		else
 			var admin_values = null
-
-		if(this.props.central_device_status == "connecting")
-			return null
-
-		if(this.props.central_device_status == "connected" && this.props.power_voltage){
-
+	
 			return (
 				<View style={{alignItems:"center"}}>
 					{admin_values}
 					<View>
-						<Text style={styles.device_control_title}>
-							CURRENT POWER VALUES
-						</Text>
+						<View style={styles.device_control_title_container}>
+							<Text style={styles.device_control_title}>
+								CURRENT POWER VALUES
+							</Text>
+						</View>
 						<WhiteRow name="Power Voltage" value={this.props.power_voltage}/>
 						<WhiteRow name="Battery Voltage" value={this.props.battery_voltage}/>
 					</View>
 					<View style={{marginBottom:80}}>
-						<Text style={styles.device_control_title}>
-							OTHER COMMANDS
-						</Text>
+						<View style={styles.device_control_title_container}>
+							<Text style={styles.device_control_title}>
+								OTHER COMMANDS
+							</Text>
+						</View>
 						<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
 						<WhiteRowLink name="DEBUG MODE"  callback={() => this.getDebugModeStatus()}/>
 						<WhiteRowLink name="GET LAST PACKET TIME" callback={() => this.getLastPackageTime()}/>
@@ -745,35 +748,26 @@ class SetupCentral extends Component{
 					</View>
 				</View>	
 			)
-		}
-
 		return null
 	}
 
-	renderOptions(device,central_device_status,indicator_number){
-		if(central_device_status == "connecting")
-			return <ActivityIndicator/>
+	renderOptions(){
 
-		if(!IS_EMPTY(device) &&  central_device_status == "connected" && indicator_number){
-			return <Options 
-				device={device}
-				indicatorNumber={this.props.indicator_number}
-				goToPair={() => this.goToPair()}
-				goToDeploy={() => this.goToDeploy()}
-				goToFirmwareUpdate={() => this.goToFirmwareUpdate()}
-				goToConfigureRadio={() => this.goToConfigureRadio()}
-				goToForcePair={() => this.goToForcePair()}
-				goToInstructionalVideos = {() => this.goToInstructionalVideos()}
-				getOperationValues = {() => this.getOperationValues()}
-				device_status = {this.props.central_device_status}
-				fastTryToConnect = {(device) => this.fastTryToConnect(device)}
-				getCloudStatus = {(device) => this.getCloudStatus(device)}
-				getRelayValues = {() => this.getRelayValues()}
-
-			/>
-		}
-		
-		return <ActivityIndicator/>
+		return <Options 
+			device={this.props.device}
+			indicatorNumber={this.props.indicator_number}
+			goToPair={() => this.goToPair()}
+			goToDeploy={() => this.goToDeploy()}
+			goToFirmwareUpdate={() => this.goToFirmwareUpdate()}
+			goToConfigureRadio={() => this.goToConfigureRadio()}
+			goToForcePair={() => this.goToForcePair()}
+			goToInstructionalVideos = {() => this.goToInstructionalVideos()}
+			getOperationValues = {() => this.getOperationValues()}
+			device_status = {this.props.central_device_status}
+			fastTryToConnect = {(device) => this.fastTryToConnect(device)}
+			getCloudStatus = {(device) => this.getCloudStatus(device)}
+			getRelayValues = {() => this.getRelayValues()}
+		/>
 	}
 
 	renderNotification(show_notification,indicator_number){
@@ -962,15 +956,39 @@ class SetupCentral extends Component{
 	}
 
 	render(){
-		console.log("render()")
-		
+		console.log("datos aca",this.props.central_device_status,this.props.indicator_number,this.props.power_voltage)
+		var props = this.props
+
+		if(!IS_EMPTY(props.device) &&  props.central_device_status == "connected" && props.indicator_number && props.power_voltage){
+			var content = (
+				<View>
+					<View>
+						{this.renderNotification(this.show_notification,props.indicator_number)}
+					</View>
+					<View>
+						{this.renderOptions()}
+					</View>
+					<View>
+						{this.renderInfo()}
+					</View>
+					<View>
+						{this.renderModal()}
+					</View>
+				</View>
+			)
+		}else{
+			var content = null
+		}
+
 		return (
 			<Background>
 				<ScrollView>
 					<View>
 						<StatusBox
-							device = {this.device} 
-							device_status = {this.props.central_device_status}
+							device = {props.device} 
+							device_status = {props.central_device_status}
+							indicator_number = {props.indicator_number}
+							power_voltage = {props.power_voltage}
 							readStatusCharacteristic={(device) => this.getStatus(device)}
 							tryToConnect={(device) => this.tryToConnect(device)}
 							manualDisconnect={() => this.manualDisconnect()}
@@ -979,16 +997,7 @@ class SetupCentral extends Component{
 						/>
 					</View>
 					<View>
-						{this.renderNotification(this.show_notification,this.props.indicator_number)}
-					</View>
-					<View>
-						{this.renderOptions(this.props.device,this.props.central_device_status,this.props.indicator_number)}
-					</View>
-					<View>
-						{this.renderInfo()}
-					</View>
-					<View>
-						{this.renderModal()}
+						{content}
 					</View>
 				</ScrollView>
 			</Background>

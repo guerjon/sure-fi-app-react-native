@@ -230,9 +230,15 @@ export  const styles = StyleSheet.create({
     white_touchable_text: {
       fontSize: 25
     },
+    device_control_title_container : {
+      alignItems:"center"
+    },
     device_control_title: {
-      margin:20,
-      color:"black"
+      fontFamily: 'Roboto',
+      margin:10,
+      color:"gray",
+      fontSize: 18,
+      fontWeight: "400"
     },
     tab: {
       borderRadius:10,

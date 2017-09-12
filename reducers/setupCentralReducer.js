@@ -20,7 +20,8 @@ const initialState = {
   hopping_table : 0,
   action_from_disconnect : "",
   write_pair_result : false,
-  hardware_status : null
+  hardware_status : null,
+  options_loaded : false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -164,6 +165,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         hardware_status : action.hardware_status
+      }
+    case "OPTIONS_LOADED":
+      return {
+        ...state,
+        options_loaded : action.options_loaded
       }
     default:
       return state

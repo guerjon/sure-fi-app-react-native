@@ -389,7 +389,7 @@ class MainScreen extends Component {
   	render() {
   		//console.log("this.props",this.props)
   		var {screen_status} = this.props
-  		return this.renderMainScreen()
+  		//return this.renderMainScreen()
   		switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()

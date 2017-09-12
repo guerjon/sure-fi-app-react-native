@@ -98,7 +98,7 @@ class Bridges extends Component{
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        console.log("event",event)
+        //console.log("event",event)
         if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
             switch(event.id){
                 case "keyboard":
@@ -276,7 +276,7 @@ class Bridges extends Component{
     }
 
     goToDeviceControl(device){
-        console.log("goToDeviceControl()",device)
+        console.log("goToDeviceControl()")
         this.stopScan()
         this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
         this.props.navigator.dismissModal({
@@ -468,7 +468,7 @@ class Bridges extends Component{
     }
 
     renderSelectedOption(option){
-        console.log("renderSelectedOption()",option)
+        //console.log("renderSelectedOption()")
         var { dispatch } = this.props;
         dispatch({type:"HIDE_SERIAL_INPUT"})
         dispatch({type : "HIDE_DEVICES_LIST"})
@@ -528,7 +528,7 @@ class Bridges extends Component{
     }
 
     render(){
-        console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
+        //console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
         if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
