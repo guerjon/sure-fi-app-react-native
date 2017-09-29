@@ -35,7 +35,8 @@ import {
     FIRMWARE_CENTRAL_ROUTE,
     IS_EMPTY,
     GET_LARGEST,
-    PRETY_VERSION
+    PRETY_VERSION,
+    HEADERS_FOR_POST
 } from '../constants.js'
 
 import {
@@ -63,6 +64,10 @@ var {
 } = window
 var rows_to_write = 0
 
+const hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
+const hardware_remote_type = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
+
+
 class UpdateFirmwareCentral extends Component {
 
 
@@ -70,8 +75,17 @@ class UpdateFirmwareCentral extends Component {
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
         navBarButtonColor: "white",
-        orientation: 'portrait'
+        orientation: 'portrait',
     }   
+
+    static navigatorButtons = {
+        rightButtons: [
+            {
+                title: 'Advanced', // for a textual button, provide the button title (label)
+                id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+            },
+        ]
+    };
 
     constructor(props) {
     	super(props);
@@ -79,7 +93,20 @@ class UpdateFirmwareCentral extends Component {
         application_firmware_files = {}
         radio_firmware_files = {}
         bluetooth_firmware_files = {}
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+    }
 
+    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
+        
+        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
+            switch(event.id){
+                case "advanced":
+                    this.showAdvanceView()
+                break
+                default:
+                break
+            }
+        } 
     }
 
     componentWillMount() {
@@ -110,62 +137,46 @@ class UpdateFirmwareCentral extends Component {
     }
 
     fetchFirmwareFiles(){
+        console.log("fetchFirmwareFiles()")
+
         var dispatch = this.props.dispatch;
         let hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
         let hardware_remote_type = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
+        var application_body = {firmware_type: "application"}
+        var radio_body = {firmware_type:"radio"}
+        var bluetooth_body = {firmware_type: "bluetooth"}
+
 
         if(this.device.manufactured_data.hardware_type == "01"){
             
-            var application_body = {
-                hardware_type_key : hardware_central_type,
-                firmware_type : "application"
-            }
+            application_body.hardware_type_key = hardware_central_type
+            radio_body.hardware_type_key = hardware_central_type
+            bluetooth_body.hardware_type_key = hardware_central_type
 
-            var radio_body = {
-                hardware_type_key : hardware_central_type,
-                firmware_type : "radio"
-            }
-            var bluetooth_body = {
-                hardware_type_key : hardware_central_type,
-                firmware_type : "bluetooth"
-            }
         }else{
-            var application_body = {
-                hardware_type_key : hardware_remote_type,
-                firmware_type : "application"
-            }            
-            var radio_body = {
-                hardware_type_key : hardware_remote_type,
-                firmware_type : "radio"
-            }            
-            
-            var bluetooth_body = {
-                hardware_type_key : hardware_remote_type,
-                firmware_type : "bluetooth"
-            }            
+
+            application_body.hardware_type_key = hardware_remote_type
+            radio_body.hardware_type_key = hardware_remote_type
+            bluetooth_body.hardware_type_key = hardware_remote_type
         }
 
-        var headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',             
-        }
 
         fetch(FIRMWARE_CENTRAL_ROUTE, {
-            headers: headers,
+            headers: HEADERS_FOR_POST,
             method: 'POST',
             body : JSON.stringify(application_body)
         })
         .then(response_1 => {
             
             fetch(FIRMWARE_CENTRAL_ROUTE,{
-                headers: headers,
+                headers: HEADERS_FOR_POST,
                 method: 'POST',
                 body : JSON.stringify(radio_body)
 
             }).then(response_2 => {
                 
                 fetch(FIRMWARE_CENTRAL_ROUTE,{
-                    headers: headers,
+                    headers: HEADERS_FOR_POST,
                     method: 'POST',
                     body: JSON.stringify(bluetooth_body)
                 }).then(response_3 => {
@@ -173,30 +184,20 @@ class UpdateFirmwareCentral extends Component {
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
-                    //console.log("bt_files",this.bt_files)
+                    
                     let app_version = parseFloat(this.application_files[0].firmware_version)
                     let radio_version = parseFloat(this.radio_files[0].firmware_version)
                     let bt_version = parseFloat(this.bt_files[0].firmware_version)
                     let dispatch = this.props.dispatch
-
-                    /* 
-                        console.log("app_version",app_version)
-                        console.log("radio_version",radio_version)
-                        console.log("bt_version",bt_version)
-                    */
+                    
                     this.largest_version = GET_LARGEST(app_version,radio_version,bt_version)
                     this.update_requires = this.checkRequireUpdates(app_version,radio_version,bt_version)
                     this.require_update = this.dispatchRequireUpdates(this.update_requires)
 
-                    /*
-                        dispatch({type: "SET_APPLICATION_FIRMWARE_FILES",application_firmware_files: this.application_files})
-                        dispatch({type: "SET_RADIO_FIRMWARE_FILES",radio_firmware_files:this.radio_files})
-                        dispatch({type: "SET_BLUETOOTH_FIRMWARE_FILES",bluetooth_firmware_files:this.bt_files})
-                    */
                     dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
-
+                    dispatch({type: "CHANGE_TAB",active_tab: "app"})
                 })
             })
         })
@@ -207,10 +208,6 @@ class UpdateFirmwareCentral extends Component {
 
     checkRequireUpdates(app_version,radio_version,bt_version){
         let props = this.props
-        /*console.log("props.app_version",props.app_version)
-        console.log("props.radio_version",props.radio_version)
-        console.log("props.bt_version",props.bluetooth_version)
-        */
         let require_app = props.app_version != app_version
         let require_radio = props.radio_version != radio_version
         let require_bt = props.bluetooth_version != bt_version
@@ -254,17 +251,36 @@ class UpdateFirmwareCentral extends Component {
     }
 
     handleDisconnectedPeripheral(){
-       this.resetStack()
+       this.closeModal()
        
     }
 
-    resetStack(){
+    closeModal(){
        this.props.navigator.dismissModal() 
     }
 
-    getTab(tab){
-        let device = this.device
-        var {application_firmware_files,radio_firmware_files,bluetooth_firmware_files} = this.props
+    closeAndConnect(){
+        console.log("closeAndConnect()")
+        this.props.fastTryToConnect(this.device)
+        this.props.navigator.dismissModal() 
+    }
+
+    appUpdateSuccess(){
+        Alert.alert("Success","The app firmware is updated.")
+    }
+
+    radioUpdateSuccess(){
+        Alert.alert("Success","The radio firmware is updated.")
+    }
+
+    btUpdateSuccess(){
+        Alert.alert("Success","The bluetooth firmware is updated.")
+    }
+
+    getTabInfo(tab){
+
+        let device = this.device    
+        // [TODO] change the time on the startNextUpdate
         switch(tab){
             case "charging":
                 return <ActivityIndicator/>
@@ -272,23 +288,26 @@ class UpdateFirmwareCentral extends Component {
             return (
                 <AppFirmwareUpdate 
                     device={device}  
-                    resetStack={() => this.resetStack()}
-                    firmware_files = {application_firmware_files}
+                    firmware_files = {this.application_files}
+                    startNextUpdate = {() => this.appUpdateSuccess()}
+                    closeModal = {() => this.closeModal()}
                 />)
             case "radio":
             return (
                 <RadioFirmwareUpdate 
-                    device={device}  
-                    resetStack={() => this.resetStack()}
-                    firmware_files = {radio_firmware_files}
+                    device={device}
+                    firmware_files = {this.radio_files}
+                    startNextUpdate = {() => this.radioUpdateSuccess()}
+                    closeModal = {() => this.closeModal()}
                 />
             )
             case "bluetooth":
             return (
                 <BluetoothFirmwareUpdate 
                     device={device}  
-                    resetStack={() => this.resetStack()}
-                    firmware_files = {bluetooth_firmware_files}
+                    closeModal={() => this.closeModal()}
+                    firmware_files = {this.bt_files}
+                    startNextUpdate = {() => this.btUpdateSuccess()}
                 />
             )
             default:
@@ -353,7 +372,7 @@ class UpdateFirmwareCentral extends Component {
                 dispatch({type: "UPDATE_CURRENT_UPDATE", current_update: "bt"})
             }else{
                 Alert.alert("Update Complete","All Firmware has been updated to the selected firmware version(s)")
-                this.resetStack()
+                this.closeModal()
             }
         }
 
@@ -425,14 +444,15 @@ class UpdateFirmwareCentral extends Component {
         let content = null
 
         switch(current_update){
+
             case "app":
-                let app_firmware_file = this.props.selected_files.app_files
+
                 content = (
                     <AppFirmwareUpdate 
                         device={device}  
-                        resetStack={() => this.resetStack()}
+                        closeModal={() => this.closeModal()}
                         viewKind = {this.props.view_kind} 
-                        firmwareFile = {app_firmware_file}
+                        firmwareFile = {this.application_files}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -443,9 +463,9 @@ class UpdateFirmwareCentral extends Component {
                 content = (
                     <RadioFirmwareUpdate
                         device={device}  
-                        resetStack={() => this.resetStack()}
+                        closeModal={() => this.closeModal()}
                         viewKind = {this.props.view_kind}
-                        firmwareFile = {radio_firmware_file}
+                        firmwareFile = {this.radio_files}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -455,9 +475,9 @@ class UpdateFirmwareCentral extends Component {
                 content = (
                     <BluetoothFirmwareUpdate 
                         device={device}  
-                        resetStack={() => this.resetStack()}
+                        closeAndConnect={() => this.closeAndConnect()}
                         viewKind = {this.props.view_kind}
-                        firmwareFile = {bt_firmware_file}
+                        firmwareFile = {this.bt_files}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -603,9 +623,12 @@ class UpdateFirmwareCentral extends Component {
 
     renderAdvancedView(){
         let props = this.props
-        let app_text_style = props.active_tab == "app" ? {color:"black",fontWeight: "900",fontSize:16 }  : {color:"gray"}
-        let radio_text_style = props.active_tab == "radio" ? {color:"black",fontWeight: "900",fontSize:16 }  : {color:"gray"}
-        let bluetooth_text_style = props.active_tab == "bluetooth" ? {color:"black",fontWeight: "900",fontSize:15 }  : {color:"gray"}
+        let normal_style = {color:"gray"}
+        let selected_style = {color:"black",fontWeight: "900",fontSize:16 }
+        let active_tab = props.active_tab
+        let app_text_style = active_tab == "app" ? selected_style  : normal_style
+        let radio_text_style = active_tab == "radio" ? selected_style  : normal_style
+        let bluetooth_text_style = active_tab == "bluetooth" ? selected_style : normal_style
         let dispatch = props.dispatch
 
         return (
@@ -617,7 +640,7 @@ class UpdateFirmwareCentral extends Component {
                             APP 
                         </Text>
                         <Text style={app_text_style}>
-                            {props.app_version}
+                            V.{props.app_version}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -627,7 +650,7 @@ class UpdateFirmwareCentral extends Component {
                             RADIO 
                         </Text>
                         <Text style={radio_text_style}>
-                            {props.radio_version}
+                            V.{props.radio_version}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -637,13 +660,13 @@ class UpdateFirmwareCentral extends Component {
                             BLUETOOTH 
                         </Text>
                         <Text style={bluetooth_text_style}>
-                            {this.props.bluetooth_version}
+                            V.{this.props.bluetooth_version}
                         </Text>
                         </View>
                     </TouchableHighlight>
                 </View>
                 <View>
-                    {this.getTab(props.active_tab)}
+                    {this.getTabInfo(active_tab)}
                 </View>
             </View>
         )

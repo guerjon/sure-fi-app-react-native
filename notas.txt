@@ -116,7 +116,40 @@ Platform Architecture
 	- Systems Apps, todas las apps que ya vienen pre-instaladas y podemos usar, como la app para enviar un mensaje, el navegador etc... claro siempre se puede volver a crear lo que se necesite.
 
 
-MinSdk
+Views
+
+ 	Hay dos tipos de vistas las que son interactivas como una textView una EditText una ImageView etc... donde el usuario puede interactuar con estas
+ 	y las que son contenedores de otras vistas estas extienden de ViewGroup
+
+ 	Las vistas contenedoras mas famosas son
+ 		- Linear Layout: esta madre tiene un scroll
+ 		- Relative Layout : Muestra una vista tal que su posicion se puede definir por sus su padre o por alguna otra vista
+ 		- FramewLayout : Las FrameLayaout son clases extendidas de ViewGroup y su caracterstica es que solo pueden tener un hijo
+ 		- ConstraintLatout : Views en una forma flexible.
+
+ 	Otra de las caracteristicas mas importantes de las vistas son los atributos en los xml por ejemplo
+ 		android:text="Some Random text" Te permite ponerle el texto a las vistas
+ 		android:width="200dp" Para el ancho
+ 		android:height="300dp" Para el largo
+
+ 	En width y height tambien se puede usar "wrap_content", wrap_content nos permite hacer que la vista se comprima hasta que tenga el mismo tama~no que su hijo
+ 	por ejemplo si ponemos wrap_content en una vista interactiva como TextView entonces el width the la vista contenedora sera tan grande como el texto mismo.
+ 	Tambien existe match_parent y pues esta madre, lo que hace es que el width y height del hijo se expanden tanto como la longitud de widht y height del padre.
+
+
+ 	Tambien existen los atributos android:padding y android:layout_margin y ps son igual en css
+
+Views & Activitys
+ 	Para ligar un xml a una actividad en el metodo onCreate the la actividad debes de invocar al metodo setContentView y a este pasarle una referencia de el xml
+ 	de esta manera setContentView(R.layout.activity_main)
+
+
+Scroll
+	Para usar un scroll debemos de ser muy cuidadosos ya que no es tan simple, tenemos que usar un <ScrollView> etiqueta y cuidar que el android:width attribute
+	tenga el match_parent como attributo igual el height tiene que tener el wrap_content para que pues cubra a la lista de los hijos
+
+Resources
+	
 
 
 -----------------+--------------------------redux-----------------+--------------------------
@@ -441,3 +474,26 @@ On Sure-Fi bridges you need put some kind of elevation on the menus.
 
 El componentDidMount que primero se renderiza es el de los hijos.
 -------------------------------------------------------------------- React ---------------------------------------------------------------------------------------
+
+	para encontrar el complemento de un numero primero se representa el numero en binario por ejemplo el 8
+
+	1001 
+	Luego se cambian todos los 1 por 0 y los 0 por 1
+	
+	0110
+
+	Esto es el complemento del 8 ahora para encontrar el 2 complemento se tiene que sumar uno
+
+	0111
+
+	Ahora si el bit mas a la izquerda es 0 entonces el numero es positivo si es 1 es negativo, a este bit se le llama el sign bit
+
+
+
+
+
+-------------------------------------------------------------------- Operaciones binarias ------------------------------------------------------------------------
+
+
+
+-------------------------------------------------------------------- Operaciones binarias ------------------------------------------------------------------------

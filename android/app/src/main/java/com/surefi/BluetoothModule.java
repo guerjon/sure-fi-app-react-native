@@ -21,6 +21,7 @@ import no.nordicsemi.android.dfu.DfuServiceController;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
+
 /**
  * Created by hiddenbutler on 7/6/17.
  */
@@ -92,7 +93,7 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
 
         @Override
         public void onProgressChanged(final String deviceAddress, final int percent, final float speed, final float avgSpeed, final int currentPart, final int partsTotal) {
-
+            Log.d("CHANGE",String.valueOf(percent));
             try {
                 JSONObject json = new JSONObject();
                 json.put("percent",percent);
@@ -132,16 +133,15 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
     public void initService(String address,String name,String path){
 
         final DfuServiceInitiator starter = new DfuServiceInitiator(address)
-                .setDeviceName(name)
-                .setDisableNotification(true);
+            .setDeviceName(name)
+            .setDisableNotification(true);
+
 
         DfuServiceListenerHelper.registerProgressListener(getReactApplicationContext(), mDfuProgressListener);
 
-            starter.setZip(path);
+        starter.setZip(path);
         final DfuServiceController controller = starter.start(getReactApplicationContext(), DfuService.class);
     }
-
-
 }
 
 

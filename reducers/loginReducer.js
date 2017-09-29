@@ -2,7 +2,8 @@ const initialState = {
 	session_token : null,
   user : null,
   user_login_status:"logout",
-  user_data : null
+  user_data : null,
+  fetching_data : false
 }
 
 export default function loginReducer (state = initialState, action) {
@@ -16,6 +17,11 @@ export default function loginReducer (state = initialState, action) {
       return {
         ...state,
         user_data : action.user_data
+      }
+    case "FETCHING_DATA":
+      return{
+        ...state,
+        fetching_data: action.fetching_data
       }
     default:
       return state

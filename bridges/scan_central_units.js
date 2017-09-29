@@ -134,21 +134,28 @@ class ScanCentralUnits extends Component {
 
         if(this.props.camera_status == "showed")
             return(
-                <View style={{marginVertical:10}}>
-                    <View>
+                <View style={{alignItems:"center"}}>
                         <Camera
-                            style={styles.preview}
+                            style={{
+                                width: width,
+                                height: width-20, 
+                                borderRadius:10,                           
+                            }}
                             aspect={Camera.constants.Aspect.fill}
                             ref={(cam) => {
                                 this.camera = cam;
                             }}
                             onBarCodeRead={(e) => this.onSuccess(e)}
                         >
-                        </Camera>
-                    </View>
-                    <View style={{flexDirection:"row"}}>
-                        {button}
-                    </View>                    
+                            <Image 
+                                source={require('../images/scanner_background.imageset/scanner_background.png')}
+                                style={{
+                                    width: width,
+                                    height: width-20, 
+                                }}
+                            >
+                            </Image>
+                        </Camera>                    
                 </View>
             )
         

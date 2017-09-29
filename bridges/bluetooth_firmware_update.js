@@ -23,6 +23,12 @@ import BleManager from 'react-native-ble-manager'
 import RNFetchBlob from 'react-native-fetch-blob'
 import { NavigationActions } from 'react-navigation'
 import ProgressBar from 'react-native-progress/Bar';
+import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
+
+import {
+	WRITE_COMMAND,
+	IS_CONNECTED
+} from '../action_creators'
 
 const BleManagerModule = NativeModules.BleManager;
 const BluetoothModule = NativeModules.BluetoothModule
@@ -33,19 +39,9 @@ var {
     width
 } = window
 
-import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
+
 
 class BluetoothFirmwareUpdate extends Component{
-/*	
-	static navigationOptions ={
-		title : "FirmwareUpdate",
-		tabBarLabel: "Bluetooth",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="bluetooth" size={20} color="white"/>
-	}*/
 	
 	constructor(props) {
 		super(props);
@@ -83,17 +79,33 @@ class BluetoothFirmwareUpdate extends Component{
 
 	dfuCompletedEvent(data){
 		Alert.alert("Update Complete","The bluetooth update has been completed");
-		this.props.resetStack()
+		setTimeout(() => this.fastTryToConnect(this.device),2000)
+		this.props.closeModal()
 	}
 
+	fastTryToConnect(device){
+		console.log("fastTryToConnect()")
+	    
+		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+
+		IS_CONNECTED(device.id)
+		.then(response => {
+			if(!response)
+				BleManager.connect(device.id).then(response => {
+				})
+		})
+	}
+
+
 	searchDevices(){
+
 		this.scanning = setInterval(() => {
 			BleManager.scan([], 3, true).then(() => {
-            	console.log('scanning...');
         	})
 		} , 1000)
         this.devices = []
         setTimeout(() => {
+        	this.scanning_status = "stopped"
         	if(this.scanning)
           	clearInterval(this.scanning)
         },60000)
@@ -111,14 +123,11 @@ class BluetoothFirmwareUpdate extends Component{
 			.fetch('GET', path,GET_HEADERS)
 			
 			.then((res) => {
-				this.filePath = res.path()
 				
-
-
-				BleManagerModule.retrieveServices(this.device.id,() => {
-					BleManagerModule.specialWrite(this.device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[0x1A],20)
-						this.searchDevices()
-				})	
+				this.filePath = res.path()
+				WRITE_COMMAND(this.device.id,[0x1A])
+				
+				this.searchDevices()
 
 			})
 			.catch((errorMessage, statusCode) => {
@@ -138,7 +147,6 @@ class BluetoothFirmwareUpdate extends Component{
 		var {progress,app_version} = this.props
 
 		if(progress > 0){
-			console.log("1")
 			var content = (
 				<View>
 					<View style={{flexDirection:"row"}}>
@@ -161,7 +169,6 @@ class BluetoothFirmwareUpdate extends Component{
 				</View>
 			)
 		}else{
-			console.log("2")
 			var content = (
 				<ActivityIndicator />
 			)
@@ -174,6 +181,7 @@ class BluetoothFirmwareUpdate extends Component{
 	}
 
 	handleDiscoverPeripheral(device){
+		console.log("handleDiscoverPeripheral()")
 		var devices = this.devices;
 		
 		if(device.name){
@@ -181,20 +189,23 @@ class BluetoothFirmwareUpdate extends Component{
 	        	
 	        	let short_id = this.device.manufactured_data.device_id.substring(2,6)
 	        	
+
 	        	if(device.new_representation == short_id){
+	        		
 					if(this.scanning){
-          				clearInterval(this.scanning)
+						if(this.scanning_status != "stopped"){
+							this.scanning_status = "stopped"; //just should be in one time
+							clearInterval(this.scanning)
+	          				this.props.dispatch({type: "START_UPDATE"})
+	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),5000)							
+						}
 					}
-					this.props.dispatch({type: "START_UPDATE"})
-	        		BluetoothModule.initService(device.id,device.name,this.filePath)
 	        	}
 	        }
         }
 	}
 
-
-	render(){	
-
+	render(){
 		return(
 			<View style={{flex:1}}>
 				<View style={{alignItems:"center"}}>
@@ -208,7 +219,6 @@ class BluetoothFirmwareUpdate extends Component{
 						<View style={{height:400}}>
 							<SelectFirmwareCentral 
 								device ={this.device}
-								kind_firmware="radio" 
 								fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
 								getStartRow={() => this.getStartRow()}
 								firmware_files={this.props.firmware_files}

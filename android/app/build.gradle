@@ -97,9 +97,9 @@ android {
         applicationId "com.surefi"
         minSdkVersion 18
         targetSdkVersion 23
-        versionCode 13
-        versionName "1.13"
-        ndk {
+        versionCode 14
+        versionName "1.14"
+        ndk {   
             abiFilters "armeabi-v7a", "x86"
         }
         multiDexEnabled true
@@ -151,8 +151,18 @@ android {
 }
 
 dependencies {
+    
+    compile project(':react-native-sqlite-storage')
+    compile(project(':react-native-maps')) {
+      exclude group: 'com.google.android.gms', module: 'play-services-base'
+      exclude group: 'com.google.android.gms', module: 'play-services-maps'
+    }
+        
+    compile 'com.google.android.gms:play-services-base:11.0.0'
+    compile 'com.google.android.gms:play-services-maps:11.0.0'
+    
     compile project(':react-native-youtube')
-    compile project(':react-native-sms')
+    //compile project(':react-native-sms')
     compile project(':react-native-smart-barcode')
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':react-native-randombytes')

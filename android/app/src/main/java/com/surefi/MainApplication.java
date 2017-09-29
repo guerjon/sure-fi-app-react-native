@@ -3,10 +3,9 @@ package com.surefi;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.airbnb.android.react.maps.MapsPackage;
 import com.inprogress.reactnativeyoutube.ReactNativeYouTube;
-import com.tkporter.sendsms.SendSMSPackage;
 import com.reactnativecomponent.barcode.RCTCapturePackage;
-//import com.tkporter.sendsms.SendSMSPackage;
 //import com.reactnativecomponent.barcode.RCTCapturePackage;
 //import com.bitgo.randombytes.RandomBytesPackage;
 import com.oblador.keychain.KeychainPackage;
@@ -23,6 +22,7 @@ import com.RNFetchBlob.RNFetchBlobPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
 import it.innove.BleManagerPackage;
 import com.reactnativenavigation.NavigationApplication;
+import org.pgsqlite.SQLitePluginPackage;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,7 +46,9 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new BluetoothPackage(),
               new BlePackage(),
               new KeychainPackage(),
-              new ReactNativeYouTube()
+              new ReactNativeYouTube(),
+              new MapsPackage(),
+              new SQLitePluginPackage()
 
        );
    }

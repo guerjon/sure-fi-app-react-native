@@ -17,34 +17,23 @@ import Title from '../helpers/title'
 
 
 class SpreadingFactor extends Component{
-	
-	handleTouchButton(spreading_factor){
-		console.log("spreading updated to",spreading_factor)
-		this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor : spreading_factor})
-	}
-
-	getSpreadingFactorButtons(){
-		return (
-			<View>
-				<View style={styles.row_style}>
-					<Button text="SF7" active={this.props.current_value == "SF7"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="SF8" active={this.props.current_value == "SF8"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="SF9" active={this.props.current_value == "SF9"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-				</View>
-				<View style={styles.row_style}>	
-					<Button text="SF10" active={this.props.current_value == "SF10"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="SF11" active={this.props.current_value == "SF11"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="SF12" active={this.props.current_value == "SF12"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-				</View>
-			</View>
-		)
-	}
 
 	render(){	
 		return(
 			<View>
 				<Title name="Spreading Factor" type=""/>
-				{this.getSpreadingFactorButtons()}
+				<View>
+					<View style={styles.row_style}>
+						<Button text="SF7" active={this.props.current_value == 1} handleTouchButton={() => this.props.updateValue(1)}/>
+						<Button text="SF8" active={this.props.current_value == 2} handleTouchButton={() => this.props.updateValue(2)}/>
+						<Button text="SF9" active={this.props.current_value == 3} handleTouchButton={() => this.props.updateValue(3)}/>
+					</View>
+					<View style={styles.row_style}>	
+						<Button text="SF10" active={this.props.current_value == 4} handleTouchButton={() => this.props.updateValue(4)}/>
+						<Button text="SF11" active={this.props.current_value == 5} handleTouchButton={() => this.props.updateValue(5)}/>
+						<Button text="SF12" active={this.props.current_value == 6} handleTouchButton={() => this.props.updateValue(6)}/>
+					</View>
+				</View>
 			</View>	
 		);	
 	}

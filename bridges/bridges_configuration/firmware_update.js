@@ -302,6 +302,7 @@ class UpdateFirmwareCentral extends Component{
 				this.new_rows = null;
 				console.log("write 0x11")
 				this.write([0x11]) //finish the rows sending
+				
 			}
 		}else{
 			console.log("there is not rows array on processRows")

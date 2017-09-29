@@ -6,7 +6,8 @@ import {
   	ScrollView,
   	TextInput,
   	Alert,
-  	TouchableHighlight
+  	TouchableHighlight,
+  	ActivityIndicator
 } from 'react-native'
 import {styles,first_color,width,success_green,option_blue} from './styles/index.js'
 import { connect } from 'react-redux';
@@ -43,15 +44,17 @@ class Login extends Component{
 		let user = this.props.user
 		let password = this.props.password
 
-		console.log("user",user)
-		console.log("password",password)
+		//console.log("user",user)
+		//console.log("password",password)
 		
 		if(user)
 			this.login(user,password)
 	}
 
 	login(email,password){
-		console.log("login()",email,password)
+		//console.log("login()",email,password)
+		this.setFetchingDataToTrue()
+
 		if(validator.validate(email)){
 			let body = JSON.stringify({
 				user_login: email,
@@ -84,20 +87,37 @@ class Login extends Component{
 				}else{
 					Alert.alert("Error",data.msg)
 				}
+				this.setFetchingDataToFalse()
 			})
-			.catch(error => Alert.alert("Error",error))
+			.catch(error => {
+				Alert.alert("Error",error)
+				this.setFetchingDataToFalse()
+			})
 		}else{
+			this.setFetchingDataToFalse()
 			Alert.alert("Error","The email is not correct.")
 		}
 	}
 
 	logout(){
-		console.log("logout()")
+		//console.log("logout()")
 		KeyChain.resetGenericPassword()
 		.then(response => {
+			//console.log("response",response)
+			this.props.deleteUserAndPassword()
 			this.props.dispatch({type: "SET_USER_DATA",user_data: null})
 			this.props.dispatch({type: "SET_USER_STATUS",user_status : "logout"})
+
 		})
+	}
+
+
+	setFetchingDataToFalse(){
+		this.props.dispatch({type: "FETCHING_DATA",fetching_data:false})
+	}
+
+	setFetchingDataToTrue(){
+		this.props.dispatch({type: "FETCHING_DATA",fetching_data:true})
 	}
 
 	getLoginInputs(){
@@ -182,30 +202,36 @@ class Login extends Component{
 					</TouchableHighlight>					
 				</View>
 			</ScrollView>
-		)
-		
+		)	
 	}
 
 	render(){
 		let user = this.props.user_data
-		if(user != null){
-			var content = this.getUserInformation(user)
+			
+		if(this.props.fetching_data){
+			return <ActivityIndicator/>
 		}else{
-			var content = this.getLoginInputs()
+			if(user != null){
+				var content = this.getUserInformation(user)
+			}else{
+				var content = this.getLoginInputs()
+			}
+			return(
+				<Background>
+					{content}
+				</Background>
+			);	
 		}
 
-		return(
-			<Background>
-				{content}
-			</Background>
-		);	
+
 	}
 }
 
 const mapStateToProps = state => ({
 	session_token : state.loginReducer.session_token,
 	user_login_status : state.loginReducer.session_token,
-	user_data : state.loginReducer.user_data
+	user_data : state.loginReducer.user_data,
+	fetching_data : state.loginReducer.fetching_data
 });
 
 export default connect(mapStateToProps)(Login);

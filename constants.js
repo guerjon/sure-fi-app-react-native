@@ -16,6 +16,9 @@ export const GET_STATUS_CLOUD_ROUTE = BASE_URL + "hardware/get_status"
 export const GET_MESSAGES_CLOUD_ROUTE = BASE_URL  + "hardware/get_messages"
 export const GET_DEVICE_NAME_ROUTE = BASE_URL + "hardware/get_name"
 export const UPDATE_DEVICE_NAME_ROUTE = BASE_URL + "hardware/update_name"
+export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
+export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
+
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -87,6 +90,7 @@ export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
 
 
+
 export const TO_HEX_STRING = string_array => {
 	var byteArray = JSON.parse(string_array);
 	return byteArray.map(function(byte) {
@@ -106,8 +110,7 @@ export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{
 }
 
 export const FOUR_BYTES_TO = (byte_1,byte_2,byte_3,byte_4) =>{
-	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 18) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
-
+	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 16) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
 }
 
 export const BYTES_TO_INT = array => { //big endian
@@ -221,6 +224,11 @@ export const REVERSE_STRING = str => {
 export const GET_HEADERS = {
 	'Accept': 'application/json',
 	'Content-Type': 'application/x-www-form-urlencoded',
+}
+
+export const HEADERS_FOR_POST = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
 }
 
 export const DEC2HEX = i => {

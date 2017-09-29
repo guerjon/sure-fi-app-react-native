@@ -4,7 +4,8 @@ const initialState = {
   phone_state_permission : "undetermined",
   sms_permission : "undetermined",
   info : {},
-  user_status : "logout"
+  user_status : "logout",
+  first_open_app : true
 }
 
 export default function dataReducer (state = initialState, action) {
@@ -51,6 +52,11 @@ export default function dataReducer (state = initialState, action) {
       return {
         ...state,
         user_status : action.user_status
+      }
+    case "FIRST_OPEN_APP":
+      return {
+        ...state,
+        first_open_app : action.first_open_app
       }
     default:
       return state

@@ -73,13 +73,13 @@ const Item = params => {
 
 class OperationValues extends Component{
 	
-	static navigationOptions ={
-		title : "Template",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait',
+        title : "Scan Device",
+    }
 
 	constructor(props) {
 		super(props);

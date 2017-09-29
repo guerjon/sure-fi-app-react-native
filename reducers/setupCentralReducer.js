@@ -21,7 +21,12 @@ const initialState = {
   action_from_disconnect : "",
   write_pair_result : false,
   hardware_status : null,
-  options_loaded : false
+  options_loaded : false,
+  app_board_version : "",
+  radio_board_version : "",
+  register_board_1 : "",
+  register_board_1 : "",
+  show_switch_button : false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -90,36 +95,6 @@ export default function setupCentralReducer (state = initialState, action) {
         acknowledments : action.acknowledments,
         hopping_table : action.hopping_table
       }
-    case "UPDATE_POWER":
-      return {
-        ...state,
-        power : action.power,
-      }
-    case "UPDATE_SPREADING_FACTOR":
-      return {
-        ...state,
-        spreading_factor : action.spreading_factor,
-      }
-    case "UPDATE_BAND_WIDTH":
-      return {
-        ...state,
-        band_width : action.band_width
-      }
-    case "UPDATE_RETRY_COUNT":
-      return {
-        ...state,
-        retry_count : action.retry_count,
-      }
-    case "UPDATE_HEARTBEAT_PERIOD":
-      return {
-        ...state,
-        heartbeat_period: action.heartbeat_period, 
-      }
-    case "UPDATE_ACKNOWLEDMENTS":
-      return{
-        ...state,
-        acknowledments : action.acknowledments
-      }
     case "UPDATE_POWER_VALUES":
       return {
         ...state,
@@ -170,6 +145,36 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         options_loaded : action.options_loaded
+      }
+    case "SET_APP_BOARD":
+      return {
+        ...state,
+        app_board_version : action.app_board_version
+      }
+    case "SET_RADIO_BOARD":
+      return {
+        ...state,
+        radio_board_version : action.radio_board_version
+      }
+    case "SET_REGISTER_BOARD_1":
+      return {
+        ...state,
+        register_board_1 : action.register_board_1
+      }
+    case "SET_REGISTER_BOARD_2":
+      return {
+        ...state,
+        register_board_2 : action.register_board_2
+      }
+    case "SHOW_SWITCH_BUTTON":
+      return {
+        ...state,
+        show_switch_button : true
+      }
+    case "HIDE_SWITCH_BUTTON":
+      return {
+        ...state,
+        show_switch_button: false
       }
     default:
       return state

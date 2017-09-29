@@ -12,7 +12,7 @@ import {
 
 const initialState = {
   manufactured_data : [],
-  central_device : {},
+  central_device: {},
   scanning_status: "",
   camera_status : "hidden",
   photo_data : {},
@@ -20,12 +20,12 @@ const initialState = {
   show_serial_input : false,
   show_qr_image: true,
   manager : {},
-  current_view : "",
   justDeploy : false,
   manual_disconnect : false,
   should_connect : true,
   interval : 0,
-  indicator_number : null
+  indicator_number : null,
+  fast_manager : null
 }
 
 
@@ -35,14 +35,13 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         manufactured_data : [],
-        central_device : {},
+        central_device : {},        
         scanning_status : "",
         camera_status : "hidden",
         photo_data : {},
         show_permissions_modal : false,
         show_serial_input : false,
         manager : {},
-        current_view : "",
         justDeploy : false,
         manual_disconnect : false,
         interval : 0 
@@ -146,25 +145,10 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         show_serial_input : false
       }
-    case "SHOW_QR_IMAGE":
-      return {
-        ...state,
-        show_qr_image : true
-      }
-    case "HIDE_QR_IMAGE":
-      return {
-        ...state,
-        show_qr_image: false
-      }
     case "SAVE_BLE_MANAGER":
       return {
         ...state,
         manager : action.manager
-      }
-    case "CURRENT_VIEW":
-      return {
-        ...state,
-        current_view : action.current_view
       }
     case "SET_JUST_DEPLOY":
       return {
@@ -191,6 +175,12 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         indicator_number : action.indicator_number
+      }
+    case "SET_FAST_MANAGER":
+      console.log("llamando a fast manager",action.fast_manager)
+      return {
+        ...state,
+        fast_manager: action.fast_manager
       }
     default:
       return state

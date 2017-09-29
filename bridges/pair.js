@@ -17,10 +17,12 @@ import { connect } from 'react-redux';
 import { 
 	IS_EMPTY,
 	HEX_TO_BYTES,
+	SUREFI_CMD_SERVICE_UUID,
+	SUREFI_CMD_WRITE_UUID
 } from '../constants'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
-
+import {COMMAND_MAKE_DEPLOY} from '../commands'
 import ScanRemoteUnits from './scan_remote_units'
 import Background from '../helpers/background'
 import {
@@ -28,7 +30,7 @@ import {
 	WRITE_PAIRING,
 	CONNECT,
 	READ_STATUS,
-	DISCONNECT
+	DISCONNECT,
 } from '../action_creators/index'
 
 const BleManagerModule = NativeModules.BleManager;
@@ -108,7 +110,7 @@ class PairBridge extends Component{
 
     	let device_id = this.central_device.manufactured_data.device_id
     	let remote_device_id = remote_device.manufactured_data.device_id
-    	let expected_status = 3
+    	let expected_status = 4
     	let rxUUID = this.central_device.manufactured_data.device_id
     	let txUUID = remote_device.manufactured_data.device_id 
     	let remote_rxUUID = remote_device.manufactured_data.device_id
@@ -118,15 +120,16 @@ class PairBridge extends Component{
     	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
     	let remote_hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
 
-    	PUSH_CLOUD_STATUS(device_id,hardware_status)
-    	.then(response => {
     		
-    		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
-    		.then(response => {
-    			WRITE_PAIRING(this.central_device.id,remote_id_bytes)
-    			.then(response => {
+		WRITE_PAIRING(this.central_device.id,remote_id_bytes)
+		.then(response => {
+			PUSH_CLOUD_STATUS(device_id,hardware_status)
+	    	.then(response => {	
+	    		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
+	    		.then(response => {
+
 					this.central_device.manufactured_data.tx = remote_device.manufactured_data.device_id
-					this.central_device.manufactured_data.device_state = "0003";
+					this.central_device.manufactured_data.device_state = "0004";
 					this.central_device.writePairResult = true
 
 		    		this.props.dispatch({
@@ -144,13 +147,54 @@ class PairBridge extends Component{
 	                .then(() => {
 	                	setTimeout(() => this.props.fastTryToConnect(this.central_device),1000) 	
 	                })
-
     			}).catch(error => console.log(error))
     		}).catch(error => console.log("error",error))
-    	}).catch(error => {
-    		console.log("error",error)
-    	})
+    	}).catch(error => {console.log("error",error)})
     }
+
+   /* deploy(){
+    	READ_STATUS(this.central_device.id)
+    	.then(response => {
+	    	this.pushStatusToCloudDeploy(response[0])
+
+    	})
+    	.catch(error => console.log("error",error))
+    }
+
+
+    pushStatusToCloudDeploy(device_status){
+    	let expected_status = device_status + 1
+    	let rxUUID = this.central_device.manufactured_data.device_id.toUpperCase()
+    	let txUUID = IS_EMPTY(this.props.remote_device) ? this.central_device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
+    	let device_id = this.central_device.manufactured_data.device_id
+    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
+    	
+    	PUSH_CLOUD_STATUS(device_id,hardware_status)
+    	.then(response => {
+    		console.log("response deploy",response)
+	    	if(this.central_device.manufactured_data.hardware_type == "01"){
+	    		var message = "This Central Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
+	    	}else{
+	    		var message = "This Remote Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
+	    	}
+
+	    	BleManagerModule.retrieveServices(this.central_device.id,() => {
+	    		BleManager.write(this.central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_MAKE_DEPLOY],20).then(() => {
+						Alert.alert(
+							"Deployment Complete",
+							message,
+							[
+								{text : "Ok",onPress: () => this.smartGoBack()}
+							],
+							{ cancelable: false }
+						)
+	    		}).catch(error => console.log("error on Write Central",error))
+	    	})    		
+    	})
+    	.catch(error => console.log("error",error))
+    }
+	
+	*/
 
     getNoMatchedMessage(){
 

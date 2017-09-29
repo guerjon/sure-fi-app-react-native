@@ -123,6 +123,8 @@ class SetupRemote extends Component{
     	this.props.navigator.dismissAllModals()
     }
     
+
+    
     showAlertDeploy(){
     	Alert.alert(
     		"Deploy Device",

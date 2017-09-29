@@ -133,10 +133,9 @@ export  const styles = StyleSheet.create({
       fontSize: 22
     },
     preview: {
-      justifyContent: 'flex-end',
-      alignItems: 'center',
       width:width-40,
       height: width-40,
+      zIndex:54
     },
     preview_remote : {
       justifyContent: 'flex-end',

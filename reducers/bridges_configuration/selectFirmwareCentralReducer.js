@@ -54,8 +54,7 @@ export default function selectFirmwareCentralReducer (state = initialState, acti
 			}
 		case "PARTIAL_RESET_FIRMWARE_CENTRAL_REDUCER":
 			return {
-				update_status : "without_activity",
-				
+				update_status : "without_activity",	
 			}
 		default:
 			return state

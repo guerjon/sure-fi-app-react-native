@@ -25,6 +25,7 @@ import loginReducer from './loginReducer'
 import videosReducer from './videos'
 import operationValuesReducer from './operationValuesReducer'
 import relayReducer from './relayReducer'
+import chatReducer from './chatReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -50,7 +51,8 @@ const rootReducer = combineReducers({
     loginReducer,
     videosReducer,
     operationValuesReducer,
-    relayReducer
+    relayReducer,
+    chatReducer
 })
 
 export default rootReducer

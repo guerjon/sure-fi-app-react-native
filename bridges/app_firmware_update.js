@@ -36,16 +36,6 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class AppFirmwareUpdate extends Component{
 	
-/*	static navigationOptions ={
-		title : "Firmware Update",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-		tabBarLabel : "App",
-		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="mobile" size={20} color="white"/>
-	}
-*/
 	constructor(props) {
 		super(props);
 		this.device = props.device
@@ -123,17 +113,17 @@ class AppFirmwareUpdate extends Component{
 		var response = data.value[0]
 
 		switch(response){
-			case 1:
+			case 0x01:
 				//console.log("BleRsp_FirmwareVersion")
 				return
-			case 2:
+			case 0x02:
 				//console.log("BleRsp_QosConfig")
 				return
-			case 3:
+			case 0x03:
 				//console.log("BleRsp_UpdateStartSuccess")
 				this.startRow()
 				return								
-			case 4: 
+			case 0x04: 
 				//console.log("BleRsp_PageSuccess")
 				this.write_status = 0
 				this.calculateProgress()
@@ -141,46 +131,58 @@ class AppFirmwareUpdate extends Component{
 					this.processRows()
 				else{
 					this.write([7])
-					
 				}
 				return
-			case 5:
+			case 0x05:
 				//console.log("BleRsp_GenericOk")
 					this.writeFirstPiece()
 				return
-			case 0x06:
-				this.props.startNextUpdate("app")
+			case 0x06: //Update Finish success
+				if(this.view_kind == "normal")
+					this.props.startNextUpdate("app")
+				else{
+					this.props.closeModal()
+					Alert.alert("Success","The update was compled successfully")
+				}
 				return
-			case 7:
+			case 0x07:
 				//console.log("BleRsp_BootloaderInfo")
 				this.programNumber = FIND_PROGRAMING_NUMBER(data)
 				this.writeStartUpdate(this.programNumber)
 				return	
-			case 224:
+			case 0xE0:
 				console.log("BleRsp_SecurityError")
 				return
-			case 225:
+			case 0xE1:
 				console.log("BleRsp_StartUpdateError")
 				return
-			case 226:
+			case 0xE2:
 				console.log("BleRsp_AlreadyStartedError")
 				return
-			case 227:
+			case 0xE3:
 				console.log("BleRsp_NotStartedError")
 				return
-			case 228:
+			case 0xE4:
 				console.log("BleRsp_InvalidNumBytesError")
 
-				Alert.alert("Error","Error on firmware update",[{text: "Ok",onPress: () => this.props.navigation.goBack()}])
+				Alert.alert("Error","Error on firmware update")
+				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
 				//this.errorProcessRows()
 				return
-			case 229:
+			case 0xE5:
 				console.log("BleRsp_PageFailure")
-
+				Alert.alert("Error","Error on firmware update")
+				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
 				return
-			case 230:
+			case 0xE6:
 				console.log("BleRsp_ImageCrcFailureError")
 				return
+			case 0xE9:
+				Alert.alert("Error","Error on firmware update")
+				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+				this.props.closeModal()					
+				break
+
 			default:
 				console.log("No" + response + " option found")
 			return
@@ -313,7 +315,7 @@ class AppFirmwareUpdate extends Component{
 				this.new_current_row = this.new_rows.shift()
 				this.processRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
-				
+				console.log("entra aqui 1")
 				this.new_rows = null;
 				this.write([7]) //finish the rows sending
 			}
@@ -376,16 +378,11 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	getAdvanceView(){
+		//console.log("this.props.firmware_files",this.props.firmware_files)
 		return (
 			<View>
-				<Text style={{fontSize:18,color:"black"}}>
-					Current App Firmware Version
-				</Text>
-				<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
-					{this.props.app_version}
-				</Text>				
-				<View style={{height:100,width:width,marginVertical:5}}>
-					<View style={{padding:10,backgroundColor:"white",marginHorizontal:15,borderRadius:10}}>
+				<View style={{height:100,width:width,marginVertical:5,marginBottom:20,alignItems:"center"}}>
+					<View style={{padding:10,backgroundColor:"white",borderRadius:10}}>
 						<Text style={{color:"black",fontSize:18,marginBottom:10}}>
 							Bootloader App Data
 						</Text>
@@ -396,22 +393,23 @@ class AppFirmwareUpdate extends Component{
 							Lower CRC: 0000|0000 Version: 00.00 Prgm:0000
 						</Text>
 					</View>
-
 				</View>		
-				<SelectFirmwareCentral 
-					device ={this.device}
-					kind_firmware="application" 
-					fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
-					getStartRow={() => this.getStartRow()}
-					firmware_files={this.props.firmware_files}
-				/>
+				<View>
+					<SelectFirmwareCentral 
+						device ={this.device}
+						kind_firmware="application" 
+						fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
+						getStartRow={() => this.getStartRow()}
+						firmware_files={this.props.firmware_files}
+					/>
+				</View>
 			</View>
 		)
 	}
 
 	render(){
 		return(
-			<View style={{flex:1}}>
+			<View>
 				<View style={{alignItems:"center"}}>
 					<View style={{height:400}}>
 						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}

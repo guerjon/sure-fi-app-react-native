@@ -24,3 +24,45 @@ export const WhiteRowLink = params => {
 	)
 
 }
+
+export const WhiteRowInfoLink = params => {
+	return (
+		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center",borderBottomWidth:0.3}} onPress={() => params.callback()}>
+			<View style={{padding:10,flexDirection:"row"}}>
+				<View style={{flex:0.7}}>
+					<Text style={{fontSize:16}}>
+						{params.name}
+					</Text>
+				</View>
+				<View style={{flex:1}}>
+					<Text style={{fontSize:16}}>
+						{params.value}
+					</Text>
+				</View>				
+			</View>
+		</TouchableHighlight>
+	)
+}
+
+export const WhiteRowIconLink = params => {
+	return (
+	      <View style={styles.container}>
+	        	<TouchableHighlight
+	        		onPress={() => params.callback()}
+	        		style={{backgroundColor:"white",height:50,borderTopRightRadius:10, borderTopLeftRadius: 10}} 
+	        	>
+	        		<View style={{flexDirection:"row",padding:10,width: Dimensions.get('window').width * 0.8,alignItems:"center",justifyContent:"center"}}>
+		        		<View style={{flex:0.3,justifyContent:"center"}}>
+		        			{params.icon}
+		        		</View>
+		        		<View style={{flex:0.7,justifyContent:"center"}}>
+			        		<Text style={{fontSize:20}}>
+			        			{params.name}
+			        		</Text>
+		        		</View>
+	        		</View>
+	        	</TouchableHighlight>
+	         
+	      </View>
+	)
+}

@@ -61,14 +61,6 @@ function selectValues(status){
 
 class selectFirmwareFile extends Component{
 
-	static navigationOptions = {
-		title : "Select Firmware File",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
-
 	constructor(props) {
 		super(props);
 		this.device = this.props.device
@@ -82,12 +74,11 @@ class selectFirmwareFile extends Component{
 
 	sortByFirmwareVersion(files){
 		var order_files = files.sort((a,b) => b.firmware_version.localeCompare(a.firmware_version))
-		//console.log(order_files)
 		return order_files;
 	}
 
 	renderFirmwareFileList(firmware_files){
-		//console.log("renderFirmwareFileList",firmware_files)
+		console.log("renderFirmwareFileList",firmware_files)
 		return (
 			<ScrollView >
 				<FlatList
@@ -147,6 +138,7 @@ class selectFirmwareFile extends Component{
 	}
 
 	render(){
+		//console.log("this.props",this.props.update_status)
 
 		if(this.props.update_status == "without_activity"){
 
@@ -165,10 +157,8 @@ class selectFirmwareFile extends Component{
 				</View>
 			);			
 		}else{
-			
 			return this.props.getStartRow()
 		}
-
 	}
 }
 

@@ -21,7 +21,9 @@ import {
 	DEVICE_REGISTRATE_LINK,
 	SESSION_START,
 	MAKE_ID,
-	GET_HEADERS
+	GET_HEADERS,
+	HEADERS_FOR_POST,
+	USER_LOGIN
 } from './constants'
 import { StackNavigator } from 'react-navigation';
 import Coverflow from 'react-native-coverflow'
@@ -68,6 +70,8 @@ class FadeInView extends React.Component {
   }
 
   componentDidMount() {
+
+
     Animated.timing(                  // Animate over time
       this.state.fadeAnim,            // The animated value to drive
       {
@@ -104,6 +108,13 @@ class MainScreen extends Component {
   		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
   		this.checkRegister()
+  	}
+
+  	componentDidMount(){
+  		if(this.props.first_open_app){
+  			this.openScanModal()
+  			this.props.dispatch({type: "FIRST_OPEN_APP",first_open_app: false})
+  		}
   	}
 
   	getSessionKey(){
@@ -175,10 +186,7 @@ class MainScreen extends Component {
 
 	  		fetch(DEVICE_REGISTRATION_LINK,{
 	  			method: "POST",
-				headers: {
-				    'Accept': 'application/json',
-				    'Content-Type': 'application/json',				
-				},  			
+				headers: HEADERS_FOR_POST,  			
 	  			body: body	  			
 	  		}).then(data => {
 
@@ -207,19 +215,63 @@ class MainScreen extends Component {
 
 
   	checkLogin(){
+  		console.log("checkLogin()");
 		KeyChain
 		.getGenericPassword()
 		.then(credentials => {
-			this.user = credentials.username
-			this.password = credentials.password
-			this.props.dispatch({type: "SET_USER_STATUS",user_status : "logged"})
+			if(credentials){
+				this.user = credentials.username
+				this.password = credentials.password
+				
+				this.props.dispatch({type: "SET_USER_STATUS",user_status : "logged"})
+				setTimeout(() => this.getUserInfo(credentials.username,credentials.password,this.session_key),2000)
+				
+			}
+
 		})
 		.catch(error => {
 			this.props.dispatch({type: "USER_LOGIN",user: null,password:null,status:"logout"})
 		})
-
-		this.props.dispatch({type : "SHOW_MAIN_SCREEN"})
   	}
+
+
+
+	getUserInfo(email,password,session_key){
+		console.log("getUserInfo()",email,password)
+
+		let body = JSON.stringify({
+			user_login: email,
+			user_password: password,
+			session_key : session_key
+		})
+
+		let headers = 
+		{
+		    'Accept': 'application/json',
+		    'Content-Type': 'application/json',				
+		}
+
+		fetch(USER_LOGIN,{
+			method: "post",
+			body: body,
+			headers : headers
+		})
+		.then(response => {
+			var data = JSON.parse(response._bodyInit)
+
+			if(data.status == "success"){
+				this.user_data = data.data.user_data
+				this.props.dispatch({type: "SET_USER_DATA",user_data:this.user_data})
+			}else{
+				Alert.alert("Error",data.msg)
+			}
+			
+		})
+		.catch(error => {
+			Alert.alert("Error",error)
+		})
+	
+	}
 
 	openSureFiPage(url){
 		Linking.canOpenURL(url).then(supported => {
@@ -236,6 +288,7 @@ class MainScreen extends Component {
 	}
 
 	navigateToLogin(){
+
 		this.props.navigator.push(
 			{
 				screen : "Login",
@@ -243,9 +296,15 @@ class MainScreen extends Component {
 				passProps:{
 					session_key: this.session_key,
 					user: this.user,
-					password: this.password
+					password: this.password,
+					deleteUserAndPassword: () =>  this.deleteUserAndPassword()
 				}
 			})
+	}
+
+	deleteUserAndPassword(){
+		this.user = null
+		this.password = null
 	}
 
 	openScanModal(){
@@ -293,6 +352,7 @@ class MainScreen extends Component {
 	}
 
 	renderMainScreen(){
+		
 		return (
 			<Background>
 		  		<View style={styles.container}>
@@ -320,7 +380,7 @@ class MainScreen extends Component {
 			  			>
 							<View style={styles.textViewContainer}>
 								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableNativeFeedback onPress={() => this.openScanModal()} >
+									<TouchableNativeFeedback onPress={() =>  this.openScanModal()} >
 										<Image source={require('./images/menu_data.imageset/menu_data.png')}>
 										</Image>
 									</TouchableNativeFeedback>
@@ -389,8 +449,8 @@ class MainScreen extends Component {
   	render() {
   		//console.log("this.props",this.props)
   		var {screen_status} = this.props
-  		//return this.renderMainScreen()
-  		switch(screen_status){
+  		return this.renderMainScreen()
+  		/*switch(screen_status){
   			case "show_main_screen":
   			return this.renderMainScreen()
   			case "show_welcome_screen":
@@ -399,7 +459,7 @@ class MainScreen extends Component {
   			return this.renderRegister()
   			default:
   			return <ActivityIndicator />
-  		}
+  		}*/
   	}
 }
 
@@ -409,9 +469,9 @@ const mapStateToProps = state => ({
 	contacts_permission : state.mainScreenReducer.contacts_permission,
 	phone_state_permission : state.mainScreenReducer.phone_state_permission,
 	sms_permission : state.mainScreenReducer.sms_permission,
-	info : state.mainScreenReducer.info
+	info : state.mainScreenReducer.info,
+	first_open_app : state.mainScreenReducer.first_open_app
 })
-
 
 export default connect(mapStateToProps)(MainScreen)
 //export default MainScreen

@@ -82,6 +82,9 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 }
 
 export const WRITE_COMMAND = (id,data) => {
+	
+	//console.log("WRITING_COMMAND: " + data)
+
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
 			BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)

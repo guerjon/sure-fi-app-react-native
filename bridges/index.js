@@ -15,7 +15,7 @@ import {
     ActivityIndicator
     } from 'react-native';
 
-import {styles,first_color,width,option_blue} from '../styles/index.js'
+import {styles,first_color,width,option_blue,height} from '../styles/index.js'
 import  {connect} from 'react-redux';
 import ScanCentralUnits from './scan_central_units'
 import ScannedDevicesList from '../helpers/scanned_devices_list'
@@ -23,7 +23,7 @@ import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
-import { YouTubeStandaloneAndroid } from 'react-native-youtube';
+//import { YouTubeStandaloneAndroid } from 'react-native-youtube';
 import SlowBleManager from 'react-native-ble-manager'
 
 import {
@@ -45,41 +45,13 @@ class Bridges extends Component{
     
     static navigatorButtons = {
         rightButtons: [
-
-        ],
-        fab: {
-            collapsedId: 'options',
-            collapsedIcon: require('../images/options-icon.png'),
-            expendedId: 'clear',
-            expendedIcon: require('../images/options-icon-open.png'),
-            backgroundColor: fab_buttons_background,
-            actions: [
-                {
-                    id: 'keyboard',
-                    icon: require('../images/keyboard_icon.imageset/keyboard_icon.png'),
-                    backgroundColor: fab_buttons_background
-                },
-                {
-                    icon : require('../images/info_icon.imageset/info_icon.png'),
-                    id: "help",
-                    backgroundColor: fab_buttons_background,
-                    buttonFontSize: 14,
-                },
-                {
-                    icon : require('../images/youtube-icon.png'),
-                    id: "youtube",
-                    backgroundColor: fab_buttons_background,
-                    buttonFontSize: 30,
-                },
                 {
                     icon: require('../images/bluetooth-icon.png'),
                     id: "devices",
                     backgroundColor: fab_buttons_background
                 }
-            ]
-        }            
+        ]
     }
-
 
     static navigatorStyle = {
         navBarBackgroundColor : first_color,
@@ -94,24 +66,17 @@ class Bridges extends Component{
          this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
         this.manager = new BleManager();
         this.stared_scanning = false
-
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
         //console.log("event",event)
         if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
             switch(event.id){
-                case "keyboard":
-                    this.renderSelectedOption('keyboard')
-                break
-                case "help":
-                    this.showHelpAlert()
-                break
-                case "youtube":
-                    this.showYouTubeVideo()
-                break
                 case "devices":
-                    this.renderSelectedOption('devices')
+                    var { dispatch } = this.props;
+                    dispatch({type:"HIDE_SERIAL_INPUT"})
+                    this.toggleShowDeviceList()
+                    
                 break
                 default:
                 break
@@ -128,6 +93,7 @@ class Bridges extends Component{
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
         this.props.dispatch({type :"SHOW_CAMERA"})
         this.props.dispatch({type :"SHOW_QR_IMAGE"})
+        
     }
 
     componentWillUnmount() {
@@ -136,23 +102,21 @@ class Bridges extends Component{
 
     stopScan(){
         this.manager.stopDeviceScan();
-    }
-
-    showYouTubeVideo(){
-        YouTubeStandaloneAndroid.playVideo({
-          apiKey: 'AIzaSyAoR0l9zJjYcbwIsmt4lSHuVI4x447JWVQ',     // Your YouTube Developer API Key
-          videoId: 'ICawolrEJtQ',     // YouTube video ID
-          autoplay: true,             // Autoplay the video
-          startTime: 120,             // Starting point of video (in seconds)
-        })
-          .then(() => console.log('Standalone Player Exited'))
-          .catch(errorMessage => console.error(errorMessage))                
+        this.manager.destroy()
     }
 
     componentDidMount() {
         this.checkMultiplePermissions() 
     }
     
+    toggleShowDeviceList(){
+        var {dispatch} = this.props
+        if(this.props.list_status == "showed"){
+            dispatch({type:"HIDE_DEVICES_LIST"})
+        }else{
+            dispatch({type:"SHOW_DEVICES_LIST"})
+        }
+    }
 
     checkMultiplePermissions(){
         console.log("checkMultiplePermissions()")
@@ -276,17 +240,32 @@ class Bridges extends Component{
     }
 
     goToDeviceControl(device){
-        console.log("goToDeviceControl()")
+        
         this.stopScan()
-        this.props.dispatch({type:"CURRENT_VIEW",current_view:"DeviceControlPanel"})
+        
         this.props.navigator.dismissModal({
             animationType: 'slide-down'
         })
 
-        this.props.navigator.push({
-            screen: "DeviceControlPanel",
-            title : "Device Details"
-        })
+        console.log("this.props.user_data",this.props.user_data);
+
+        if(this.props.user_data){
+            this.props.navigator.push({
+                screen: "DeviceControlPanel",
+                title : "Device Details"
+            })            
+        }else{
+            this.props.navigator.push({
+                screen: "DeviceControlPanel",
+                title : "Device Details",
+                rightButtons: [
+                    {
+                        id: "pin_number",
+                        icon: require('../images/options-icon-open.png'), 
+                    }
+                ]
+            })            
+        }   
     }
 
     requestMultiplePermissions(){
@@ -317,11 +296,11 @@ class Bridges extends Component{
     
         var devices = this.props.devices
         this.stared_scanning = true
+        
         this.manager.startDeviceScan(null,null,(error,device) => {
-            //console.log("device",device)
+        
             if(error){
-                //console.log("error",error)
-                Alert.alert("Error",)
+                Alert.alert("Error",error.message)
                 return
             }
 
@@ -357,6 +336,7 @@ class Bridges extends Component{
 
 
     renderDeviceList(list_status){
+
         if(list_status == "showed"){
             if(this.props.scanning_status != ""){
                 return <ScannedDevicesList manager={this.manager} devices={this.devices}/>
@@ -386,17 +366,6 @@ class Bridges extends Component{
                 </View>
             )
 
-        return null
-    }
-
-    renderQrImage(show_qr_image){
-        if(show_qr_image)
-            return (
-                <Image  
-                    source={require('../images/instruction_image_1.imageset/instruction_image.png')} 
-                    style={{width:150,height:180}}
-                />
-            )       
         return null
     }
 
@@ -431,28 +400,23 @@ class Bridges extends Component{
                         
                             dispatch({
                                 type: "CENTRAL_DEVICE_IS_NOT_ON_PAIRING_MODE"
-                            })                        
-                        
+                            })
                         }
                     }else{
                         
                         dispatch({
                             type : "IS_NOT_CENTRAL_DEVICE"
                         })
-
                     }
                 }else{
-                    
                     dispatch({
                         type: "CENTRAL_DEVICE_NOT_MATCHED",
                     })
-
                 }
             }   
             this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : null })
         }   
     }
-
 
     showOrHideSerialInput(){
         if(this.props.show_serial_input){
@@ -467,21 +431,15 @@ class Bridges extends Component{
         this.requestMultiplePermissions()
     }
 
-    renderSelectedOption(option){
-        //console.log("renderSelectedOption()")
-        var { dispatch } = this.props;
-        dispatch({type:"HIDE_SERIAL_INPUT"})
+    toggleSerialInput(){
+        var {dispatch} = this.props
         dispatch({type : "HIDE_DEVICES_LIST"})
-        dispatch({type: "HIDE_QR_IMAGE"})
-
-        if(option == "keyboard"){
-            dispatch({type:"SHOW_SERIAL_INPUT"})
-        }else if(option == "devices"){
-            dispatch({type:"SHOW_DEVICES_LIST"})
+    
+        if(this.props.show_serial_input){
+            dispatch({type:"HIDE_SERIAL_INPUT"})
         }else{
-            dispatch({type: "SHOW_QR_IMAGE"})
+            dispatch({type:"SHOW_SERIAL_INPUT"})
         }
-
     }
 
 
@@ -527,6 +485,8 @@ class Bridges extends Component{
         )
     }
 
+
+
     render(){
         //console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
         if(this.props.show_permissions_modal){
@@ -534,8 +494,8 @@ class Bridges extends Component{
         }else{
             return(
                 <Background>
-                    <View style={{flex:1,marginHorizontal:10}}>
-                        <View style={{alignItems:"center",height:350}}>
+                    <View style={{justifyContent:'space-between',height:height-150}}>
+                        <View style={{height:height * 0.6}}>
                             <ScanCentralUnits 
                                 navigation={this.props.navigation} 
                                 goToDeviceControl={(device)=> this.goToDeviceControl(device)}
@@ -547,16 +507,33 @@ class Bridges extends Component{
                         </View>
                         <View style={{alignItems:"center"}}>
                             {this.renderSerialInput(this.props.show_serial_input)}
-
                         </View> 
-                        <View style={{alignItems:"center"}}>    
-                            {this.renderQrImage(this.props.show_qr_image)}
-                        </View>                        
                         <View>
                             <ScrollView>
                                 {this.renderDeviceList(this.props.list_status) } 
                             </ScrollView>
                         </View>
+                    </View>
+                    <View style={{height:150}}>
+                        {this.props.list_status != "showed" &&
+                            <View style={{flexDirection:"row",flex:1,justifyContent: 'space-between',marginHorizontal:10}}>
+                                <View>
+                                    <TouchableHighlight onPress={() => this.toggleSerialInput()}>
+                                        <Image source={require('../images/keyboard_icon.imageset/keyboard_icon.png')} />
+                                    </TouchableHighlight>
+                                </View>
+                                <View style={{alignItems:"center"}}>
+                                    <Text style={{fontSize:18,fontWeight:"900"}}>
+                                        Scan QR Code
+                                    </Text>
+                                </View>
+                                <View>
+                                    <TouchableHighlight onPress={() => this.showHelpAlert()}>
+                                        <Image source={require('../images/info_icon.imageset/info_icon.png')} />
+                                    </TouchableHighlight>                                
+                                </View>
+                            </View>                    
+                        }
                     </View>
                 </Background>
             );  
@@ -569,9 +546,8 @@ const mapStateToProps = state => ({
     list_status : state.scannedDevicesListReducer.list_status,
     devices : state.pairReducer.devices,
     show_serial_input : state.scanCentralReducer.show_serial_input,
-    current_view : state.scanCentralReducer.current_view,
     show_permissions_modal : state.scanCentralReducer.show_permissions_modal,
-    show_qr_image : state.scanCentralReducer.show_qr_image
+    user_data : state.loginReducer.user_data
 })
 
 export default connect(mapStateToProps)(Bridges)

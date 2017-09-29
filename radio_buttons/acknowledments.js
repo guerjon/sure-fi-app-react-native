@@ -16,26 +16,14 @@ import Title from '../helpers/title'
 
 class Acknowledments extends Component{
 	
-	handleTouchButton(acknowledments){
-		this.props.dispatch({type: "UPDATE_ACKNOWLEDMENTS",acknowledments : acknowledments})
-	}
-		
-	getAcknowledmentsButtons(){
-		
-		return(
-			<View style={styles.row_style}>
-				<Button text="Disabled" active={this.props.current_value == "Disabled"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-				<Button text="Enabled" active={this.props.current_value == "Enabled"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-			</View>
-		)
-	}
-
-
 	render(){	
 		return(
 			<View>
 				<Title name="Acknowledments" type=""/>
-				{this.getAcknowledmentsButtons()}
+				<View style={styles.row_style}>
+					<Button text="Disabled" active={this.props.current_value == 0} handleTouchButton={(text) => this.props.updateValue(0)}/>
+					<Button text="Enabled" active={this.props.current_value == 1} handleTouchButton={(text) => this.props.updateValue(1)}/>
+				</View>
 			</View>	
 		);	
 	}

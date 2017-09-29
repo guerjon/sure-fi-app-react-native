@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.surefi"
-    android:versionCode="13"
-    android:versionName="1.13"
+    android:versionCode="14"
+    android:versionName="1.14"
 >
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -23,7 +23,6 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
-   
 
     <uses-sdk
         android:minSdkVersion="16"
@@ -36,8 +35,23 @@
       android:icon="@mipmap/ic_launcher"
       android:theme="@style/AppTheme"
       >
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyCaDihG0kl8iM_sUMLIVAkv7WHmRWRBboA"
+        />
+        <service
+            android:name=".DfuService"
+            android:exported="true"
+            android:label="DFUService" >
+            <intent-filter>
+                <action android:name="no.nordicsemi.android.action.DFU_UPLOAD" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
+            android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation"
             android:screenOrientation="portrait"
         >

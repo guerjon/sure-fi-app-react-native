@@ -24,7 +24,6 @@ class Notification extends Component{
 	}
 
 	componentWillMount() {
-		console.log("fdsfds",this.props)
 		this.stateMistmach(this.props.indicatorNumber)
 	}
 
@@ -68,8 +67,6 @@ class Notification extends Component{
 
 
 	render(){	
-		
-
 		if(this.props.showNotification){
 			return(
 				<View>

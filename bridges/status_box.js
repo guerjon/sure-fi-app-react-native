@@ -14,7 +14,7 @@ import {
 import {styles,first_color,width} from '../styles/index.js'
 import { connect } from 'react-redux';
 import BleManager from 'react-native-ble-manager'
-import { BleManager as FastBleManager } from 'react-native-ble-plx';
+
 import { 
 	LOADING,
 	IS_EMPTY,
@@ -24,14 +24,17 @@ import {
 	PAIR_SUREFI_READ_UUID,
 	GET_DEVICE_NAME_ROUTE,
 	UPDATE_DEVICE_NAME_ROUTE,
-	BASE64
+	BASE64,
+	DIVIDE_MANUFACTURED_DATA
 } from '../constants'
 
 import {IS_CONNECTED} from '../action_creators/'
 import Icon from 'react-native-vector-icons/FontAwesome'
-
+import {WhiteRowLink} from '../helpers/white_row_link'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+
 
 class StatusBox extends Component{
 	constructor(props) {
@@ -42,14 +45,13 @@ class StatusBox extends Component{
 		this.device_status = props.device_status
 		this.indicator_number = props.indicator_number
 		this.power_voltage = props.power_voltage
-		
 	}
 
 	componentDidMount() {
 		this.fetchDeviceName()
 	}
-			
 
+		
 	fetchDeviceName(){
 		let device = this.props.device
 		let device_id = device.manufactured_data.device_id.toUpperCase()
@@ -157,7 +159,6 @@ class StatusBox extends Component{
 			case "disconnected":
 	            return this.renderDisconnectingBox();
 			case "connected":
-				console.log("this.props.options_loaded",this.props.options_loaded)
 				if (this.props.options_loaded) 
  				return(
 					<View>
@@ -242,7 +243,6 @@ class StatusBox extends Component{
     	}
     }
 
-
 	startEditName(){
 		this.props.dispatch({type: "START_EDITING"})
 	}
@@ -252,12 +252,18 @@ class StatusBox extends Component{
 	}
 
 	render(){	
-		var {device} = this.props;
-		console.log("datos",this.device_status,this.indicator_number,this.power_voltage)
+	
+		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
+		var switch_button =  (
+			<WhiteRowLink 
+				name={this.props.device.manufactured_data.hardware_type == "01" ? "Switch to Remote Unit" : "Switch to Central Unit"} 
+				callback={() => this.props.switchUnit()}
+			/>
+		)
 
 		if(this.props.is_editing){
 			var content = (
-				<View style={styles.touchableSectionInner}>
+				<View style={{flexDirection:"row",alignItems:"center"}}>
 					<View style={{flex:0.8}}>
 						<TextInput
 							placeholder = "Write your new name"
@@ -280,26 +286,26 @@ class StatusBox extends Component{
 						>
 							<Icon name="upload" size={25} color="green"/>
 						</TouchableHighlight>
-
 					</View>	
 				</View>
 			)
 		}else{
+			if(device.manufactured_data.hardware_type == "01"){
+				var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
+			}else{
+				var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
+			}
 
 			var content = (
-				<View style={styles.touchableSectionInner}>
+				<View style={{flexDirection:"row",alignItems:"center"}}>
 					<View style={{flex:0.2}}>
-						<Image 
-							source={require('../images/bridge_icon.imageset/bridge_icon.png')} 
-							style={styles.touchableSectionInnerImage}
-						>
-						</Image>
+						{image}
 					</View>
 					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.5}}>
-						<Text style={{fontSize:18}}>
+						<Text style={{fontSize:14}}>
 							{this.device_name}
 						</Text>
-						 <Text style={{fontSize:14}}>
+						 <Text style={{fontSize:10}}>
 							{this.props.device.manufactured_data.hardware_type == "01" ? "Central Unit" : "Remote Unit" } {this.props.device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
 						</Text>
 					</View>
@@ -311,19 +317,24 @@ class StatusBox extends Component{
 					</TouchableHighlight>
 				</View>
 			)
-
 		}
 
         return (
-            <ScrollView >
+            <ScrollView>
+				<View>
+					<View style={styles.touchableSectionContainer}>
+						<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+							{content}
+						</View>
+					</View>					
 					<View>
-						<View style={styles.touchableSectionContainer}>
-							<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-								{content}
-							</View>
-						</View>					
 						{this.renderStatusDevice()}
 					</View>
+					<View>
+						{this.props.show_switch_button ? switch_button : null }
+					</View>
+				</View>
+
 			</ScrollView>
         );
 
@@ -333,7 +344,8 @@ class StatusBox extends Component{
 const mapStateToProps = state => ({
 	is_editing : state.setupCentralReducer.is_editing,
 	device_name : state.setupCentralReducer.device_name,
-	options_loaded : state.setupCentralReducer.options_loaded
+	options_loaded : state.setupCentralReducer.options_loaded,
+	show_switch_button : state.setupCentralReducer.show_switch_button
 })
 
 export default connect(mapStateToProps)(StatusBox);

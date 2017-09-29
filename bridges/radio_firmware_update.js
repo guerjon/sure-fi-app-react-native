@@ -30,21 +30,17 @@ import ProgressBar from 'react-native-progress/Bar';
 import {
     NavigationActions
 } from 'react-navigation'
+
+import {
+	WRITE_COMMAND
+} from '../action_creators'
+
+
 var rows_to_write = 0
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class RadioFirmwareUpdate extends Component{
-	
-	/*	static navigationOptions ={
-		title : "FirmwareUpdate",
-		tabBarLabel : "Radio",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-		tabBarIcon : ({ focused, tintColor }) =>  <Icon name="signal" size={20} color="white"/>
-	}*/
 	
 	constructor(props) {
 		super(props);
@@ -83,7 +79,7 @@ class RadioFirmwareUpdate extends Component{
 			
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
-				console.log("res",res)
+				
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -113,9 +109,12 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	handleCharacteristicRadioNotification(data){
-		console.log("notification data",data.value)
+		
 		var {dispatch} = this.props
 		var response = data.value[0]
+
+		
+
 		switch(response){
 			case 1:
 				console.log("BleRsp_FirmwareVersion")
@@ -132,10 +131,10 @@ class RadioFirmwareUpdate extends Component{
 				this.write_status = 0
 				this.calculateProgress()
 				if(this.new_rows.length > 0){
-					console.log("entra 2")
+					
 					this.processRadioRows()
 				}else{
-					console.log("entra 1")
+					
 					this.write([0x11])	
 				}
 				return
@@ -146,9 +145,17 @@ class RadioFirmwareUpdate extends Component{
 			case 0x0D: 
 				this.interval = setInterval(() => this.writeAllStateCommand(),1000)
 				return
-			case 11: 
-				console.log("BleRsp_BootloaderInfo")
+			case 0x0B: 
+				//console.log("BleRsp_BootloaderInfo")
 				this.processRadioRows()
+				return
+			case 0x1F:
+					console.log("0x1F",data)
+					if(!data.value[1] && !data.value[2] && !data.value[3] && !data.value[4]){
+						clearInterval(this.interval)
+						this.props.closeModal()
+						Alert.alert("Success","The radio was update successfully.")
+					}
 				return
 			case 0x13:
 				console.log(data)
@@ -157,7 +164,6 @@ class RadioFirmwareUpdate extends Component{
 					clearInterval(this.interval)
 					this.props.startNextUpdate("radio")
 				}
-
 				return
 			case 224:
 				console.log("BleRsp_SecurityError")
@@ -179,6 +185,8 @@ class RadioFirmwareUpdate extends Component{
 					this.errorHandleRow()
 				}else{
 					Alert.alert("Error","Something was wrong with the firmware update.")
+					this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+					this.props.closeModal()
 				}
 				return
 			case 229:
@@ -188,6 +196,19 @@ class RadioFirmwareUpdate extends Component{
 			case 230:
 				Alert.alert("Error","Something was wrong on the firmware update.")
 				console.log("BleRsp_ImageCrcFailureError") //BleRsp_ImageCrcFailureError
+				return
+			case 0xE9:
+				if(data.value[1] == 0x1D){
+					clearInterval(this.interval)
+					this.interval = setInterval(() => WRITE_COMMAND(this.device.id,[0x2E]),1000) 
+
+				}else{				
+					
+					Alert.alert("Error","Error on firmware update")
+					this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+					this.props.closeModal()
+
+				}
 				return
 			default:
 				console.log("No " + response + " option found")
@@ -229,18 +250,18 @@ class RadioFirmwareUpdate extends Component{
 		To run this function startRadioRow must be called before 
 	*/
 	processRadioRows(){
-		console.log("processRadioRows()")
+		//console.log("processRadioRows()")
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
 				this.processRadioRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
-				console.log("entra 2")
+				
 				this.new_rows = null;
 				this.write([0x11]) //finish the rows sending should return 0x0D or 13
 			}
 		}else{
-			console.log("3")
+			
 			console.log("there is not rows array on processRows")
 		}
 	}
@@ -410,9 +431,6 @@ class RadioFirmwareUpdate extends Component{
 	getAdvanceView(){
 		return (
 			<View>
-				<Text style={{fontSize:18,color:"black"}}>
-					Current App Firmware Version
-				</Text>
 				<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
 					{this.props.app_version}
 				</Text>				
@@ -429,14 +447,16 @@ class RadioFirmwareUpdate extends Component{
 						</Text>
 					</View>
 
-				</View>		
-				<SelectFirmwareCentral 
-					device ={this.device}
-					kind_firmware="radio" 
-					fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
-					getStartRow={() => this.getStartRow()}
-					firmware_files={this.props.firmware_files}
-				/>
+				</View>	
+				<View>	
+					<SelectFirmwareCentral 
+						device ={this.device}
+						kind_firmware="radio" 
+						fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
+						getStartRow={() => this.getStartRow()}
+						firmware_files={this.props.firmware_files}
+					/>
+				</View>
 			</View>
 		)
 	}

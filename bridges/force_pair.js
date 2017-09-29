@@ -76,14 +76,25 @@ class ForcePair extends Component{
     	WRITE_COMMAND(this.device.id,[0x20,type_of_device])
     	.then(() => {
     		WRITE_PAIRING(this.device.id,txUUID).then(() => {
-    			this.device.manufactured_data.device_state = "0003"
-    			this.props.dispatch({
-                    type: "CENTRAL_DEVICE_MATCHED",
-                    central_device: this.device
-                });
-                this.props.dispatch({type:"HIDE_CAMERA"})
-                this.props.navigator.dismissModal();
-                this.props.getCloudStatus(this.device)
+    			
+    			this.hardware_status[0] = "04"
+    			let hardware_status = "04"  + "|" + "04" + "|" + this.hardware_status[2] + "|" + this.hardware_status[3]
+
+    			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,hardware_status)
+    			.then(response => {
+
+	    			this.device.manufactured_data.device_state = "0004"
+	    			this.props.dispatch({
+	                    type: "CENTRAL_DEVICE_MATCHED",
+	                    central_device: this.device
+	                });
+	                
+	                this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 4})
+
+	                this.props.dispatch({type:"HIDE_CAMERA"})
+	                this.props.navigator.dismissModal();
+    			})
+
     		}).catch(error => console.log("error",error))
     	}).catch(error => console.log("error",error))
     }

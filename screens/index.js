@@ -18,6 +18,7 @@ import ConfigureRadio from '../bridges/configure_radio'
 import DeviceControlPanel from '../bridges/device_control_panel'
 import SetupCentralExamples from '../bridges/setup_central_examples'
 import Deploy from '../bridges/deploy'
+import PINCodeModal from '../bridges/pin_code_modal'
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
 import RadioConfiguration from '../bridges/radio/index'
@@ -26,6 +27,9 @@ import Relay from '../bridges/relay'
 import Login from '../login'
 import Videos from '../videos'
 
+import Chat from '../bridges/chat'
+import CustomMap from '../bridges/chat/custom_map'
+import ChatOptions from '../bridges/chat/chat_options'
 
 
 export function registerScreens(store,Provider){
@@ -33,7 +37,7 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('Bridges', () => Bridges,store,Provider)
 	Navigation.registerComponent('PairBridge', () => PairBridge,store,Provider)
 	Navigation.registerComponent('ForcePair', () => ForcePair,store,Provider)
-	Navigation.registerComponent('ScanCentralUnits', () => ScanCentralUnits,store,Provider)
+	Navigation.registerComponent('ScanCentralUnits', () => ScScanRemoteUnitsanCentralUnits,store,Provider)
 	Navigation.registerComponent('ScanRemoteUnits', () => ScanRemoteUnits,store,Provider)
 	Navigation.registerComponent('WriteBridgeConfiguration', () => WriteBridgeConfiguration,store,Provider)
 	Navigation.registerComponent('BridgesConfiguration', () => BridgesConfiguration,store,Provider)
@@ -54,4 +58,8 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('Videos',() => Videos,store,Provider)
 	Navigation.registerComponent('OperationValues', () => OperationValues,store,Provider)
 	Navigation.registerComponent('Relay',() => Relay,store,Provider)
+	Navigation.registerComponent('Chat',() => Chat,store,Provider)
+	Navigation.registerComponent('ChatOptions',() => ChatOptions,store,Provider)
+	Navigation.registerComponent('PINCodeModal',() => PINCodeModal,store,Provider)
+	Navigation.registerComponent('CustomMap',() => CustomMap,store,Provider)
 }

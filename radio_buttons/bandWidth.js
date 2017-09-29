@@ -18,33 +18,21 @@ import Title from '../helpers/title'
 
 class BandWidth extends Component{
 	
-	handleTouchButton(band_width){
-		console.log("bandWidth update to:", band_width)
-		this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width : band_width})
-	}
-
-	getBandWidthButtons(){
-		
-		return(
-			<View>
-				<View style={styles.row_style}>
-					<Button text="31.25 kHz" active={this.props.current_value == "31.25 kHz"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="62.50 kHz" active={this.props.current_value == "62.50 kHz"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="125 kHz" active={this.props.current_value == "125 kHz"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-				</View>
-				<View style={styles.row_style}>	
-					<Button text="250 kHz" active={this.props.current_value == "250 kHz"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-					<Button text="500 kHz" active={this.props.current_value == "500 kHz"} handleTouchButton={(text) => this.handleTouchButton(text)}/>
-				</View>		
-			</View>
-		)
-	}
-
 	render(){	
 		return(
 			<View>
-				<Title name="BandWidth" type="kHz"/>
-				{this.getBandWidthButtons()}
+				<Title name="BandWidth" type=""/>
+				<View>
+					<View style={styles.row_style}>
+						<Button text="31.25 kHz" active={this.props.current_value == 1} handleTouchButton={() => this.props.updateValue(1)}/>
+						<Button text="62.50 kHz" active={this.props.current_value == 2} handleTouchButton={() => this.props.updateValue(2)}/>
+						<Button text="125 kHz" active={this.props.current_value == 3} handleTouchButton={() => this.props.updateValue(3)}/>
+					</View>
+					<View style={styles.row_style}>	
+						<Button text="250 kHz" active={this.props.current_value == 4} handleTouchButton={() => this.props.updateValue(4)}/>
+						<Button text="500 kHz" active={this.props.current_value == 5} handleTouchButton={() => this.props.updateValue(5)}/>
+					</View>		
+				</View>
 			</View>	
 		);	
 	}
