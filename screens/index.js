@@ -23,9 +23,11 @@ import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
 import RadioConfiguration from '../bridges/radio/index'
 import OperationValues from '../bridges/operation_values'
+import DeviceNotMatched from '../bridges/device_not_matched'
 import Relay from '../bridges/relay'
 import Login from '../login'
 import Videos from '../videos'
+
 
 import Chat from '../bridges/chat'
 import CustomMap from '../bridges/chat/custom_map'
@@ -62,4 +64,5 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('ChatOptions',() => ChatOptions,store,Provider)
 	Navigation.registerComponent('PINCodeModal',() => PINCodeModal,store,Provider)
 	Navigation.registerComponent('CustomMap',() => CustomMap,store,Provider)
+	Navigation.registerComponent('DeviceNotMatched',() => DeviceNotMatched,store,Provider)
 }

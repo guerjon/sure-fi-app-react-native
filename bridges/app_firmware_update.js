@@ -58,17 +58,13 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	componentWillUnmount() {
-		this.handlerUpdate.remove()
+		//this.handlerUpdate.remove()
 	}
 
-	fetchFirmwareUpdate(firmware_file){
+	fetchFirmwareUpdate(path){
 		
 		var {dispatch} = this.props		
-		let path = firmware_file.firmware_path
-
-		// send http request in a new thread (using native code) 
-		this.firmware_version = firmware_file.firmware_version
-
+		
 		if(path){
 
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
@@ -138,7 +134,7 @@ class AppFirmwareUpdate extends Component{
 					this.writeFirstPiece()
 				return
 			case 0x06: //Update Finish success
-				if(this.view_kind == "normal")
+				if(this.props.viewKind == "normal")
 					this.props.startNextUpdate("app")
 				else{
 					this.props.closeModal()
@@ -412,7 +408,7 @@ class AppFirmwareUpdate extends Component{
 			<View>
 				<View style={{alignItems:"center"}}>
 					<View style={{height:400}}>
-						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}
+						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}				
 					</View>
 				</View>
 			</View>

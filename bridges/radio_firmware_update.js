@@ -49,6 +49,7 @@ class RadioFirmwareUpdate extends Component{
 		this.current_row = {}
 		this.write_status = 0
 		this.firmware_file = props.firmwareFile
+		console.log("firmware_file",props.firmwareFile);
 		this.view_kind = props.viewKind
 		this.handleCharacteristicRadioNotification = this.handleCharacteristicRadioNotification.bind(this);
 	}	
@@ -66,12 +67,10 @@ class RadioFirmwareUpdate extends Component{
 			this.fetchFirmwareUpdate(this.firmware_file)
 	}
 
-	fetchFirmwareUpdate(firmware_file){
-		
+	fetchFirmwareUpdate(path){
+		console.log("fetchFirmwareUpdate",path);
 		var {dispatch} = this.props		
-		let path = firmware_file.firmware_path
-		
-		this.firmware_version = firmware_file.firmware_version
+
 		//this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
 		//this.props.dispatch({type: "RESET_FIRMWARE_CENTRAL_REDUCER"})
 
@@ -153,8 +152,12 @@ class RadioFirmwareUpdate extends Component{
 					console.log("0x1F",data)
 					if(!data.value[1] && !data.value[2] && !data.value[3] && !data.value[4]){
 						clearInterval(this.interval)
-						this.props.closeModal()
-						Alert.alert("Success","The radio was update successfully.")
+						if(this.props.viewKind == "normal"){
+							this.props.startNextUpdate("radio")
+						}else{
+							this.props.closeModal()
+							Alert.alert("Success","The radio was update successfully.")							
+						}
 					}
 				return
 			case 0x13:
@@ -391,6 +394,7 @@ class RadioFirmwareUpdate extends Component{
 		var {progress,radio_version} = this.props
 		
 		if(progress > 0){
+			console.log("progress",progress);
 			let progress_number = this.limitSize(progress.toFixed(2) * 100) 
 			var content = (
 				<View>
@@ -406,13 +410,11 @@ class RadioFirmwareUpdate extends Component{
 							</Text>
 						</View>
 					</View>
-					<View>
-						<View>
-							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
-							<Text>
-								Updating Radio
-							</Text>
-						</View>
+					<View style={{marginHorizontal:20}}> 	
+						<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
+						<Text>
+							Updating Radio
+						</Text>
 					</View>
 				</View>
 			)

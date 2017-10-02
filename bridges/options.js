@@ -47,6 +47,7 @@ class Options extends Component{
 		super(props);	
 		this.device_status = this.props.device_status
 		this.device = this.props.device
+
 	}
 
 	showAlertUnpair(){
@@ -64,11 +65,34 @@ class Options extends Component{
     unPair() {
     	console.log("unPair()")
 
-    	READ_STATUS(this.device.id)
-    	.then(response => {
-    		console.log("response",response)
-	    	this.pushStatusToCloud(response[0])
-    	})
+		WRITE_UNPAIR(this.device.id).then(response => {
+			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
+			
+			var remote_state = "01|01"+this.device.manufactured_data.tx+"|000000"
+
+			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,state)
+			.then(response => {
+				PUSH_CLOUD_STATUS(this.device.manufactured_data.tx,remote_state)
+				//console.log("resopnse",response);
+				this.device.manufactured_data.tx = "000000"
+				this.device.manufactured_data.device_state = "0001"
+				this.device.writeUnpairResult = true
+		    	this.props.dispatch({
+		            type: "CENTRAL_DEVICE_MATCHED",
+		            central_device: this.device,
+		        });
+
+	            this.props.dispatch({
+			        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
+			    })	
+	            DISCONNECT(this.device.id)
+	            .then(() => {
+	            	setTimeout(() => this.props.fastTryToConnect(this.device),1000) 	
+	            })
+			})
+			.catch(error => Alert.alert("Error",error))
+
+		}).catch(error => console.log(error))
     }
 
     forceUnPair(){
@@ -166,6 +190,24 @@ class Options extends Component{
 				</View>
 			</TouchableHighlight>	
     	)
+
+    }
+
+    getDocumentationOption(){
+    	return (
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToDocumentation()}>
+				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
+					<View style={styles.white_touchable_highlight_image_container}>
+						<Image source={require('../images/menu_docs.imageset/menu_documents.png')} style={styles.white_touchable_highlight_image}/>
+					</View>
+					<View style={styles.white_touchable_text_container}>
+						<Text style={styles.white_touchable_text}>
+							Documentation
+						</Text>
+					</View>
+				</View>
+			</TouchableHighlight>	
+    	)    	
     }
 
     getDeployCentralUnitOption(){
@@ -277,14 +319,14 @@ class Options extends Component{
 	    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|000000"
 	    	let other_guy_status = "0" + device_status + "|0" + expected_status + "|" + txUUID + "|00000" 
 	    	
-	    	console.log("device_id",device_id,hardware_status,other_guy_status)
+	    	//console.log("device_id",device_id,hardware_status,other_guy_status)
 
 	    	PUSH_CLOUD_STATUS(device_id,hardware_status)
 	    	.then(response => {
-	    		console.log("hardware_status",hardware_status)
+	    		//console.log("hardware_status",hardware_status)
 	    		PUSH_CLOUD_STATUS(txUUID,other_guy_status)
 	    		.then(response => {
-	    			console.log("response3",response)
+	    			//console.log("response3",response)
 	    			WRITE_UNPAIR(device.id).then(response => {
 
 						device.manufactured_data.tx = "000000"
@@ -362,14 +404,14 @@ class Options extends Component{
     getRelayDefaults(){
     	
     	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.getRelayValues()}>
+			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToRelay()}>
 				<View style={styles.white_touchable_highlight_inner_container}>
 					<View style={styles.white_touchable_highlight_image_container}>
 						<Image source={require('../images/menu_relay.imageset/menu_relay.png')} style={styles.white_touchable_highlight_image}/>
 					</View>
 					<View style={styles.white_touchable_text_container}>
 						<Text style={styles.white_touchable_text}>
-							Relay Defaults
+							Default settings
 						</Text>
 					</View>
 				</View>
@@ -378,7 +420,7 @@ class Options extends Component{
    	}
 
    	getSureFiChat(){
-
+   		console.log("getSureFiChat()");
    		//if(this.props.device.manufactured_data.device_state == "0004" ){
    			return (
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToChat()}>
@@ -479,12 +521,14 @@ class Options extends Component{
 	getAdditionalOptions(){
 		
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
+		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 		var sales_dist = ["SALES","DIST"]		
 		var indicator = this.props.indicatorNumber
 
-		if(admin_options.lastIndexOf(user_type) !== -1){
+		//if(admin_options.lastIndexOf(user_type) !== -1){
+		if(true){
+
 			return this.getAdminOptions(indicator)
 
 		}else if(sales_dist.lastIndexOf(user_type) !== -1){
@@ -504,6 +548,7 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getConfigureRadioOption()}
 					</View>
 				)
@@ -514,6 +559,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
@@ -527,6 +573,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
@@ -576,6 +623,7 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}	
+						{this.getDocumentationOption()}
 					</View>
 				)
 			break
@@ -585,6 +633,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
@@ -597,6 +646,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
@@ -628,14 +678,14 @@ class Options extends Component{
 	}
 
 	getDefaultOptions(bridge_status){
-		console.log("getDefaultOptions()",bridge_status);
 		switch(bridge_status){
 			case 1:
 				return (
 					<View>
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}	
+						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}	
 					</View>
 				)
 
@@ -644,6 +694,7 @@ class Options extends Component{
 					<View>
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 					</View>
 				)
@@ -653,6 +704,7 @@ class Options extends Component{
 					<View style={{flex:1}}>
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
+						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 					</View>
 				)

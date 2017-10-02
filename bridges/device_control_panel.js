@@ -71,7 +71,8 @@ import {
 	COMMAND_GET_REGISTERED_BOARD_1,
 	COMMAND_GET_REGISTERED_BOARD_2,
 	COMMAND_GET_APP_PIC_VERSION,
-	COMMAND_GET_RADIO_PIC_VERSION
+	COMMAND_GET_RADIO_PIC_VERSION,
+	COMMAND_GET_HOPPING_TABLE
 } from '../commands'
 import {
 	powerOptions,
@@ -105,6 +106,17 @@ class SetupCentral extends Component{
 	constructor(props) {
 		super(props);
 		this.device = props.device
+
+		console.log("id",this.device.id);
+		console.log("name",this.device.name);
+		console.log("address",this.device.manufactured_data.address);
+		console.log("device_id",this.device.manufactured_data.device_id	);
+		console.log("device_state",this.device.manufactured_data.device_state);
+		console.log("firmware_version",this.device.manufactured_data.firmware_version);
+		console.log("tx",this.device.manufactured_data.tx);
+		console.log("hardware_type",this.device.manufactured_data.hardware_type);
+		console.log("security_string",this.device.manufactured_data.security_string);
+
 		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
@@ -136,7 +148,6 @@ class SetupCentral extends Component{
 		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
 		this.activateHandleCharacteristic()
 		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
-
 	}
 
 	componentDidMount() {
@@ -153,6 +164,7 @@ class SetupCentral extends Component{
 		this.handleConnected.remove()
 		this.disconnect()
 		this.fast_manager.stopDeviceScan()
+		//PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,"04|04|FFCFFC|FCCFCC").then(response => console.log(response)).catch(error => console.log(error))
 	}
 
 	showPINModal(){
@@ -347,7 +359,7 @@ class SetupCentral extends Component{
 							SUREFI_CMD_READ_UUID,
 							() => {	
 								//this.getCloudStatus(device)	
-								this.readStatusOnDevice(device)
+							 	 this.readStatusOnDevice(device)
 							}
 						)
 					}
@@ -380,7 +392,11 @@ class SetupCentral extends Component{
 		.then(response => {
 			console.log("response",response);
 			this.status_on_bridge = response[0] //this is the internal status on the bridge
-			this.getCloudStatus(device)
+			if(this.status_on_bridge == 2){
+				this.readStatusOnDevice(device)
+			}else{
+				this.getCloudStatus(device)
+			}
 		})
 		.catch(error => Alert.alert("Error",error))
 	}
@@ -552,7 +568,9 @@ class SetupCentral extends Component{
     			Alert.alert("Error","The expected_status its 2 and the current status on the bridge its 3" )
     		break
     		case 3: //this shouldn never happend because you can't undeploy 
+
     			Alert.alert("Error","The expected_status its 3 and the current status on the bridge its 4" )
+
     		break
     		default: //this shouldnt never happend
     			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0XEE}) 
@@ -614,7 +632,9 @@ class SetupCentral extends Component{
 								    	.then(response => {
 									    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_PIC_VERSION])
 									    	.then(response => {
-									    			//this.goToChat()
+									    		WRITE_COMMAND(device.id,[COMMAND_GET_HOPPING_TABLE])
+									    		.then(response => {
+									    		})
 									    	}).catch(error => console.log("error",error))								    		
 								    	}).catch(error => console.log("error",error))
 
@@ -666,6 +686,7 @@ class SetupCentral extends Component{
 				this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(data.value[1].toString() +"." + data.value[2].toString())  })
 				break
 			case 8 : //radio settings
+				console.log("data",data.value);
 				let power = powerOptions.get(data.value[3])
 				let spreading_factor = spreadingFactor.get(data.value[1]) 
 				let band_width = bandWidth.get(data.value[2]) 
@@ -678,12 +699,9 @@ class SetupCentral extends Component{
 					{
 						type: "UPDATE_RADIO_SETTINGS",
 						power : power,
-						spreading_factor : spreading_factor,
-						band_width : band_width,
 						retry_count : retry_count,
 						heartbeat_period: heartbeat_period,
 						acknowledments : acknowledments,
-						hopping_table : hopping_table
 					}
 				)
 				break
@@ -772,15 +790,19 @@ class SetupCentral extends Component{
 					)
 				}
 				break
-			case 0x18:
-				data.value.shift()
-				this.updateRelayValues(data.value)
-				break
+
 			case 0x19:
 
 				data.value.shift()
 				this.goToOperationValues(data.value)
-				break				
+				break
+
+			case 0x20: 
+				var selectedDeviceHoppingTable = data.value[1]
+				selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
+
+				this.selectHoppingTable(selectedDeviceHoppingTable,data.value[1])
+				break
 			case 0x1B:
 				if(data.value[1]){ // debug mode is enabled
 					WRITE_COMMAND(this.device.id,[0x28,0x00])
@@ -1000,10 +1022,59 @@ class SetupCentral extends Component{
 
 	}
 
+	selectHoppingTable(selectedDeviceHoppingTable,normal_hopping_table){
+        let tableIndex = parseInt(selectedDeviceHoppingTable,16) % 72 
+
+        var option = tableIndex % 3
+
+        if (selectedDeviceHoppingTable >= 72) {
+
+            option += 1
+
+        }
+
+        if (selectedDeviceHoppingTable >= 144) {
+
+            option += 1
+
+        }
+
+        switch (option) {
+
+        case 0:
+
+            selectedDeviceSF = "SF10"
+
+            selectedDeviceBandwidth = "250kHz"
+
+            break
+
+        case 1:
+
+            selectedDeviceSF = "SF9"
+
+            selectedDeviceBandwidth = "125kHz"
+
+            break
+
+        default:
+
+            selectedDeviceSF = "SF8"
+            selectedDeviceBandwidth = "62.5kHz"
+            break
+        }
+
+        this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:normal_hopping_table})
+        this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor:selectedDeviceSF})
+        this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width:selectedDeviceBandwidth})
+
+	}
+
 	renderInfo(){
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 
-		if(user_type)
+		//if(user_type)
+		if(true)
 			var admin_values = (
 				<View>
 					<View>
@@ -1019,12 +1090,14 @@ class SetupCentral extends Component{
 					<View>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
-								CURRENT RADIO SETTINGS
+								RADIO SETTINGS
 							</Text>
 						</View>
 						<WhiteRow name="Spreading Factor" value ={this.props.spreading_factor}/>
 						<WhiteRow name="Bandwidth" value ={this.props.band_width}/>
 						<WhiteRow name="Power" value ={this.props.power}/>
+						<WhiteRow name="Hopping table" value ={this.props.hopping_table}/>
+
 					</View>
 					<View>
 						<View style={styles.device_control_title_container}>
@@ -1047,7 +1120,7 @@ class SetupCentral extends Component{
 					<View>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
-								CURRENT POWER VALUES
+								POWER VALUES
 							</Text>
 						</View>
 						<WhiteRow name="Power Voltage" value={this.props.power_voltage}/>
@@ -1061,15 +1134,16 @@ class SetupCentral extends Component{
 								OTHER COMMANDS
 							</Text>
 						</View>
-						{this.getOtherCommands()}
+						{this.getOtherCommands(user_type)}
 					</View>
 				</View>	
 			)
 		return null
 	}
 
-	getOtherCommands(){
-		if(this.props.user_status == "logged"){
+	getOtherCommands(user_type){
+		//if(user_type){
+		if(true){
 			return (
 				<View>
 					<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
@@ -1102,8 +1176,9 @@ class SetupCentral extends Component{
 			device_status = {this.props.central_device_status}
 			fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 			getCloudStatus = {(device) => this.getCloudStatus(device)}
-			getRelayValues = {() => this.getRelayValues()}
+			goToRelay = {() => this.goToRelay()}
 			goToChat={() => this.goToChat()}
+			goToDocumentation = {() => this.goToDocumentation()}
 			activateHandleCharacteristic = {() => this.activateHandleCharacteristic()}
 		/>
 	}
@@ -1122,11 +1197,13 @@ class SetupCentral extends Component{
 		}
 		return null
 	}
+	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
+	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
 
 	goToPair(){
 
-		if(this.props.power_voltage < 11){
-		//if(true){
+		//if(this.props.power_voltage < 11){
+		if(true){
 			this.handleCharacteristic.remove()
 			var fastTryToConnect = (device) => this.fastTryToConnect(device)
 			this.props.navigator.showModal(
@@ -1158,11 +1235,40 @@ class SetupCentral extends Component{
 
 	goToFirmwareUpdate(){
 		this.handleCharacteristic.remove()
-		this.props.navigator.showModal({
-			screen: "FirmwareUpdate",
-			title : "Firmware Update",
-			fastTryToConnect : () => this.fastTryToConnect()
-		})
+
+		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
+		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
+		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
+		
+		
+		if(admin_options.lastIndexOf(user_type) !== -1){
+
+			this.props.navigator.showModal({
+				screen: "FirmwareUpdate",
+				title : "Firmware Update",
+				fastTryToConnect : () => this.fastTryToConnect(),
+				rightButtons: [
+		            {
+		                title: 'Advanced', // for a textual button, provide the button title (label)
+		                id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+		            },
+		        ],
+		        passProps: {
+		        	fastTryToConnect: () => this.fastTryToConnect()
+		        	//device : this.device
+		        }
+			})			
+		}else{
+			this.props.navigator.showModal({
+				screen: "FirmwareUpdate",
+				title : "Firmware Update",
+				fastTryToConnect : () => this.fastTryToConnect(),
+				passProps: {
+					fastTryToConnect: () => this.fastTryToConnect()
+					//device : this.device
+				}
+			})			
+		}
 	}
 
 	goToConfigureRadio(){
@@ -1175,24 +1281,28 @@ class SetupCentral extends Component{
 		)
 	}
 
-    updateRelayValues(values){
-    	let props = this.props
-    	let dispatch = props.dispatch
-    	
-    	dispatch({type: "SET_SLIDER_VALUE",slider_value: values[0]})
-    	dispatch({type: "SET_RELAY_IMAGE_1_STATUS",relay_1_image_status : values[1]})
-    	dispatch({type: "SET_RELAY_IMAGE_2_STATUS",relay_2_image_status : values[2]})
-
-    	this.goToRelay()
-    }
-
 	goToRelay(){
-
+		console.log("goToRelay()");
+		this.disactivateHandleCharacteristic()
 		this.props.navigator.showModal({
 			screen: "Relay",
 			title: "Relay Settings",
 			passProps: {
-				getRelayValues : () => this.getRelayValues()
+				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
+				device : this.device
+			}
+		})
+	}
+
+	goToChat(){
+		console.log("goToChat--Device_Control()");
+		this.disactivateHandleCharacteristic()
+
+		this.props.navigator.push({
+			screen : "Chat",
+			title: "Sure-Fi Chat",
+			passProps: {
+				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
 			}
 		})
 	}
@@ -1216,20 +1326,7 @@ class SetupCentral extends Component{
 		Alert.alert("Videos on process","Videos coming soon.")
 	}
 
-	getOperationValues(){
-		WRITE_COMMAND(this.device.id,[0x25])
-		.then(response => {
-		})
-		.catch(error =>  Alert.alert("Error",error))
-	}
-
-	getRelayValues(){
-		WRITE_COMMAND(this.device.id,[0x24])
-		.then(response => {
-		})
-		.catch(error =>  Alert.alert("Error",error))		
-	}
-
+	
 	goToOperationValues(values){
 		this.props.navigator.showModal({
 			screen : "OperationValues",
@@ -1240,16 +1337,28 @@ class SetupCentral extends Component{
 		})
 	}
 
-	goToChat(){
-		this.disactivateHandleCharacteristic()
+
+
+	goToDocumentation(){
+		console.log("goToDocumentation");
 		this.props.navigator.push({
-			screen : "Chat",
-			title: "Sure-Fi Chat",
-			passProps: {
-				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
-				device : this.device
+			screen: "DeviceNotMatched",
+			title: "Documentation",
+			passProps:{
+				showAlert: false,
+				device_id: this.props.device.manufactured_data.device_id
 			}
 		})
+	}
+
+	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
+	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/	
+
+	getOperationValues(){
+		WRITE_COMMAND(this.device.id,[0x25])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))
 	}
 
 	closeModal(){
@@ -1471,20 +1580,19 @@ const mapStateToProps = state => ({
 	show_continue_button : state.setupCentralReducer.show_continue_button,
 	central_photo_data : state.setupCentralReducer.central_photo_data,
 	central_unit_description : state.setupCentralReducer.central_unit_description,
-	device : state.scanCentralReducer.central_device,
-	/*device : {
-		id: "F4:AF:68:14:7A:3E",
-		name: "Sure-Fi Brid",
-		manufactured_data: {
-			address:"F4:AF:68:14:7A:3E",
-			device_id:"FFCFFC",
-			device_state:"0204",
-			firmware_version:"01",
-			hardware_type:"02",
-			security_string : [128,8,55,87,34,114,52,88,179,59,82,237,203,74,58,82]
-		}		
+	device:{
+	  	id: 'F4:AF:68:14:7A:3E',
+	  	name: 'Sure-Fi Brid',
+		manufactured_data : {
+			address: 'F4:AF:68:14:7A:3E',
+			device_id: 'FFCFFC',
+			device_state: '0204',
+			firmware_version: '01',
+			tx: 'FCCFCC',
+			hardware_type: '02',
+			security_string: [ 128, 8, 55, 87, 34, 114, 52, 88, 179, 59, 82, 237, 203, 74, 58, 82 ],
+	  	}
 	},
-	*/
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
 	checkDeviceState: state.scanCentralReducer.central_checkDeviceState,
 	app_version : state.setupCentralReducer.app_version,

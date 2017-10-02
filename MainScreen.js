@@ -352,7 +352,53 @@ class MainScreen extends Component {
 	}
 
 	renderMainScreen(){
-		
+		/*
+
+		<View style={styles.textViewContainer}>
+			<View>
+				<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
+				</Image>
+			</View>
+			<View>
+			</View>
+			<View style={styles.textView}>
+				<Text style={styles.text}>
+					Thermostat Wire Replacement
+				</Text>
+			</View>
+		</View>							
+
+		<View style={styles.textViewContainer}>
+			<View>
+				<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
+				</Image>
+			</View>
+			<View>
+			</View>
+			<View style={styles.textView}>
+				<Text style={styles.text}>
+					Wiegand Wire Replacement
+				</Text>
+			</View>
+		</View>
+		<View style={styles.textViewContainer}>
+			<TouchableHighlight onPress={() => this.openVideosModal()}>
+				<View>
+					<View>
+						<Image source={require('./images/menu_video.imageset/menu_video.png')} >
+						</Image>
+					</View>
+					<View style={styles.textView}>
+						
+							<Text style={styles.text}>
+								Will it Transmit?
+							</Text>
+					</View>
+				</View>
+			</TouchableHighlight>
+		</View>
+
+		*/
 		return (
 			<Background>
 		  		<View style={styles.container}>
@@ -390,51 +436,7 @@ class MainScreen extends Component {
 										Wiegand Wire
 									</Text>
 								</View>
-							</View>
-
-							<View style={styles.textViewContainer}>
-								<View>
-									<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Thermostat Wire Replacement
-									</Text>
-								</View>
-							</View>							
-
-							<View style={styles.textViewContainer}>
-								<View>
-									<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
-									</Image>
-								</View>
-								<View>
-								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Wiegand Wire Replacement
-									</Text>
-								</View>
-							</View>
-							<View style={styles.textViewContainer}>
-								<TouchableHighlight onPress={() => this.openVideosModal()}>
-									<View>
-										<View>
-											<Image source={require('./images/menu_video.imageset/menu_video.png')} >
-											</Image>
-										</View>
-										<View style={styles.textView}>
-											
-												<Text style={styles.text}>
-													Will it Transmit?
-												</Text>
-										</View>
-									</View>
-								</TouchableHighlight>
-							</View>
+							</View>	
 			  			</Coverflow>
 		  		</View>
 		  	</Background>

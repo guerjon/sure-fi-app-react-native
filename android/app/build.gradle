@@ -97,8 +97,8 @@ android {
         applicationId "com.surefi"
         minSdkVersion 18
         targetSdkVersion 23
-        versionCode 14
-        versionName "1.14"
+        versionCode 16
+        versionName "1.16"
         ndk {   
             abiFilters "armeabi-v7a", "x86"
         }
@@ -152,7 +152,6 @@ android {
 
 dependencies {
     
-    compile project(':react-native-sqlite-storage')
     compile(project(':react-native-maps')) {
       exclude group: 'com.google.android.gms', module: 'play-services-base'
       exclude group: 'com.google.android.gms', module: 'play-services-maps'

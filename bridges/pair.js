@@ -91,110 +91,44 @@ class PairBridge extends Component{
 
     pair(){
     	console.log("pair()")
+		var {remote_device,dispatch} = this.props
+		let rxUUID = this.central_device.manufactured_data.device_id
+    	let txUUID = remote_device.manufactured_data.device_id
+
+		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
     	this.fast_manager.stopDeviceScan();
 
-    	READ_STATUS(this.central_device.id)
-    	.then(response => {
-	    	this.pushStatusToCloud(response[0])
+	    WRITE_PAIRING(this.central_device.id,remote_id_bytes)
+			.then(response => {
+				PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
+		    	.then(response => {	
+		    		PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
+		    		.then(response => {
 
-    	})
-    	.catch(error => console.log("error",error))
+						this.central_device.manufactured_data.tx = txUUID
+						this.central_device.manufactured_data.device_state = "0004";
+						this.central_device.writePairResult = true
+
+			    		this.props.dispatch({
+		                    type: "CENTRAL_DEVICE_MATCHED",
+		                    central_device: this.central_device
+		                });
+
+		                this.props.dispatch({
+					        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
+					    })	
+
+			    		this.props.navigator.dismissModal();
+		                
+		                DISCONNECT(this.central_device.id)
+		                .then(() => {
+		                	setTimeout(() => this.props.fastTryToConnect(this.central_device),1000) 	
+		                })
+	    			}).catch(error => console.log(error))
+	    		}).catch(error => console.log("error",error))
+	    	}).catch(error => {console.log("error",error)})	
     }
-
-    pushStatusToCloud(response){
-    	console.log("pushStatusToCloud()",response)
-
-		var {remote_device,dispatch} = this.props
-		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
-
-    	let device_id = this.central_device.manufactured_data.device_id
-    	let remote_device_id = remote_device.manufactured_data.device_id
-    	let expected_status = 4
-    	let rxUUID = this.central_device.manufactured_data.device_id
-    	let txUUID = remote_device.manufactured_data.device_id 
-    	let remote_rxUUID = remote_device.manufactured_data.device_id
-    	let remote_txUUID = this.central_device.manufactured_data.device_id
-
-		let device_status = response
-    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
-    	let remote_hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + remote_rxUUID + "|" + remote_txUUID
-
-    		
-		WRITE_PAIRING(this.central_device.id,remote_id_bytes)
-		.then(response => {
-			PUSH_CLOUD_STATUS(device_id,hardware_status)
-	    	.then(response => {	
-	    		PUSH_CLOUD_STATUS(remote_device_id,remote_hardware_status)
-	    		.then(response => {
-
-					this.central_device.manufactured_data.tx = remote_device.manufactured_data.device_id
-					this.central_device.manufactured_data.device_state = "0004";
-					this.central_device.writePairResult = true
-
-		    		this.props.dispatch({
-	                    type: "CENTRAL_DEVICE_MATCHED",
-	                    central_device: this.central_device
-	                });
-
-	                this.props.dispatch({
-				        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
-				    })	
-
-		    		this.props.navigator.dismissModal();
-	                
-	                DISCONNECT(this.central_device.id)
-	                .then(() => {
-	                	setTimeout(() => this.props.fastTryToConnect(this.central_device),1000) 	
-	                })
-    			}).catch(error => console.log(error))
-    		}).catch(error => console.log("error",error))
-    	}).catch(error => {console.log("error",error)})
-    }
-
-   /* deploy(){
-    	READ_STATUS(this.central_device.id)
-    	.then(response => {
-	    	this.pushStatusToCloudDeploy(response[0])
-
-    	})
-    	.catch(error => console.log("error",error))
-    }
-
-
-    pushStatusToCloudDeploy(device_status){
-    	let expected_status = device_status + 1
-    	let rxUUID = this.central_device.manufactured_data.device_id.toUpperCase()
-    	let txUUID = IS_EMPTY(this.props.remote_device) ? this.central_device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
-    	let device_id = this.central_device.manufactured_data.device_id
-    	let hardware_status = "0" + device_status + "|" + "0" + expected_status + "|" + rxUUID + "|" + txUUID
-    	
-    	PUSH_CLOUD_STATUS(device_id,hardware_status)
-    	.then(response => {
-    		console.log("response deploy",response)
-	    	if(this.central_device.manufactured_data.hardware_type == "01"){
-	    		var message = "This Central Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
-	    	}else{
-	    		var message = "This Remote Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
-	    	}
-
-	    	BleManagerModule.retrieveServices(this.central_device.id,() => {
-	    		BleManager.write(this.central_device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,[COMMAND_MAKE_DEPLOY],20).then(() => {
-						Alert.alert(
-							"Deployment Complete",
-							message,
-							[
-								{text : "Ok",onPress: () => this.smartGoBack()}
-							],
-							{ cancelable: false }
-						)
-	    		}).catch(error => console.log("error on Write Central",error))
-	    	})    		
-    	})
-    	.catch(error => console.log("error",error))
-    }
-	
-	*/
 
     getNoMatchedMessage(){
 
@@ -223,7 +157,7 @@ class PairBridge extends Component{
 						/>
 
 						<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-							<Text >
+							<Text > 
 								{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 
 							</Text>
 							<Text style={{fontSize:22}}>
@@ -250,7 +184,7 @@ class PairBridge extends Component{
 							</Text>
 
 							<Text style={{fontSize:18}}>
-								Remote Unit {this.props.remote_device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
+								Remote Unit {this.props.remote_device.manufactured_data.device_state == "01" ? "Unpaired" : "Paired"}
 							</Text>
 						</View>					
 					</View>

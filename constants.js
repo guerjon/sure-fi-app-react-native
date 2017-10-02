@@ -18,6 +18,7 @@ export const GET_DEVICE_NAME_ROUTE = BASE_URL + "hardware/get_name"
 export const UPDATE_DEVICE_NAME_ROUTE = BASE_URL + "hardware/update_name"
 export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
 export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
+export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
 
 
 export const LOADING = 'LOADING'
@@ -88,8 +89,6 @@ export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
-
-
 
 export const TO_HEX_STRING = string_array => {
 	var byteArray = JSON.parse(string_array);
@@ -238,6 +237,10 @@ export const DEC2HEX = i => {
 	else if (i >= 256  && i <= 4095)  { result = "0"   + i.toString(16); }
 	else if (i >= 4096 && i <= 65535) { result =         i.toString(16); }
 	return result
+}
+
+export const DEC2BIN = n => {
+	return (n >>> 0).toString(2)
 }
 
 export const CRC16 = bytes => {

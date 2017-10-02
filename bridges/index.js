@@ -63,7 +63,7 @@ class Bridges extends Component{
     
     constructor(props) {
         super(props);
-         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
         this.manager = new BleManager();
         this.stared_scanning = false
     }
@@ -76,7 +76,6 @@ class Bridges extends Component{
                     var { dispatch } = this.props;
                     dispatch({type:"HIDE_SERIAL_INPUT"})
                     this.toggleShowDeviceList()
-                    
                 break
                 default:
                 break
@@ -103,6 +102,10 @@ class Bridges extends Component{
     stopScan(){
         this.manager.stopDeviceScan();
         this.manager.destroy()
+    }
+
+    stopWithoutDestroy(){
+        this.manager.stopDeviceScan()
     }
 
     componentDidMount() {
@@ -292,13 +295,14 @@ class Bridges extends Component{
     }   
 
     startScanning(){
-        console.log("startScanning()")
+        console.log("startScanning(1)")
     
         var devices = this.props.devices
+
         this.stared_scanning = true
         
         this.manager.startDeviceScan(null,null,(error,device) => {
-        
+            
             if(error){
                 Alert.alert("Error",error.message)
                 return
@@ -308,6 +312,7 @@ class Bridges extends Component{
                 if (!FIND_ID(devices, device.id)) {
                     var data = this.getManufacturedData(device)
                     devices.push(data)
+
                     this.devices = devices
                     this.remote_devices = this.filterRemoteDevices(devices)
                     this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
@@ -485,7 +490,22 @@ class Bridges extends Component{
         )
     }
 
+    goToDeviceNotMatched(device_id){
+        console.log("goToDeviceNotMatched()");
+        //this.stared_scanning = false
+        //this.props.dispatch({type:"UPDATE_DEVICES",devices:[]})
+        //this.stopWithoutDestroy();
 
+        this.props.navigator.showModal({
+            screen: "DeviceNotMatched",
+            title : device_id,
+            passProps: {
+                device_id : device_id,
+                startScanning : () => this.startScanning(),
+                showAlert: true
+            },
+        })      
+    }
 
     render(){
         //console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
@@ -503,6 +523,7 @@ class Bridges extends Component{
                                 manager = {this.manager}
                                 requestMultiplePermissions = {() => this.requestMultiplePermissions()}
                                 stopScan = {() => this.stopScan()}
+                                goToDeviceNotMatched = {(device_id) => this.goToDeviceNotMatched(device_id)}
                             />
                         </View>
                         <View style={{alignItems:"center"}}>

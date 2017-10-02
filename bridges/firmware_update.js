@@ -78,18 +78,9 @@ class UpdateFirmwareCentral extends Component {
         orientation: 'portrait',
     }   
 
-    static navigatorButtons = {
-        rightButtons: [
-            {
-                title: 'Advanced', // for a textual button, provide the button title (label)
-                id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
-            },
-        ]
-    };
-
     constructor(props) {
     	super(props);
-    	this.device = props.central_device
+    	this.device = props.device
         application_firmware_files = {}
         radio_firmware_files = {}
         bluetooth_firmware_files = {}
@@ -146,7 +137,7 @@ class UpdateFirmwareCentral extends Component {
         var radio_body = {firmware_type:"radio"}
         var bluetooth_body = {firmware_type: "bluetooth"}
 
-
+        console.log("device on firmware",this.device.manufactured_data);
         if(this.device.manufactured_data.hardware_type == "01"){
             
             application_body.hardware_type_key = hardware_central_type
@@ -333,13 +324,15 @@ class UpdateFirmwareCentral extends Component {
     }
 
     startFirmwareUpdate(){
-        
+        console.log("startFirmwareUpdate()");
         let props = this.props
         let dispatch = props.dispatch
 
         if(this.require_update){
             dispatch({type: "HIDE_FIRMWARE_UPDATE_LIST"})
-
+            
+            console.log(props.radio_update_status,props.app_update_status,props.bt_update_status);
+            
             if(props.radio_update_status == "update_required"){
                 dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status:"updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "radio"}) // this mount the component <AppFirmwareUpdate> and this component start the update automatically
@@ -353,7 +346,7 @@ class UpdateFirmwareCentral extends Component {
                 dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "bt"}) // this mount the component <BluetoothFirmwareUpdate> and this component start the update automatically  
             }
-
+            
         }
     }
 
@@ -365,11 +358,15 @@ class UpdateFirmwareCentral extends Component {
             dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status : "updated"})
 
             if(props.app_update_status == "update_required"){
+                
                 dispatch({type: "APP_UPDATE_STATUS",app_update_status : "updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE", current_update:"app"})
+
             }else if(props.bt_update_status == "update_required"){
+
                 dispatch({type: "BT_UPDATE_STATUS",bt_update_status : "updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE", current_update: "bt"})
+                
             }else{
                 Alert.alert("Update Complete","All Firmware has been updated to the selected firmware version(s)")
                 this.closeModal()
@@ -393,7 +390,7 @@ class UpdateFirmwareCentral extends Component {
     }
 
     getFirmwareList(){
-        let app_files = this.application_files
+        let app_files = this.application_firmware_files
         let radio_files = this.radio_files
         let bt_files = this.bt_files
         
@@ -437,11 +434,44 @@ class UpdateFirmwareCentral extends Component {
         this.props.dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : largest_version,selected_files:selected_files})
     }
 
+
+    getSelectedFiles(){
+        var selected_files = this.props.selected_files
+        
+        var selected_app_file = null
+        var selected_radio_file = null
+        var selected_bluetooth_file = null
+
+        if(this.application_files)
+            this.application_files.map(application_file => {
+                if(application_file.firmware_version == this.props.selected_version ){
+                    selected_app_file = application_file.firmware_path
+                }
+            })
+
+        if(this.radio_files)
+            this.radio_files.map(radio_file => {
+                if(radio_file.firmware_version == this.props.selected_version){
+                    selected_radio_file = radio_file.firmware_path
+                }    
+            })
+        if(this.bt_files)
+            this.bt_files.map(bt_file => {
+                if(bt_file.firmware_version == this.props.selected_version)
+                    selected_bluetooth_file = bt_file.firmware_path
+            })
+
+        return [selected_radio_file,selected_app_file,selected_bluetooth_file]
+    }
+
+
     renderUpdateComponent(){
         let current_update = this.props.current_update
         let device = this.device
         let selected_version = this.props.selected_version
         let content = null
+
+        var selected_files = this.getSelectedFiles()
 
         switch(current_update){
 
@@ -452,7 +482,7 @@ class UpdateFirmwareCentral extends Component {
                         device={device}  
                         closeModal={() => this.closeModal()}
                         viewKind = {this.props.view_kind} 
-                        firmwareFile = {this.application_files}
+                        firmwareFile = {selected_files[1]}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -465,7 +495,7 @@ class UpdateFirmwareCentral extends Component {
                         device={device}  
                         closeModal={() => this.closeModal()}
                         viewKind = {this.props.view_kind}
-                        firmwareFile = {this.radio_files}
+                        firmwareFile = {selected_files[0]}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -477,7 +507,7 @@ class UpdateFirmwareCentral extends Component {
                         device={device}  
                         closeAndConnect={() => this.closeAndConnect()}
                         viewKind = {this.props.view_kind}
-                        firmwareFile = {this.bt_files}
+                        firmwareFile = {selected_files[2]}
                         startNextUpdate = {kind => this.startNextUpdate(kind)}
                     />
                 )
@@ -544,7 +574,7 @@ class UpdateFirmwareCentral extends Component {
             <View>
                 <View style={{backgroundColor:"white",marginTop:40}}>
                     <View style={{alignItems:"center"}}>
-                        <View style={{backgroundColor:"gray",width:width,padding:10}}>
+                        <View style={{backgroundColor:"gray",width:width,padding:5}}>
                             <View style={{marginLeft:10}}>
                                 <Text style={{fontWeight:"900",color:"white"}}>
                                     Current Device Firmware Version
@@ -581,7 +611,7 @@ class UpdateFirmwareCentral extends Component {
                             </Text>
                         </View>
                     </View>
-                    <View style={{backgroundColor:"gray",padding:10,justifyContent:"center",flexDirection:"row"}}>
+                    <View style={{backgroundColor:"gray",padding:5,justifyContent:"center",flexDirection:"row"}}>
                         <View style={{flex:0.7,marginLeft:10}}>
                             <Text style={{color:"white"}}>
                                 Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
@@ -692,7 +722,6 @@ class UpdateFirmwareCentral extends Component {
 const mapStateToProps = state => ({
     firmware_file: state.updateFirmwareCentralReducer.firmware_file,
     active_tab : state.updateFirmwareCentralReducer.active_tab,
-    central_device: state.scanCentralReducer.central_device,
     firmware_update_state: state.firmwareUpdateReducer.firmware_update_state,
     progress: state.firmwareUpdateReducer.progress,
     app_version : state.setupCentralReducer.app_version,
@@ -709,7 +738,9 @@ const mapStateToProps = state => ({
     current_update : state.firmwareUpdateReducer.current_update,
     show_firmware_update_list : state.firmwareUpdateReducer.show_firmware_update_list,
     selected_version : state.firmwareUpdateReducer.selected_version,
-    selected_files: state.firmwareUpdateReducer.selected_files
+    selected_files: state.firmwareUpdateReducer.selected_files,
+    device : state.scanCentralReducer.central_device,
+
 });
 
 export default connect(mapStateToProps)(UpdateFirmwareCentral)

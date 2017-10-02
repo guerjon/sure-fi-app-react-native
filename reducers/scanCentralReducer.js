@@ -110,11 +110,6 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         central_device : action.device
       }
-    case "SHOW_SCANNED_IMAGE":
-      return {
-        ...state,
-        photo_data : action.photo_data
-      }
     case "SHOW_ACCEPT_PERMITIONS_MODAL":
       return {
         ...state,

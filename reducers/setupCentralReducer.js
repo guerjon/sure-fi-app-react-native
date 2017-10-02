@@ -88,13 +88,27 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         power : action.power,
-        spreading_factor : action.spreading_factor,
-        band_width : action.band_width,
         retry_count : action.retry_count,
         heartbeat_period: action.heartbeat_period,
         acknowledments : action.acknowledments,
-        hopping_table : action.hopping_table
       }
+    case "UPDATE_HOPPING_TABLE":
+      return {
+        ...state,
+        hopping_table: action.hopping_table
+      }
+
+    case "UPDATE_SPREADING_FACTOR":
+      return {
+        ...state,
+        spreading_factor : action.spreading_factor
+      }
+    case "UPDATE_BAND_WIDTH":
+      return {
+        ...state,
+        band_width: action.band_width
+      } 
+
     case "UPDATE_POWER_VALUES":
       return {
         ...state,

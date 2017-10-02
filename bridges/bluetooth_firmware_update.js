@@ -80,7 +80,7 @@ class BluetoothFirmwareUpdate extends Component{
 	dfuCompletedEvent(data){
 		Alert.alert("Update Complete","The bluetooth update has been completed");
 		setTimeout(() => this.fastTryToConnect(this.device),2000)
-		this.props.closeModal()
+		this.props.closeAndConnect()
 	}
 
 	fastTryToConnect(device){
@@ -111,9 +111,8 @@ class BluetoothFirmwareUpdate extends Component{
         },60000)
 	}
 
-	fetchFirmwareUpdate(firmware_file){
-		let path = firmware_file.firmware_path
-		this.firmware_version = firmware_file.firmware_version
+	fetchFirmwareUpdate(path){
+	
 		if(path){
 			RNFetchBlob.config({
 			    // add this option that makes response data to be stored as a file,

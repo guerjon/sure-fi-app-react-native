@@ -22,7 +22,6 @@ import com.RNFetchBlob.RNFetchBlobPackage;
 import com.lwansbrough.RCTCamera.RCTCameraPackage;
 import it.innove.BleManagerPackage;
 import com.reactnativenavigation.NavigationApplication;
-import org.pgsqlite.SQLitePluginPackage;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,8 +46,7 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new BlePackage(),
               new KeychainPackage(),
               new ReactNativeYouTube(),
-              new MapsPackage(),
-              new SQLitePluginPackage()
+              new MapsPackage()
 
        );
    }

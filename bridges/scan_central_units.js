@@ -107,16 +107,11 @@ class ScanCentralUnits extends Component {
                         })
 
                     }
-                }else{
+                }else{      
                     
-                    dispatch({
-                        type: "CENTRAL_DEVICE_NOT_MATCHED",
-                    })
-
+                    this.props.goToDeviceNotMatched(device_id)
                 }
             }   
-            this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : null })
-            
         }       
     }
 
@@ -125,7 +120,6 @@ class ScanCentralUnits extends Component {
         this.scanning = true
         this.props.dispatch({type: "RESET_CAMERA"})
         this.props.dispatch({type :"SHOW_CAMERA"})
-
     }
 
     renderCamera(message,button) {

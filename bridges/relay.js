@@ -7,18 +7,24 @@ import {
   	Switch,
   	TouchableHighlight,
   	Slider,
-  	Alert
+  	Alert,
+  	ActivityIndicator,
+  	NativeModules,
+  	NativeEventEmitter
 } from 'react-native'
 import {styles,first_color,width,height,success_green,red_error,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
-
+	DEC2BIN,
+	SET_CHAR_AT
 } from '../constants'
 import Background from '../helpers/background'
 import {
 	WRITE_COMMAND,
 } from '../action_creators'
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 class Relay extends Component{
 
@@ -32,7 +38,70 @@ class Relay extends Component{
     constructor(props) {
     	super(props);
     	this.device = this.props.device
+    	this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
     }
+
+	handleCharacteristicNotification(data){
+		var value = data.value[0]
+		
+		switch(value){
+			case 0x02:
+				data.value.shift()
+				this.updateQsValues(data.value[0])
+				break
+			case 0x18:
+				data.value.shift()
+				this.updateRelayValues(data.value)
+				break
+			default:
+			break
+		}
+	}
+
+
+    componentWillMount() {
+    	this.props.dispatch({type :"RESET_RELAY_REDUCER"});
+    	this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification)
+    	this.getRelayValues() 
+    }
+
+    componentWillUnmount() {
+      this.props.activateHandleCharacteristic()
+    }
+
+    updateRelayValues(values){
+    	console.log("updateRelayValues",values);
+    	let props = this.props
+    	let dispatch = props.dispatch
+    	
+    	dispatch({type: "SET_SLIDER_VALUE",slider_value: values[0]})
+    	dispatch({type: "SET_RELAY_IMAGE_1_STATUS",relay_1_image_status : values[1]})
+    	dispatch({type: "SET_RELAY_IMAGE_2_STATUS",relay_2_image_status : values[2]})
+    	this.getQosConfig()
+
+    }
+
+    getQosConfig(){
+    	WRITE_COMMAND(this.device.id,[0x0B])
+    	.catch(error => Alert.alert("Error",error))
+    }
+
+    updateQsValues(value){
+    	console.log("updateQsValues",value);
+    	var binary_value = DEC2BIN(value)
+    	console.log("bynay_value",binary_value);
+
+    	this.props.dispatch({type: "SET_QS",qs : binary_value})
+    	this.props.dispatch({type: "SET_RELAY_LOADING",relay_loading: false})
+    }
+
+	getRelayValues(){
+		console.log("getRelayValues()");
+		WRITE_COMMAND(this.device.id,[0x24])
+		.then(response => {
+		})
+		.catch(error =>  Alert.alert("Error",error))		
+	}
 
 
 	updateSliderValue(slider_value){
@@ -58,7 +127,19 @@ class Relay extends Component{
 
 		WRITE_COMMAND(this.device.id,[0x23, this.props.slider_value,this.props.relay_1_image_status,this.props.relay_2_image_status])
 		.then(() => {
-			Alert.alert("Update Complete","Sure-Fi Relay Settings successfully updated.")
+			setTimeout(() => {
+				var number = parseInt(this.props.qs,2)
+
+				WRITE_COMMAND(this.device.id,[0x0C,number])
+				.then(() =>{
+					Alert.alert("Update Complete","Sure-Fi Relay Settings successfully updated.")
+				})
+				.catch(error => {
+					Alert.alert("Error",error)
+				})
+
+			},1000)
+			
 		})
 	}
 
@@ -151,15 +232,89 @@ class Relay extends Component{
 		console.log("this.slider",this.slider)
 	}
 
+	updateQs(pos){
+		//we need change the value before save it!
+		var value = this.props.qs.substr(pos,1)
+		console.log("value before",value);
+		if(value == "1")
+			value = "0"
+		else
+			value = "1"
+
+		var new_qs = this.props.qs.substr(0, pos) + value+ this.props.qs.substr(pos + value.length);
+				
+		this.props.dispatch({type: "SET_QS",qs: new_qs})
+
+	}
+
 	render(){	
-		console.log("this.props",this.props.relay_1_image_status,this.props.relay_2_image_status,this.props.slider_value)
-		
+		console.log("relay_loading",this.props.relay_loading);
+		if(this.props.relay_loading){
+			return (
+				<Background> 
+					<View style={{height:height}}>
+						<ActivityIndicator /> 
+					</View>
+				</Background>
+			)
+		}
+
 		return(
 			<ScrollView style={styles.pairContainer}>
 				<Background>
 					<View style={{height: height}}>
 						<View style={{marginVertical:30,backgroundColor:"white"}}>
-							<View style={{flexDirection:"row",marginVertical:20,marginHorizontal:20}}>
+
+							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+								<Switch 
+									onValueChange={slider_value => this.updateQs(0)} 
+									onTintColor={option_blue}
+									tintColor="orange"
+									value={this.props.qs.substr(0,1) == "1" ? true : false}
+								/>
+								<Text style={{marginLeft:20,fontSize:18}}>
+									Long Duration
+								</Text>
+							</View>
+
+							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+								<Switch 
+									onValueChange={slider_value => this.updateQs(1)} 
+									onTintColor={option_blue}
+									tintColor="orange"
+									value={this.props.qs.substr(1,1) == "1" ? true : false}
+								/>
+								<Text style={{marginLeft:20,fontSize:18}}>
+									Status Indications
+								</Text>
+							</View>
+
+							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+								<Switch 
+									onValueChange={slider_value => this.updateQs(2)} 
+									onTintColor={option_blue}
+									tintColor="orange"
+									value={this.props.qs.substr(2,1) == "1" ? true : false}
+								/>
+								<Text style={{marginLeft:20,fontSize:18}}>
+									All Messages
+								</Text>
+							</View>
+
+							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+								<Switch 
+									onValueChange={slider_value => this.updateQs(3)} 
+									onTintColor={option_blue}
+									tintColor="orange"
+									value={this.props.qs.substr(3,1) == "1" ? true : false}
+								/>
+								<Text style={{marginLeft:20,fontSize:18}}>
+									Quality of Service Lights
+								</Text>
+							</View>
+
+
+							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
 								<Switch 
 									onValueChange={slider_value => this.updateSwitch(slider_value)} 
 									onTintColor={option_blue}
@@ -198,12 +353,12 @@ class Relay extends Component{
 }
 
 
-
 const mapStateToProps = state => ({
 	slider_value: state.relayReducer.slider_value,
 	relay_1_image_status : state.relayReducer.relay_1_image_status,
 	relay_2_image_status : state.relayReducer.relay_2_image_status,
-	device: state.scanCentralReducer.central_device,
+	relay_loading : state.relayReducer.relay_loading,
+	qs : state.relayReducer.qs
 });
 
 export default connect(mapStateToProps)(Relay);
