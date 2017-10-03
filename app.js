@@ -15,10 +15,10 @@ registerScreens(store,Provider);
 // this will start our app
 Navigation.startSingleScreenApp({
   screen: {
-    //screen : "MainScreen",
-    //title: 'MainScreen',
-    screen : "DeviceControlPanel",
-    title: "DeviceControlPanel",
+    screen : "MainScreen",
+    title: 'MainScreen',
+    //screen : "DeviceControlPanel",
+    //title: "DeviceControlPanel",
     navigatorStyle : {
       navBarHidden : true,
       orientation: 'portrait'

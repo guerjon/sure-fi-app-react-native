@@ -19,7 +19,7 @@ export const UPDATE_DEVICE_NAME_ROUTE = BASE_URL + "hardware/update_name"
 export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
 export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
 export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
-
+export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'

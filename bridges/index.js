@@ -23,7 +23,7 @@ import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
-//import { YouTubeStandaloneAndroid } from 'react-native-youtube';
+
 import SlowBleManager from 'react-native-ble-manager'
 
 import {

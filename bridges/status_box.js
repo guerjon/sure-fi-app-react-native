@@ -224,6 +224,7 @@ class StatusBox extends Component{
 	    		})
 	    	}).then(response => {
 	    		let data = JSON.parse(response._bodyInit)
+	    		console.log("data",response);
 	    		if(data.status == "success"){
 	    			this.device_name = data.data.name
 	    			this.finishEditName();

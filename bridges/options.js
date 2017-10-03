@@ -3,29 +3,13 @@ import {
   	Text,
   	View,
   	Image,
-  	ScrollView,
-  	ActivityIndicator,
   	TouchableHighlight,
   	Alert,
-  	NativeModules,
-  	NativeEventEmitter,
-  	
-
 } from 'react-native'
 
-const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
-import BleManager from "react-native-ble-manager"
-import { NavigationActions } from 'react-navigation'
 import {styles,first_color} from '../styles/index.js'
 import { connect } from 'react-redux';
-import * as KeyChain from 'react-native-keychain'
 import { 
-	LOADING,
-	PAIR_SUREFI_SERVICE,
-	PAIR_SUREFI_WRITE_UUID,
-	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_WRITE_UUID,
 	IS_EMPTY
 } from '../constants'
 import { 
@@ -40,6 +24,24 @@ import {
 import {COMMAND_MAKE_DEPLOY} from '../commands'
 
 const next_step = <Text style={styles.device_control_title_container}>NEXT STEP</Text>
+
+const Option = params => {
+	return (
+		<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => params.callback()}>
+			<View style={styles.white_touchable_highlight_inner_container}>
+				<View style={styles.white_touchable_highlight_image_container}>
+					<Image source={params.image} style={styles.white_touchable_highlight_image}/>
+				</View>
+				<View style={styles.white_touchable_text_container}>
+					<Text style={styles.white_touchable_text}>
+						{params.name}
+					</Text>
+				</View>
+			</View>
+		</TouchableHighlight>
+	)    		
+}
+
 
 class Options extends Component{
 	
@@ -124,132 +126,6 @@ class Options extends Component{
 				.catch(error => console.log("error",error))
 
     		}).catch(error => console.log(error))
-    	
-
-    }
-
-    getPairBridgeOption(){
-		return (
-			<View style={{marginBottom:20}}>
-				<View style={styles.device_control_title_container}>
-					<Text style={styles.device_control_title}>
-						NEXT STEP
-					</Text>
-				</View>			
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
-					<View style={{
-						flexDirection:"row",
-						padding:5,
-						alignItems:"center",						
-  					}}>
-						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
-						</View>
-						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
-								Pair Bridge
-							</Text>
-						</View>
-					</View>
-				</TouchableHighlight>
-				
-			</View>
-		)    	
-    }
-
-    getUpdateFirwmareOption(){
-		return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToFirmwareUpdate()}>
-				<View style={styles.white_touchable_highlight_inner_container}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_flash_firmware.imageset/menu_flash_firmware.png')} style={styles.white_touchable_highlight_image}/>
-					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Update Firmware
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
-		)    	
-    }
-
-    getConfigureRadioOption(){
-
-    	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToConfigureRadio()}>
-				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} style={styles.white_touchable_highlight_image}/>
-					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Configure Radio
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>	
-    	)
-
-    }
-
-    getDocumentationOption(){
-    	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToDocumentation()}>
-				<View style={{flexDirection:"row",padding:5,alignItems:"center"}}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_docs.imageset/menu_documents.png')} style={styles.white_touchable_highlight_image}/>
-					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Documentation
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>	
-    	)    	
-    }
-
-    getDeployCentralUnitOption(){
-    	if(this.props.device){
-    		if(this.props.device.manufactured_data){
-    			if(this.props.device.manufactured_data.hardware_type){
-    				var status_text = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
-    				let status_text_2 = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
-    			}else{
-    				var status_text = "UNDEFINED"
-    				let status_text_2 = "UNDEFINED"
-    			}
-    		}else{
-    			var status_text = "UNDEFINED"
-    			let status_text_2 = "UNDEFINED"
-    		}
-    	}else{
-    		var status_text = "UNDEFINED"
-    		let status_text_2 = "UNDEFINED"
-    	}
-
-    	return (
-    		<View style={{marginBottom:50}}>
-				{next_step}
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.showAlertDeploy()}>
-					<View style={{
-						flexDirection:"row",
-						padding:5,
-						alignItems:"center",	
-					}}>
-						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
-						</View>
-						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
-								{status_text}
-							</Text>
-						</View>
-					</View>
-				</TouchableHighlight>
-			</View>
-    	)
     }
 
     showAlertDeploy(){
@@ -352,112 +228,110 @@ class Options extends Component{
 				
 	    	}).catch(error => console.log("error",error))
     	}
-
     }
 
     getOperatingValuesOption(){
-    	return (
-    		<View>
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.getOperationValues()}>
-					<View style={{
-						flexDirection:"row",
-						padding:5,
-						alignItems:"center",	
-					}}>
-						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_operating.imageset/menu_operating.png')} style={styles.white_touchable_highlight_image}/>
-						</View>
-						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
-								Operating Values
-							</Text>
-						</View>
-					</View>
-				</TouchableHighlight>
-    		</View>
-    	)
+    	return <Option callback={() => this.props.getOperationValues()} image={require('../images/menu_operating.imageset/menu_operating.png')} name="Operating Values"/>
     }
 
     getInstructionalVideos(){
+    	return <Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
+    }
+
+    getRelayDefaults(){
+    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay.imageset/menu_relay.png')} name="Default settings" />
+   	}
+
+   	getSureFiChat(){
+   		return <Option callback={() => this.props.goToChat()} image={require('../images/menu_chat.imageset/menu_chat.png')} name="Sure-Fi Chat" />
+   	}
+
+    getUnPairBridgeOption(){
+    	return <Option callback={() => this.showAlertUnpair()} image={require('../images/menu_unpair.imageset/menu_unpair.png')} name="Unpair Bridge"/>
+    }
+
+    getPairBridgeOption(){
+		return (
+			<View style={{marginBottom:20}}>
+				<View style={styles.device_control_title_container}>
+					<Text style={styles.device_control_title}>
+						NEXT STEP
+					</Text>
+				</View>			
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
+					<View style={{
+						flexDirection:"row",
+						padding:5,
+						alignItems:"center",						
+  					}}>
+						<View style={styles.white_touchable_highlight_image_container}>
+							<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+						</View>
+						<View style={styles.white_touchable_text_container}>
+							<Text style={styles.white_touchable_text}>
+								Pair Bridge
+							</Text>
+						</View>
+					</View>
+				</TouchableHighlight>
+				
+			</View>
+		)    	
+    }
+
+    getUpdateFirwmareOption(){
+    	return <Option callback={() => this.props.goToFirmwareUpdate()} image={require('../images/menu_flash_firmware.imageset/menu_flash_firmware.png')} name="Update Firmware" />
+    }
+
+    getConfigureRadioOption(){
+    	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} name="Configure Radio" />
+    }
+
+    getDocumentationOption(){
+    	return <Option callback={() => this.props.goToDocumentation()} image={require('../images/menu_docs.imageset/menu_documents.png')} name="Documentation"/>
+    }
+
+    getDeployCentralUnitOption(){
+    	if(this.props.device){
+    		if(this.props.device.manufactured_data){
+    			if(this.props.device.manufactured_data.hardware_type){
+    				var status_text = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
+    				let status_text_2 = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
+    			}else{
+    				var status_text = "UNDEFINED"
+    				let status_text_2 = "UNDEFINED"
+    			}
+    		}else{
+    			var status_text = "UNDEFINED"
+    			let status_text_2 = "UNDEFINED"
+    		}
+    	}else{
+    		var status_text = "UNDEFINED"
+    		let status_text_2 = "UNDEFINED"
+    	}
+
     	return (
-    		<View>
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToInstructionalVideos()}>
+    		<View style={{marginBottom:50}}>
+				{next_step}
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.showAlertDeploy()}>
 					<View style={{
 						flexDirection:"row",
 						padding:5,
 						alignItems:"center",	
 					}}>
 						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_video.imageset/menu_video.png')} style={styles.white_touchable_highlight_image}/>
+							<Image source={require('../images/menu_deploy.imageset/menu_deploy.png')} style={styles.white_touchable_highlight_image}/>
 						</View>
 						<View style={styles.white_touchable_text_container}>
 							<Text style={styles.white_touchable_text}>
-								Wiring Guides
+								{status_text}
 							</Text>
 						</View>
 					</View>
 				</TouchableHighlight>
-    		</View>
+			</View>
     	)
-    }
-
-    getRelayDefaults(){
-    	
-    	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToRelay()}>
-				<View style={styles.white_touchable_highlight_inner_container}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_relay.imageset/menu_relay.png')} style={styles.white_touchable_highlight_image}/>
-					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Default settings
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
-    	)    
-   	}
-
-   	getSureFiChat(){
-   		console.log("getSureFiChat()");
-   		//if(this.props.device.manufactured_data.device_state == "0004" ){
-   			return (
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToChat()}>
-					<View style={styles.white_touchable_highlight_inner_container}>
-						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_chat.imageset/menu_chat.png')} style={styles.white_touchable_highlight_image}/>
-						</View>
-						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
-								Sure-Fi Chat
-							</Text>
-						</View>
-					</View>
-				</TouchableHighlight>   			
-   			)
-   		//}
-   		return null
-   	}
-
-    getUnPairBridgeOption(){
-    	return (
-			<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.showAlertUnpair()}>
-				<View style={styles.white_touchable_highlight_inner_container}>
-					<View style={styles.white_touchable_highlight_image_container}>
-						<Image source={require('../images/menu_unpair.imageset/menu_unpair.png')} style={styles.white_touchable_highlight_image}/>
-					</View>
-					<View style={styles.white_touchable_text_container}>
-						<Text style={styles.white_touchable_text}>
-							Unpair Bridge
-						</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
-    	)
-	
-    	return null
-    }
+    }    
 
     renderForcePairOption(){
 		return (
@@ -733,18 +607,10 @@ class Options extends Component{
 		}
 	}
 
-	getNextStepOptions(){
-
-	}
-
 	render(){	
 		return (
 
 			<View style={{marginVertical:20}}>
-				
-				<View>
-					{this.getNextStepOptions()}
-				</View>
 				<View>
 					{this.getAdditionalOptions()}
 				</View>

@@ -13,6 +13,19 @@ import {
 const initialState = {
   manufactured_data : [],
   central_device: {},
+  /*central_device:{
+      id: 'F4:AF:68:14:7A:3E',
+      name: 'Sure-Fi Brid',
+    manufactured_data : {
+      address: 'F4:AF:68:14:7A:3E',
+      device_id: 'FFCFFC',
+      device_state: '0204',
+      firmware_version: '01',
+      tx: 'FCCFCC',
+      hardware_type: '02',
+      security_string: [ 128, 8, 55, 87, 34, 114, 52, 88, 179, 59, 82, 237, 203, 74, 58, 82 ],
+      }
+  },*/
   scanning_status: "",
   camera_status : "hidden",
   photo_data : {},

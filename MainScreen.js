@@ -138,6 +138,7 @@ class MainScreen extends Component {
   			
   			if(data.status == "success"){
   				this.session_key = data.data.session_key
+  				this.props.dispatch({type:"SET_SESSION_KEY",session_key: data.data.session_key})
   			}else{
   				Alert.alert("Error","Error connecting with the server.")
   			}

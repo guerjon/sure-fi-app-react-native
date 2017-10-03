@@ -5,7 +5,8 @@ const initialState = {
   sms_permission : "undetermined",
   info : {},
   user_status : "logout",
-  first_open_app : true
+  first_open_app : true,
+  session_key : null,
 }
 
 export default function dataReducer (state = initialState, action) {
@@ -57,6 +58,11 @@ export default function dataReducer (state = initialState, action) {
       return {
         ...state,
         first_open_app : action.first_open_app
+      }
+    case "SET_SESSION_KEY":
+      return{
+        ...state,
+        set_session_key: action.set_session_key
       }
     default:
       return state

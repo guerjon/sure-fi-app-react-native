@@ -107,7 +107,7 @@ class SetupCentral extends Component{
 		super(props);
 		this.device = props.device
 
-		console.log("id",this.device.id);
+		/*console.log("id",this.device.id);
 		console.log("name",this.device.name);
 		console.log("address",this.device.manufactured_data.address);
 		console.log("device_id",this.device.manufactured_data.device_id	);
@@ -116,7 +116,7 @@ class SetupCentral extends Component{
 		console.log("tx",this.device.manufactured_data.tx);
 		console.log("hardware_type",this.device.manufactured_data.hardware_type);
 		console.log("security_string",this.device.manufactured_data.security_string);
-
+		*/
 		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
@@ -153,8 +153,6 @@ class SetupCentral extends Component{
 	componentDidMount() {
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 		this.checkDeviceState(this.device)
-		
-		//this.showPINModal()
 	}
 
 	componentWillUnmount() {
@@ -1323,9 +1321,11 @@ class SetupCentral extends Component{
 	}
 
 	goToInstructionalVideos(){
-		Alert.alert("Videos on process","Videos coming soon.")
+		this.props.navigator.push({
+			screen : "Videos",
+			title : "Videos",
+		})
 	}
-
 	
 	goToOperationValues(values){
 		this.props.navigator.showModal({
@@ -1580,19 +1580,7 @@ const mapStateToProps = state => ({
 	show_continue_button : state.setupCentralReducer.show_continue_button,
 	central_photo_data : state.setupCentralReducer.central_photo_data,
 	central_unit_description : state.setupCentralReducer.central_unit_description,
-	device:{
-	  	id: 'F4:AF:68:14:7A:3E',
-	  	name: 'Sure-Fi Brid',
-		manufactured_data : {
-			address: 'F4:AF:68:14:7A:3E',
-			device_id: 'FFCFFC',
-			device_state: '0204',
-			firmware_version: '01',
-			tx: 'FCCFCC',
-			hardware_type: '02',
-			security_string: [ 128, 8, 55, 87, 34, 114, 52, 88, 179, 59, 82, 237, 203, 74, 58, 82 ],
-	  	}
-	},
+	device: state.scanCentralReducer.central_device,
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
 	checkDeviceState: state.scanCentralReducer.central_checkDeviceState,
 	app_version : state.setupCentralReducer.app_version,
