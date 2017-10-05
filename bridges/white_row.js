@@ -8,7 +8,7 @@ import {width} from '../styles'
 
 export const WhiteRow = (params) => {
 	return (
-		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center",borderBottomWidth:0.3}}>
+		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}}>
 			<View style={{padding:10,flexDirection:"row"}}>
 				<View style={{flex:0.7}}>
 					<Text style={{fontSize:16}}>

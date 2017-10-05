@@ -83,12 +83,13 @@ class BluetoothFirmwareUpdate extends Component{
 		this.props.closeAndConnect()
 	}
 
-	fastTryToConnect(device){
+	fastTryToConnect(){
 		console.log("fastTryToConnect()")
 	    
 		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+		 dispatch({type: "BT_UPDATE_STATUS",radio_update_status : "updated"})
 
-		IS_CONNECTED(device.id)
+		IS_CONNECTED(this.device.id)
 		.then(response => {
 			if(!response)
 				BleManager.connect(device.id).then(response => {
@@ -147,22 +148,20 @@ class BluetoothFirmwareUpdate extends Component{
 
 		if(progress > 0){
 			var content = (
-				<View>
-					<View style={{flexDirection:"row"}}>
-						<View style={{flex:1}}>
-							<Text style={{fontSize:16,padding:5}}>
+				<View style={{backgroundColor:"white",width:width,height:100,alignItems:"center"}}>
+					<View style={{justifyContent:"space-between"}}>
+						<View >
+							<Text style={{fontSize:16,padding:10,textAlign:"center"}}>
 								Updating Bluetooth
 							</Text>
 						</View>
-						<View style={{flex: 1}}>
-							<Text style={{alignSelf:"flex-end"}}>
+						<View style={{padding:10}}>
+							<Text style={{textAlign:"center"}}>
 								{progress.toFixed(2) * 100 } %
 							</Text>
 						</View>
-					</View>
-					<View>
 						<View>
-							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
+							<ProgressBar progress={progress} width={width-60} height={5} borderRadius={5} color={option_blue}/>
 						</View>
 					</View>
 				</View>

@@ -396,25 +396,23 @@ class RadioFirmwareUpdate extends Component{
 		if(progress > 0){
 			console.log("progress",progress);
 			let progress_number = this.limitSize(progress.toFixed(2) * 100) 
+
 			var content = (
-				<View>
-					<View style={{flexDirection:"row"}}>
-						<View style={{flex:1}}>
-							<Text style={{fontSize:16}}>
-								Updating
+				<View style={{backgroundColor:"white",width:width,height:100,alignItems:"center"}}>
+					<View style={{justifyContent:"space-between"}}>
+						<View>
+							<Text style={{fontSize:16,padding:10,textAlign:"center"}}>
+								Updating Radio
 							</Text>
 						</View>
-						<View style={{flex: 1}}>
-							<Text style={{alignSelf:"flex-end"}}>
+						<View style={{padding:10}}>
+							<Text style={{textAlign:"center"}}>
 								{progress_number} %
 							</Text>
 						</View>
 					</View>
 					<View style={{marginHorizontal:20}}> 	
-						<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
-						<Text>
-							Updating Radio
-						</Text>
+						<ProgressBar progress={progress} width={width-60} height={5} borderRadius={5} color={option_blue}/>
 					</View>
 				</View>
 			)

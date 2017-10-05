@@ -48,14 +48,15 @@ class StatusBox extends Component{
 	}
 
 	componentDidMount() {
-		this.fetchDeviceName()
-	}
-
-		
-	fetchDeviceName(){
 		let device = this.props.device
 		let device_id = device.manufactured_data.device_id.toUpperCase()
-		let uuid = device.id
+		let remote_device_id = device.manufactured_data.tx.toUpperCase()
+
+		this.fetchDeviceName(device_id,remote_device_id)
+
+	}
+
+	fetchDeviceName(device_id,remote_device_id){
 
 		fetch(GET_DEVICE_NAME_ROUTE,{
 			method: "POST",
@@ -63,13 +64,29 @@ class StatusBox extends Component{
 				'Accept' : 'application/json',
 				'Content-Type' : 'application/json'
 			},
-			body: JSON.stringify({hardware_serial: device_id,ret_uuid:uuid})
+			body: JSON.stringify({hardware_serial: device_id})
 		})
 		.then(response => {
 			var data = JSON.parse(response._bodyInit).data
 			this.device_name = data.name
 			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name})
+			fetch(GET_DEVICE_NAME_ROUTE,{
+				method: "POST",
+				headers: {
+					'Accept' : 'application/json',
+					'Content-Type' : 'application/json'
+				},
+				body: JSON.stringify({hardware_serial: remote_device_id})
 
+			})
+			.then(response => {
+
+				var data = JSON.parse(response._bodyInit).data
+				
+				this.remote_device_name = data.name
+				this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : data.name})
+			})
+			.catch(error => console.log("error",error))
 		})
 		.catch(error => console.log("error",error))
 	}
@@ -78,12 +95,9 @@ class StatusBox extends Component{
 		return (
 			<View>
 	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
-					<View style={{flexDirection:"row"}}>
-						<Text style={{padding: 10,margin:5}}>
-							Status
-						</Text >
-						<View style={{width:180}}>
-							<Text style={{fontSize:15}}>
+					<View style={{flexDirection:"row",height:50,alignItems:"center",justifyContent:"center"}}>
+						<View style={{width:width-20}}>
+							<Text style={{fontSize:15,color:"gray",padding:5}}>
 								Hold the Test button on the Bridge for 5 seconds
 							</Text>
 						</View>
@@ -97,24 +111,25 @@ class StatusBox extends Component{
 	}
 
 	renderNormalConnecting(){
-		return (
+		return(
 			<View>
-	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
-					<View style={{flexDirection:"row"}}>
-						<Text style={{padding: 10,margin:5}}>
-							Status
-						</Text >
-						<View style={{width:180,justifyContent:"center",alignItems:"center"}}>
-							<Text style={{fontSize:15}}>
+				<View style={{backgroundColor:"white"}}>
+		            <View style={{margin:10}}>
+						<View style={{
+							justifyContent:"center",
+							alignItems:"center",
+							flexDirection: "row"
+						}}>
+							<Text style={{color: "#FFA500",padding: 2,fontSize:18}}>
+								Status:
+							</Text >
+							<Text style={{color: "#FFA500",padding: 2,fontSize:18}}> 
 								Connecting
 							</Text>
 						</View>
 					</View>
-					<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
-						<ActivityIndicator />
-					</View>							
 				</View>
-			</View>
+			</View>			
 		)
 	}	
 	
@@ -169,7 +184,7 @@ class StatusBox extends Component{
 									alignItems:"center",
 									flexDirection: "row"
 								}}>
-									<Text style={{padding: 2,fontSize:18}}>
+									<Text style={{color: "#00DD00",padding: 2,fontSize:18}}>
 										Status:
 									</Text >
 									<Text style={{color: "#00DD00",padding: 2,fontSize:18}}> 
@@ -226,7 +241,8 @@ class StatusBox extends Component{
 	    		let data = JSON.parse(response._bodyInit)
 	    		console.log("data",response);
 	    		if(data.status == "success"){
-	    			this.device_name = data.data.name
+	    			this.device_name = this.props.device_name
+
 	    			this.finishEditName();
 	    		}else{
 	    			Alert.alert("Error on update","Something was wrong on update the name")
@@ -252,80 +268,140 @@ class StatusBox extends Component{
 		this.props.dispatch({type: "FINISH_EDITING"})
 	}
 
-	render(){	
-	
-		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
-		var switch_button =  (
+	getSwitchButton(){
+		return(
 			<WhiteRowLink 
 				name={this.props.device.manufactured_data.hardware_type == "01" ? "Switch to Remote Unit" : "Switch to Central Unit"} 
 				callback={() => this.props.switchUnit()}
 			/>
 		)
+	}
 
-		if(this.props.is_editing){
-			var content = (
-				<View style={{flexDirection:"row",alignItems:"center"}}>
-					<View style={{flex:0.8}}>
-						<TextInput
-							placeholder = "Write your new name"
-							style={{height: 40, width:width -80, borderColor: 'gray', borderWidth: 0.3,borderRadius:5,backgroundColor:"white"}} 
-							underlineColorAndroid="transparent"
-							onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
-							value = {this.props.device_name}
-						/>					
-					</View>
-					<View style={{flex:0.2}}>
-						<TouchableHighlight 
-							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-							onPress={() => this.finishEditName()}
-						>
-							<Icon name="times" size={25} color="red"/>
-						</TouchableHighlight>
-						<TouchableHighlight 
-							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-							onPress={() => this.updateName()}
-						>
-							<Icon name="upload" size={25} color="green"/>
-						</TouchableHighlight>
-					</View>	
+	getSerialInfo(){
+		if(this.props.device.manufactured_data.hardware_type == "01"){
+			return (
+				<View style={{flexDirection:"row"}}>
+					<Text>
+						Central Serial: {this.props.device.manufactured_data.device_id.toUpperCase()} 
+					</Text>
+					{this.props.device.manufactured_data.tx &&
+						(<Text>
+							Remote Serial: {this.props.device.manufactured_data.tx.toUpperCase()} 
+						</Text>)
+					}
 				</View>
 			)
+
 		}else{
-			if(device.manufactured_data.hardware_type == "01"){
-				var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
-			}else{
-				var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
-			}
 
-			var content = (
-				<View style={{flexDirection:"row",alignItems:"center"}}>
-					<View style={{flex:0.2}}>
-						{image}
-					</View>
-					<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center",flex:0.5}}>
-						<Text style={{fontSize:14}}>
-							{this.device_name}
-						</Text>
-						 <Text style={{fontSize:10}}>
-							{this.props.device.manufactured_data.hardware_type == "01" ? "Central Unit" : "Remote Unit" } {this.props.device.manufactured_data.device_state == "1301" ? "Unpaired" : "Paired"}
-						</Text>
-					</View>
-					<TouchableHighlight 
-						style={{flex:0.1,alignItems:"flex-end",justifyContent:"center"}}
-						onPress={() => this.startEditName()}
-					>
-						<Icon name="edit" size={20} color="gray"/>			
-					</TouchableHighlight>
+			return (
+				<View style={{flexDirection:"row"}}>
+					<Text style={{fontSize:12,marginRight:5}}>
+						Remote Serial : {this.props.device.manufactured_data.device_id.toUpperCase()}
+					</Text>
+					{this.props.device.manufactured_data.tx &&
+						(<Text  style={{fontSize:12,marginRight:5}}>
+							Central Serial : {this.props.device.manufactured_data.tx.toUpperCase()} 
+						</Text>)
+					}
 				</View>
-			)
+			)			
+
 		}
+
+	}
+
+	getEditing(){
+		return (
+			<View style={{flexDirection:"row",alignItems:"center"}}>
+				<View style={{flex:0.8}}>
+					<TextInput
+						placeholder = "Write your new name"
+						style={{height: 40, width:width -80, borderColor: 'gray', borderWidth: 0.3,borderRadius:5,backgroundColor:"white"}} 
+						underlineColorAndroid="transparent"
+						onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
+						value = {this.props.device_name}
+					/>					
+				</View>
+				<View style={{flex:0.2}}>
+					<TouchableHighlight 
+						style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
+						onPress={() => this.finishEditName()}
+					>
+						<Icon name="times" size={25} color="red"/>
+					</TouchableHighlight>
+					<TouchableHighlight 
+						style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
+						onPress={() => this.updateName()}
+					>
+						<Icon name="upload" size={25} color="green"/>
+					</TouchableHighlight>
+				</View>	
+			</View>
+		)
+	}
+
+	getTextPairedWith(){
+		if(this.props.remote_device_name != ""){
+			return <Text style={{fontSize:18,fontWeight:"400",textAlign: 'center'}}>Paired to {this.props.remote_device_name}</Text>
+		}else
+			return null
+	}
+
+	getNormalText(){
+		if(this.props.device.manufactured_data.hardware_type == "01"){
+			var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
+		}else{
+			var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
+		}
+
+		return (
+			<View style={{flexDirection:"row"}}>
+				<View>
+					{image}
+				</View>
+				<View style={{flexDirection:"column",alignItems:"center",flex:0.5,paddingVertical:10}}>
+					<Text style={{fontSize:20,fontWeight:"900",color:"black",textAlign: 'center'}}>
+						{this.device_name}
+					</Text>
+					
+					{this.getTextPairedWith()}
+
+					{this.getSerialInfo()}
+				</View>
+				<TouchableHighlight 
+					style={{flex:0.1,alignItems:"flex-end",justifyContent:"center"}}
+					onPress={() => this.startEditName()}
+				>
+					<Icon name="edit" size={20} color="gray"/>			
+				</TouchableHighlight>
+			</View>
+		)		
+	
+	}
+
+	getTextSection(is_editing){
+
+		if(is_editing){
+			
+			return this.getEditing()
+
+		}else{
+			return this.getNormalText()
+		}
+	}
+
+	render(){	
+	
+		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
+		var switch_button =  this.getSwitchButton()
 
         return (
             <ScrollView>
 				<View>
 					<View style={styles.touchableSectionContainer}>
 						<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
-							{content}
+							{this.getTextSection(this.props.is_editing)}
 						</View>
 					</View>					
 					<View>
@@ -346,7 +422,8 @@ const mapStateToProps = state => ({
 	is_editing : state.setupCentralReducer.is_editing,
 	device_name : state.setupCentralReducer.device_name,
 	options_loaded : state.setupCentralReducer.options_loaded,
-	show_switch_button : state.setupCentralReducer.show_switch_button
+	show_switch_button : state.setupCentralReducer.show_switch_button,
+	remote_device_name : state.setupCentralReducer.remote_device_name
 })
 
 export default connect(mapStateToProps)(StatusBox);

@@ -70,7 +70,7 @@ class Options extends Component{
 		WRITE_UNPAIR(this.device.id).then(response => {
 			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
 			
-			var remote_state = "01|01"+this.device.manufactured_data.tx+"|000000"
+			var remote_state = "01|01|"+this.device.manufactured_data.tx+"|000000"
 
 			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,state)
 			.then(response => {
@@ -231,7 +231,7 @@ class Options extends Component{
     }
 
     getOperatingValuesOption(){
-    	return <Option callback={() => this.props.getOperationValues()} image={require('../images/menu_operating.imageset/menu_operating.png')} name="Operating Values"/>
+    	return <Option callback={() => this.props.goToOperationValues()} image={require('../images/menu_operating.imageset/menu_operating.png')} name="Operating Values"/>
     }
 
     getInstructionalVideos(){
@@ -414,7 +414,7 @@ class Options extends Component{
 	}
 
 	getAdminOptions(bridge_status){
-		console.log("getAdminOptions()");
+		//console.log("getAdminOptions()");
 		switch(bridge_status){
 			case 1:
 				return(
@@ -609,7 +609,6 @@ class Options extends Component{
 
 	render(){	
 		return (
-
 			<View style={{marginVertical:20}}>
 				<View>
 					{this.getAdditionalOptions()}

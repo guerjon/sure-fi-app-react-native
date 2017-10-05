@@ -99,7 +99,8 @@ export  const styles = StyleSheet.create({
       width:width,
       alignItems:"center",
       borderBottomWidth: 0.2,
-      borderBottomColor: "gray"
+      borderBottomColor: "gray",
+
     },
     pairSectionsContainer:{
       marginVertical:5,

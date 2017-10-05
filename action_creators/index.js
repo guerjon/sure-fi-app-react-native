@@ -14,7 +14,10 @@ import {
 	PAIR_SUREFI_WRITE_UUID,
 	PAIR_SUREFI_READ_UUID,
 	SUREFI_SEC_SERVICE_UUID,
-	SUREFI_SEC_HASH_UUID
+	SUREFI_SEC_HASH_UUID,
+	WRITE_HARDWARE_LOG,
+	HEADERS_FOR_POST,
+	BASE64
 } from '../constants'
 
 import {
@@ -22,6 +25,15 @@ import {
 } from '../commands'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+function bytesToHex(bytes) {
+    for (var hex = [], i = 0; i < bytes.length; i++) {
+        hex.push((bytes[i] >>> 4).toString(16));
+        hex.push((bytes[i] & 0xF).toString(16));
+    }
+    return hex.join("");
+}
+
 
 export const IS_CONNECTED = (id) => {
 	
@@ -182,4 +194,33 @@ export const CONNECT = (device) => {
 				BleManager.connect(device.id).then(response => {})
 		})
 		.catch(error => console.log("Error",error))
+}
+
+export const POST_LOG = log => {
+
+	fetch(WRITE_HARDWARE_LOG,{
+		method: "post",
+		headers: HEADERS_FOR_POST,
+		body: JSON.stringify(log)
+	}).then(response => {
+		
+	}).catch(error => {
+		Alert.alert("Error",error)
+	})
+}
+
+export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type) => {
+
+	var log_value = bytesToHex(bytes)
+	log_value = BASE64.btoa(log_value)
+
+	var body = {
+		log_type : log_type,
+		log_value : log_value,
+		device_id : UUID, //this looks wrong but is correct the name its bad on the sistem
+		hardware_serial : manufactured_id.toUpperCase() //this looks wrong but is correct the name its bad on the sistem
+	}
+
+	return body
+
 }

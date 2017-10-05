@@ -31,7 +31,8 @@ import {
 import {
     styles,
     first_color,
-    width
+    width,
+    height
 } from '../styles/index'
 import Camera from 'react-native-camera';
 import {IS_CONNECTED} from '../action_creators'
@@ -49,176 +50,10 @@ class ScanRemoteUnits extends Component {
 
     constructor(props) {
         super(props);
-        this.devices = []
-        this.fast_manager = props.manager
         //bleManagerEmitter.addListener('BleManagerDiscoverPeripheral',(data) => this.handleDiscoverPeripheral(data));
         this.master_device = this.props.master_device // this device was matched could be a central or a remote one
         //this.searchDevices()
-        this.scanDevices()
-    }
-
-    componentDidMount() {
-        this.props.dispatch({type: "SHOW_REMOTE_CAMERA"})
-    }
-
-    getManufacturedData(device) {
-        if (device) {
-            device.manufactured_data = constants.DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA.substring(14), device.id);
-            delete device.manufacturerData
-            delete device.CORRECT_DATA;
-        }else{
-          console.log("error on getManufacturedData device is null or 0")
-        }
-        return device;
-    }
-
-    scanDevices(){
-        console.log("scanRemoteDevices()")
-        var devices = this.devices
-        this.fast_manager.startDeviceScan(null,null,(error,device) => {
-            if(error){
-                return
-            }
-            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                
-                if (!constants.FIND_ID(devices, device.id)) {       
-                    var data = this.getManufacturedData(device)
-                    devices.push(data)
-                    this.devices = devices
-                }                
-            }
-        })
-    }
-
-    matchDevice(device_id){
-        
-        var {
-            dispatch,
-            navigation
-        } = this.props;
-
-        var devices = this.devices
-        var matched_device = []
-
-        if(devices){// the scanner should found some devices at this moment, if not just keep looking 
-                
-            var matched_devices = constants.MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
-
-            if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are REMOTE i.e hardware_type == 01 return true
-            
-                if(this.master_device.manufactured_data.hardware_type == "01"){ // THE PREVIOUS MATCHED DEVICE IS A CENTRAL SO WE NEED FIGURE OUT A REMOTE ONE
-                    
-                    matched_devices = constants.GET_REMOTE_DEVICES(matched_devices)
-                    
-                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-                        matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
-                        if(matched_devices.length > 0){
-
-                            let device = matched_devices[0]
-                            dispatch({
-                                type: "REMOTE_DEVICE_MATCHED",
-                                remote_device: device
-                            });
-                            this.props.showAlertConfirmation()
-                            
-                        }else{
-                           Alert.alert(
-                            "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }
-                            );   
-                        }
-                    }else{
-                        Alert.alert(
-                            "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }
-                        );
-                    }
-            
-                }else{
-                    matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
-                    
-                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-                        matched_devices = constants.GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
-                        if(matched_devices.length > 0){
-
-                            let device = matched_devices[0]
-                            dispatch({
-                                type: "REMOTE_DEVICE_MATCHED",
-                                remote_device: device
-                            });
-                            this.props.showAlertConfirmation()
-                            
-                        }else{
-                            Alert.alert(
-                                "Pairing Error",
-                                "Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.",
-                                [
-                                    {text: "Accept", onPress: () => this.showCamera()}
-                                ],
-                                {
-                                    cancelable: false
-                                }                            
-                            );
-                        }
-                    }else{
-                        Alert.alert(
-                            "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Remote Unit. You need to pair to a Sure-Fi Remote Unit.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }                            
-                        );
-                    }
-                }
-            }else{
-                Alert.alert(
-                    "Pairing error",
-                    "The device " + this.scan_result_id + " was not found",
-                    [
-                        {text: "Accept", onPress: () => this.showCamera()}
-                    ],
-                    {
-                        cancelable: false
-                    }
-                );
-            }
-        }
-    }
-
-    showCamera(){
-        this.props.dispatch({type:"SHOW_REMOTE_CAMERA"})
-    }
-
-    hideCamera(){
-        this.props.dispatch({type:"HIDE_REMOTE_CAMERA"})
-    }
-
-    onSuccess(scan_result) {
-        //Vibration.vibrate()
-        var device_id = scan_result.data.substr(-6).toUpperCase();
-        this.scan_result_id = device_id
-        this.hideCamera();
-        this.matchDevice(device_id)
-    }
-
-    stopScanning(scanning){
-        if(scanning)
-            clearInterval(scanning)
+       
     }
 
     clearQr(){
@@ -228,18 +63,31 @@ class ScanRemoteUnits extends Component {
     renderCamera(message,button) {
         if(this.props.camera_status == "showed"){
             return(
-                <View>
-                    <Camera
-                        style={styles.preview_remote}
-                        aspect={Camera.constants.Aspect.fill}
-                        ref={(cam) => {
-                            this.camera = cam;
-                        }}
-                        onBarCodeRead={(e) => this.onSuccess(e)}
-                    >
-                    </Camera>
+                <View style={{alignItems:"center"}}>
+                        <Camera
+                            style={{
+                                width: width-100,
+                                height: width-100, 
+                                borderRadius:10,                           
+                            }}
+                            aspect={Camera.constants.Aspect.fill}
+                            ref={(cam) => {
+                                this.camera = cam;
+                            }}
+                            onBarCodeRead={(e) => this.props.onSuccess(e)}
+                        >
+                            <Image 
+                                source={require('../images/scanner_background.imageset/scanner_background.png')}
+                                style={{
+                                    width: width-100,
+                                    height: width-100, 
+                                }}
+                            >
+                            </Image>
+                        </Camera>                    
                 </View>
-            )            
+
+            )           
         }else{
             return (
                 <View style={styles.preview_remote}>

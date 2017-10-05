@@ -514,7 +514,7 @@ class Chat extends Component {
         if(coordenate < 0)
             coordenate = coordenate * -1
         
-        coordenate = Math.round(coordenate * 10000000) 
+        coordenate = Math.rounpard(coordenate * 10000000) 
         coordenate = coordenate.toString(16)
         coordenate = HEX_TO_BYTES(coordenate)
         return coordenate

@@ -27,15 +27,15 @@ export const WhiteRowLink = params => {
 
 export const WhiteRowInfoLink = params => {
 	return (
-		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center",borderBottomWidth:0.3}} onPress={() => params.callback()}>
+		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => params.callback()}>
 			<View style={{padding:10,flexDirection:"row"}}>
 				<View style={{flex:0.7}}>
-					<Text style={{fontSize:16}}>
+					<Text style={{fontSize:14}}>
 						{params.name}
 					</Text>
 				</View>
 				<View style={{flex:1}}>
-					<Text style={{fontSize:16}}>
+					<Text style={{fontSize:12}}>
 						{params.value}
 					</Text>
 				</View>				

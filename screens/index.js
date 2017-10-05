@@ -19,6 +19,8 @@ import DeviceControlPanel from '../bridges/device_control_panel'
 import SetupCentralExamples from '../bridges/setup_central_examples'
 import Deploy from '../bridges/deploy'
 import PINCodeModal from '../bridges/pin_code_modal'
+import InsertIDModal from '../bridges/insert_id_modal'
+
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
 import RadioConfiguration from '../bridges/radio/index'
@@ -63,6 +65,8 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('Chat',() => Chat,store,Provider)
 	Navigation.registerComponent('ChatOptions',() => ChatOptions,store,Provider)
 	Navigation.registerComponent('PINCodeModal',() => PINCodeModal,store,Provider)
+	Navigation.registerComponent('InsertIDModal',() => InsertIDModal,store,Provider)
 	Navigation.registerComponent('CustomMap',() => CustomMap,store,Provider)
 	Navigation.registerComponent('DeviceNotMatched',() => DeviceNotMatched,store,Provider)
+
 }

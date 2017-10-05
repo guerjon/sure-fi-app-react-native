@@ -122,13 +122,13 @@ class Login extends Component{
 
 	getLoginInputs(){
 		return (
-			<View style={{marginVertical:20}}>
+			<View style={{justifyContent:"center",alignItems:"center",width:width}}>
 				<View>
 					<Text style={styles.device_control_title}>
 						USER LOGIN
 					</Text>							
 				</View>
-				<View style={{backgroundColor:"white"}}>
+				<View style={{backgroundColor:"white",width:width}}>
 					<View style={{margin:50}}>
 						<View style={{height:40,borderWidth:0.5,marginVertical:10,flexDirection:"row"}}>
 							<View style={{flex:0.2}}>

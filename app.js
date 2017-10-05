@@ -21,12 +21,15 @@ Navigation.startSingleScreenApp({
     //title: "DeviceControlPanel",
     navigatorStyle : {
       navBarHidden : true,
-      orientation: 'portrait'
     },
     navigatorButtons: {},
     passProps: {},
-    animationType: 'slide-down'
-  }
+    animationType: 'slide-down',
+  },
+  appStyle: {
+    orientation: 'portrait'
+  }    
+
 });
 
 

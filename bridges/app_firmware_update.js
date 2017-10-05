@@ -341,22 +341,22 @@ class AppFirmwareUpdate extends Component{
 		if(progress > 0){
 
 			var content = (
-				<View>
-					<View style={{flexDirection:"row"}}>
-						<View style={{flex:1}}>
-							<Text style={{fontSize:16,padding:5}}>
+				<View style={{backgroundColor:"white",width:width,height:100,alignItems:"center"}}>
+					<View style={{justifyContent:"space-between"}}>
+						<View>
+							<Text style={{fontSize:16,padding:10,textAlign:"center"}}>
 								Updating App
 							</Text>
 						</View>
-						<View style={{flex: 1}}>
-							<Text style={{alignSelf:"flex-end"}}>
+						<View style={{padding:10}}>
+							<Text style={{textAlign:"center"}}>
 								{progress.toFixed(2) * 100 } %
 							</Text>
 						</View>
 					</View>
-					<View>
-						<View>
-							<ProgressBar progress={progress} width={width-60} height={20} borderRadius={20} color={option_blue}/>
+					<View >
+						<View >
+							<ProgressBar progress={progress} width={width-60} height={5} borderRadius={5} color={option_blue}/>
 						</View>
 					</View>
 				</View>

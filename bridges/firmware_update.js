@@ -105,9 +105,7 @@ class UpdateFirmwareCentral extends Component {
         let dispatch = this.props.dispatch
 
         dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
-    }
-
-    componentDidMount() {
+        dispatch({type:"HIDE_FIRMWARE_UPDATE_LIST"})
         this.fetchFirmwareFiles()
     }
 
@@ -158,20 +156,20 @@ class UpdateFirmwareCentral extends Component {
             body : JSON.stringify(application_body)
         })
         .then(response_1 => {
-            
+            console.log("response_1",response_1);
             fetch(FIRMWARE_CENTRAL_ROUTE,{
                 headers: HEADERS_FOR_POST,
                 method: 'POST',
                 body : JSON.stringify(radio_body)
 
             }).then(response_2 => {
-                
+                console.log("response_2",response_2);
                 fetch(FIRMWARE_CENTRAL_ROUTE,{
                     headers: HEADERS_FOR_POST,
                     method: 'POST',
                     body: JSON.stringify(bluetooth_body)
                 }).then(response_3 => {
-
+                    console.log("response_3",response_3);
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
@@ -243,7 +241,6 @@ class UpdateFirmwareCentral extends Component {
 
     handleDisconnectedPeripheral(){
        this.closeModal()
-       
     }
 
     closeModal(){
@@ -306,20 +303,21 @@ class UpdateFirmwareCentral extends Component {
         }
     }
 
-    getTextVersionStatus(status){
+    getTextVersionAndStyleStatus(status){
         switch(status){
             case "no_started":
-                return "NOT STARTED"
+
+                return {text:"NOT STARTED",style:{color:"blue",fontSize:9}}
             case "update_required":
-                return "UPDATE REQUIRED"
+                return {text:"UPDATE REQUIRED",style:{color: "#000099",fontSize:9}}
             case "no_update_required":
-                return "NO UPDATE REQUIRED"
+                return {text:"NO UPDATE REQUIRED",style:{color: "#009900",fontSize:9}}
             case "updating":
-                return "UPDATING"
+                return {text:"UPDATING",style:{color: "#FF7F00",fontSize:9}}
             case "updated":
-                return "UPDATED"
+                return {text:"Completed",style:{color:"#009900",fontSize:9}}
             default:
-                return "NO STATUS FOUND"
+                return {text:"NO STATUS FOUND",style:{fontSize:9}}
         }
     }
 
@@ -349,6 +347,20 @@ class UpdateFirmwareCentral extends Component {
             
         }
     }
+
+    forceUpdate(){
+        var {dispatch} =this.props
+        
+        this.require_update = true
+
+        dispatch({type: "APP_UPDATE_STATUS",app_update_status:"update_required"})
+        dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status:"update_required"})
+        dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"update_required"})
+
+        this.startFirmwareUpdate()
+
+    }
+
 
     startNextUpdate(current){
         let props = this.props
@@ -390,18 +402,18 @@ class UpdateFirmwareCentral extends Component {
     }
 
     getFirmwareList(){
-        let app_files = this.application_firmware_files
+        let application_files = this.application_files
         let radio_files = this.radio_files
         let bt_files = this.bt_files
         
-        if(this.props.show_firmware_update_list){
-            if(app_files.length == radio_files.length && radio_files.length == bt_files.length){
+        if(this.props.show_firmware_update_list ){
+            if(application_files.length == radio_files.length && radio_files.length == bt_files.length){
                 var items = []
-                for (var i = 0; i < app_files.length; i++) {
-                    items.push({app_files: app_files[i],radio_files: radio_files[i], bt_files: bt_files[i]})
+                for (var i = 0; i < application_files.length; i++) {
+                    items.push({application_files: application_files[i],radio_files: radio_files[i], bt_files: bt_files[i]})
                 }
             }else{
-                items.push({app_files: app_files[0],radio_files: radio_files[0],bt_files:bt_files[0]})
+                items.push({application_files: application_files[0],radio_files: radio_files[0],bt_files:bt_files[0]})
             }          
 
             return ( 
@@ -414,7 +426,7 @@ class UpdateFirmwareCentral extends Component {
     }
 
     renderItem(item){
-        let app_version = parseFloat(item.app_files.firmware_version)
+        let app_version = parseFloat(item.application_files.firmware_version)
         let radio_version = parseFloat(item.radio_files.firmware_version)
         let bt_version = parseFloat(item.bt_files.firmware_version)
         let largest_version = GET_LARGEST(app_version,radio_version,bt_version)
@@ -427,6 +439,7 @@ class UpdateFirmwareCentral extends Component {
             </TouchableHighlight>
         )
     }
+
 
     changeSelectedFirmware(largest_version,selected_files,app_version,radio_version,bt_version){
         this.update_requires =  this.checkRequireUpdates(app_version,radio_version,bt_version)
@@ -569,6 +582,14 @@ class UpdateFirmwareCentral extends Component {
 
     renderNormalView(){
         
+        /*
+                    <View style={{marginHorizontal:20,padding:5}}>
+                        <Text>
+                            Update Firmware to Version: {PRETY_VERSION(this.props.selected_version)}
+                        </Text>
+                    </View>
+
+        */
         let props = this.props
         return (
             <View>
@@ -576,34 +597,34 @@ class UpdateFirmwareCentral extends Component {
                     <View style={{alignItems:"center"}}>
                         <View style={{backgroundColor:"gray",width:width,padding:5}}>
                             <View style={{marginLeft:10}}>
-                                <Text style={{fontWeight:"900",color:"white"}}>
+                                <Text style={{fontWeight:"900",color:"white",textAlign:"center"}}>
                                     Current Device Firmware Version
                                 </Text>
                             </View>
                         </View>
-                        <Text style={{fontWeight:"900",fontSize:25}}>
+                        <Text style={{fontWeight:"900",fontSize:25,color:"black",padding:5}}>
                             Up To Date - {props.largest_version.length > 1 ? ("V" + props.largest_version) : ("V" + props.largest_version + ".0")}
                         </Text>
                     </View>
                     <View style={{flexDirection:"row",justifyContent:"center"}}>
-                        <View style={{alignItems:"center"}}>
-                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                        <View style={{alignItems:"center",padding:5}}>
+                            <Text style={{fontWeight:"900",color:"black"}}>
                                 Radio Firmware
                             </Text>
                             <Text>
                                 {PRETY_VERSION(props.radio_version)}
                             </Text>
                         </View>
-                        <View style={{alignItems:"center"}}>
-                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                        <View style={{alignItems:"center",padding:5}}>
+                            <Text style={{fontWeight:"900",marginHorizontal:10,color:"black"}}>
                                 App Firmware
                             </Text>
                             <Text>
                                 {PRETY_VERSION(props.app_version)}
                             </Text>
                         </View>
-                        <View style={{alignItems:"center"}}>
-                            <Text style={{fontWeight:"900",marginHorizontal:10}}>
+                        <View style={{alignItems:"center",padding:5}}>
+                            <Text style={{fontWeight:"900",marginHorizontal:10,color:"black"}}>
                                 BT Firmware
                             </Text>
                             <Text>
@@ -613,36 +634,55 @@ class UpdateFirmwareCentral extends Component {
                     </View>
                     <View style={{backgroundColor:"gray",padding:5,justifyContent:"center",flexDirection:"row"}}>
                         <View style={{flex:0.7,marginLeft:10}}>
-                            <Text style={{color:"white"}}>
+                            <Text style={{color:"white",textAlign:"center"}}>
                                 Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
                             </Text>
                         </View>
-                        <TouchableHighlight style={{flex:0.3,alignItems:"flex-end"}} onPress={() => this.showOrHideList()}>
-                            <Icon name="plus-square" size={20} color="white"/> 
+                        <TouchableHighlight style={{alignItems:"flex-end",borderWidth:2,borderColor:"white",borderRadius:5}} onPress={() => this.showOrHideList()}>
+                            <Text style={{color:"white",textAlign:"center",padding:4,fontSize:10}}>
+                                Change
+                            </Text>
                         </TouchableHighlight>
                     </View>
-                    <View style={{marginHorizontal:20,padding:5}}>
-                        <Text>
-                            Update Firmware to Version: {PRETY_VERSION(this.props.selected_version)}
-                        </Text>
+                    <View style={{marginHorizontal:20,padding:5,flexDirection:"row", justifyContent: 'space-between'}}>  
+                        <View>
+                            <Text style={{color:"black"}}>
+                                Radio 
+                            </Text>
+                            <Text style={this.getTextVersionAndStyleStatus(props.radio_update_status).style}>
+                                {this.getTextVersionAndStyleStatus(props.radio_update_status).text}
+                            </Text>
+                        </View>
+                        <View>
+                            <Text style={{color:"black"}}>
+                                Application
+                            </Text>
+                            <Text style={this.getTextVersionAndStyleStatus(props.radio_update_status).style}>
+                                {this.getTextVersionAndStyleStatus(props.app_update_status).text}
+                            </Text>
+                        </View>
+                        <View>
+                            <Text style={{color:"black"}}>
+                                Bluetooth
+                            </Text>
+                            <Text style={this.getTextVersionAndStyleStatus(props.radio_update_status).style}>
+                                 {this.getTextVersionAndStyleStatus(props.bt_update_status).text}
+                            </Text>
+                        </View>
                     </View>
-                    <View style={{marginHorizontal:20,padding:5}}>  
-                        <Text>
-                            Radio - {this.getTextVersionStatus(props.radio_update_status)}
-                        </Text>
-                        <Text>
-                            Application - {this.getTextVersionStatus(props.app_update_status)}
-                        </Text>
-                        <Text>
-                            Bluetooth - {this.getTextVersionStatus(props.bt_update_status)}
-                        </Text>
+                    <View style={{alignItems:"flex-end"}}>
+                        <TouchableHighlight style={{backgroundColor:"#009900",marginHorizontal:10}} onPress={() => this.forceUpdate()}>
+                            <Text style={{fontSize:10,color:"white",paddingHorizontal:7,paddingVertical:5}}>
+                                Force
+                            </Text>
+                        </TouchableHighlight>
                     </View>
                     <View>
                         {this.renderStartUpdateBtn()}
                     </View>
                 </View>
                 <View>
-                    {this.getFirmwareList()}
+                    {this.application_files ?  this.getFirmwareList() : null}
                 </View>
                 <View>
                     {this.renderUpdateComponent()}

@@ -52,6 +52,7 @@ class Relay extends Component{
 			case 0x18:
 				data.value.shift()
 				this.updateRelayValues(data.value)
+				this.props.saveOnCloudLog(data.value,"FAILSAFES")
 				break
 			default:
 			break
@@ -144,10 +145,7 @@ class Relay extends Component{
 	}
 
 	refresh(){
-		this.props.navigator.dismissModal({
-			 animationType: 'slide-down' 
-		})
-		this.props.getRelayValues()
+		this.getRelayValues()
 	}
 
 	updateComple(){
@@ -358,7 +356,8 @@ const mapStateToProps = state => ({
 	relay_1_image_status : state.relayReducer.relay_1_image_status,
 	relay_2_image_status : state.relayReducer.relay_2_image_status,
 	relay_loading : state.relayReducer.relay_loading,
-	qs : state.relayReducer.qs
+	qs : state.relayReducer.qs,
+	device : state.scanCentralReducer.central_device
 });
 
 export default connect(mapStateToProps)(Relay);

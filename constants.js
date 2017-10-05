@@ -20,6 +20,8 @@ export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
 export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
 export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
 export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
+export const WRITE_HARDWARE_LOG = BASE_URL + "hardware/write_hardware_log"
+
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -89,6 +91,22 @@ export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
+
+export const LOG_TYPES = [
+	'BOOTLOADERINFO',
+	'FAILSAFES',
+	'FIRMWAREVERSIONS',
+	'OPERATINGVALUES',
+	'RADIOFIRMWARE',
+	'BLUETOOTHFIRMWARE',
+	'APPFIRMWARE',
+	'HOPPINGTABLE',
+	'RADIOSETTINGS',
+	'POWERLEVELS',
+	'LASTPACKET',
+	'RESETCAUSES',
+]
+
 
 export const TO_HEX_STRING = string_array => {
 	var byteArray = JSON.parse(string_array);
@@ -297,7 +315,7 @@ export const FIND_ID = (data, idToLookFor) => {
 }
 
 export const MATCH_DEVICE = (devices, device_id) => {
-	
+	console.log("MATCH_DEVICE",device_id);
 	devices = devices.filter(device => {
 		if (!device)
 			return false
@@ -308,7 +326,7 @@ export const MATCH_DEVICE = (devices, device_id) => {
 
 		var data_upper_case = device.manufactured_data.device_id.toUpperCase()
 		device_id = device_id.toUpperCase()
-		
+		console.log("searched_device: " + data_upper_case + " my device: " + device_id);
 		return data_upper_case == device_id;
 	})
 
@@ -461,12 +479,18 @@ export const GET_LARGEST = (a,b,c) => {
 
 export const PRETY_VERSION = version => {
 	if(version){
-		if(version < 1)
-			return ("V" + version.toString())
+		if(version < 1){
+			var version_split = version.toString().split(".")
+
+			return ("V" + version_split[0] + ".0" + version_split[1])
+		}
+			
 		if (version == 1)
 			return "V1.0"
-		if (version > 1)
-			return ("V" + version.toString())
+		if (version > 1){
+			var version_split = version.toString().split(".")
+			return ("V" + version_split[0] +  ".0" + version_split[1]  )
+		}
 
 		return ("V" + version.toString())
 	}else{
@@ -483,4 +507,43 @@ export const MAKE_ID = () => {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return text;
+}
+
+
+export const stringFromUTF8Array = data => 
+{
+	
+    const extraByteMap = [ 1, 1, 1, 1, 2, 2, 3, 0 ];
+    var count = data.length;
+    var str = "";
+    
+    for (var index = 0;index < count;)
+    {
+      var ch = data[index++];
+      if (ch & 0x80)
+      {	
+        var extra = extraByteMap[(ch >> 3) & 0x07];
+        if (!(ch & 0x40) || !extra || ((index + extra) > count)){
+        
+          return null;
+        }
+        
+        ch = ch & (0x3F >> extra);
+        for (;extra > 0;extra -= 1)
+        {
+          var chx = data[index++];
+          if ((chx & 0xC0) != 0x80){
+        
+          		return null;
+          }
+            
+          
+          ch = (ch << 6) | (chx & 0x3F);
+        }
+      }
+      
+      str += String.fromCharCode(ch);
+    }
+    
+    return str;
 }

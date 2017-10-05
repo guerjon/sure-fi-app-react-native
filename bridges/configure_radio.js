@@ -33,6 +33,7 @@ import HeartBeatPeriod from '../radio_buttons/heartBeatPeriod'
 import RetryCount from'../radio_buttons/retryCount'
 import SpreadingFactor from'../radio_buttons/spreadingFactor'
 import HoppingTable from '../radio_buttons/hopping_table'
+import SFBTable from '../radio_buttons/sfb_table'
 import BleManager from 'react-native-ble-manager'
 
 const BleManagerModule = NativeModules.BleManager;
@@ -112,7 +113,8 @@ class ConfigureRadio extends Component {
 			retry_count_selected,
 			heartbeat_period_selected,
 			acknowledments_selected,
-			hopping_table_selected
+			hopping_table_selected,
+			sfb_table_selected
 		} = this.props
 
 		let heart_hex_value =  heartbeat_period_selected.toString(16) 
@@ -144,7 +146,8 @@ class ConfigureRadio extends Component {
 				first_value, // change one byte to two bytes now is a 16 
 				second_value,
 				acknowledments_selected,
-				parseInt(hopping_table_selected)
+				parseInt(hopping_table_selected),
+				sfb_table_selected
 			]
 
 		)
@@ -170,6 +173,8 @@ class ConfigureRadio extends Component {
 					this.updateHeartBeatPeriod(heartbeat_period)
 					this.updateAcknowledments(values[7])
 					this.updateHoppingTable(values[8])
+					this.updateSFBTable(values[9])
+
 					this.props.dispatch({type: "UPDATE_PAGE_STATUS",page_status:"loaded"})
 
 				}else{
@@ -207,6 +212,10 @@ class ConfigureRadio extends Component {
 
 	updateAcknowledments(acknowledments_selected){
 		this.props.dispatch({type: "UPDATE_ACKNOWLEDMENTS",acknowledments_selected:acknowledments_selected})
+	}
+
+	updateSFBTable(sfb_table_selected){
+		this.props.dispatch({type: "UPDATE_SFBTABLE",sfb_table_selected: sfb_table_selected})
 	}
 
 	updateHoppingTable(hopping_table_selected){
@@ -251,8 +260,11 @@ class ConfigureRadio extends Component {
 						<View >
 							<Acknowledments current_value={this.props.acknowledments_selected} updateValue={(value) => this.updateAcknowledments(value)}/>
 						</View>
-						<View style={{marginBottom:50,backgroundColor:"white",marginTop:10}}>
-							<HoppingTable current_value={this.props.hopping_table_selected} />
+						<View style={{backgroundColor:"white",marginTop:10}}>
+							<HoppingTable current_value={this.props.hopping_table_selected} checkbox_selected={this.props.checkbox_selected} />
+						</View>
+						<View>
+							<SFBTable current_value={this.props.sfb_table_selected} updateValue={(value) => this.updateSFBTable(value)}/>
 						</View>
 					</ScrollView>											
 				</Background>
@@ -272,7 +284,10 @@ const mapStateToProps = state => ({
   	heartbeat_period_selected : state.configureRadioCentralReducer.heartbeat_period_selected,
   	acknowledments_selected : state.configureRadioCentralReducer.acknowledments_selected,
   	hopping_table_selected : state.configureRadioCentralReducer.hopping_table_selected,
+  	sfb_table_selected : state.configureRadioCentralReducer.sfb_table_selected,
+    checkbox_selected : state.configureRadioCentralReducer.checkbox_selected,
     device: state.scanCentralReducer.central_device,
+    
 });
 
 export default connect(mapStateToProps)(ConfigureRadio)

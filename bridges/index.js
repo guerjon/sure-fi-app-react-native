@@ -43,16 +43,6 @@ const cameraIcon = (<Icon name="camera" size={40} color="white" />)
 const fab_buttons_background = 'white'
 class Bridges extends Component{
     
-    static navigatorButtons = {
-        rightButtons: [
-                {
-                    icon: require('../images/bluetooth-icon.png'),
-                    id: "devices",
-                    backgroundColor: fab_buttons_background
-                }
-        ]
-    }
-
     static navigatorStyle = {
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
@@ -236,9 +226,10 @@ class Bridges extends Component{
     showHelpAlert(){
         Alert.alert(
             "Instructions",
-            "1. Locate the Qr Code found on your Sure-Fi Bridge \n\n "+
-            "2. Using the viewfinder on this screen bring the CR Conde into focus. You may have to move the bridge closer or farther away from your device \n\n" +
-            "3. When the code has been scanned,select \"Continue\" to connect the Sure-Fi Bridge."
+            "1. Please make sure your Sure-Fi device is powered on. You must use a 9V battery if Pairing and 12V DV if deploying or configuring. \n\n "+
+            "2. Locate the QR Code found on your Sure-Fi Device. \n\n" +
+            "3. Using the viewfinder on this screen brring the QR Code into focus. You may have to move the bridge closer or farther away from your device. \n\n" +
+            "4. When the code has been scanned,select \"Continue\" to connect the Sure-Fi Bridge."
         )
     }
 
@@ -255,7 +246,10 @@ class Bridges extends Component{
         if(this.props.user_data){
             this.props.navigator.push({
                 screen: "DeviceControlPanel",
-                title : "Device Details"
+                title : "Device Details",
+                appStyle: {
+                  orientation: 'portrait',
+                }                
             })            
         }else{
             this.props.navigator.push({
@@ -264,9 +258,12 @@ class Bridges extends Component{
                 rightButtons: [
                     {
                         id: "pin_number",
-                        icon: require('../images/options-icon-open.png'), 
+                        icon: require('../images/settings_bar_icon.imageset/settings_bar_icon.png'), 
                     }
-                ]
+                ],
+                appStyle: {
+                  orientation: 'portrait',
+                }                
             })            
         }   
     }
@@ -296,20 +293,22 @@ class Bridges extends Component{
 
     startScanning(){
         console.log("startScanning(1)")
-    
+        
+
         var devices = this.props.devices
 
         this.stared_scanning = true
         
-        this.manager.startDeviceScan(null,null,(error,device) => {
+        this.manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
             
             if(error){
                 Alert.alert("Error",error.message)
                 return
             }
-
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+
                 if (!FIND_ID(devices, device.id)) {
+                    
                     var data = this.getManufacturedData(device)
                     devices.push(data)
 
@@ -356,19 +355,19 @@ class Bridges extends Component{
     renderSerialInput(show_serial_input){
         if(show_serial_input)
             return(
-                <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
+                <ScrollView contentContainerStyle={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
                     <View style={{width:width-200,height:50,backgroundColor:"white",margin:10,alignItems:"center",justifyContent:"center"}}>
-                        <View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200}}>
+                        <View style={{alignItems:"center",justifyContent:"center",height:50,width:width-200,borderWidth:1}}>
                             <TextInput 
                                 maxLength={6}
-                                style={{flex:1,justifyContent:"center",fontSize:25,width:width-200}} 
+                                style={{flex:1,justifyContent:"center",fontSize:25,width:width-200,textAlign: 'center'}} 
                                 underlineColorAndroid="transparent" 
                                 onChangeText={(t) => this.searchDeviceBySerial(t)}
-                                placeholder ="FFFFFF"
+                                placeholder ="XXXXXX"
                             />
                         </View>
                     </View>
-                </View>
+                </ScrollView>
             )
 
         return null
@@ -414,12 +413,9 @@ class Bridges extends Component{
                         })
                     }
                 }else{
-                    dispatch({
-                        type: "CENTRAL_DEVICE_NOT_MATCHED",
-                    })
+                    this.goToDeviceNotMatched(device_id)
                 }
             }   
-            this.props.dispatch({type: "SHOW_SCANNED_IMAGE",photo_data : null })
         }   
     }
 
@@ -504,27 +500,49 @@ class Bridges extends Component{
                 startScanning : () => this.startScanning(),
                 showAlert: true
             },
+            appStyle: {
+              orientation: 'portrait',
+            }            
         })      
     }
 
     render(){
         //console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
+        if(this.props.show_serial_input) {
+            var camera_style = {}
+            var touchable_icon = (
+                <TouchableHighlight onPress={() => this.toggleSerialInput()}>
+                    <Image source={require('../images/camera_icon.imageset/camera_icon.png')} />
+                </TouchableHighlight>
+            )
+        }else{
+            var camera_style = {height:height * 0.6}
+            var touchable_icon = (
+                <TouchableHighlight onPress={() => this.toggleSerialInput()}>
+                    <Image source={require('../images/keyboard_icon.imageset/keyboard_icon.png')} />
+                </TouchableHighlight>
+            )
+        }
+
         if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
             return(
                 <Background>
                     <View style={{justifyContent:'space-between',height:height-150}}>
-                        <View style={{height:height * 0.6}}>
-                            <ScanCentralUnits 
-                                navigation={this.props.navigation} 
-                                goToDeviceControl={(device)=> this.goToDeviceControl(device)}
-                                scanResult = {this.scan_result}
-                                manager = {this.manager}
-                                requestMultiplePermissions = {() => this.requestMultiplePermissions()}
-                                stopScan = {() => this.stopScan()}
-                                goToDeviceNotMatched = {(device_id) => this.goToDeviceNotMatched(device_id)}
-                            />
+                        <View style={camera_style}>
+                            {!this.props.show_serial_input && ( 
+                                <ScanCentralUnits 
+                                    navigation={this.props.navigation} 
+                                    goToDeviceControl={(device)=> this.goToDeviceControl(device)}
+                                    scanResult = {this.scan_result}
+                                    manager = {this.manager}
+                                    requestMultiplePermissions = {() => this.requestMultiplePermissions()}
+                                    stopScan = {() => this.stopScan()}
+                                    goToDeviceNotMatched = {(device_id) => this.goToDeviceNotMatched(device_id)}
+                                />
+                                )
+                            }
                         </View>
                         <View style={{alignItems:"center"}}>
                             {this.renderSerialInput(this.props.show_serial_input)}
@@ -538,10 +556,8 @@ class Bridges extends Component{
                     <View style={{height:150}}>
                         {this.props.list_status != "showed" &&
                             <View style={{flexDirection:"row",flex:1,justifyContent: 'space-between',marginHorizontal:10}}>
-                                <View>
-                                    <TouchableHighlight onPress={() => this.toggleSerialInput()}>
-                                        <Image source={require('../images/keyboard_icon.imageset/keyboard_icon.png')} />
-                                    </TouchableHighlight>
+                                <View >
+                                    {touchable_icon}
                                 </View>
                                 <View style={{alignItems:"center"}}>
                                     <Text style={{fontSize:18,fontWeight:"900"}}>

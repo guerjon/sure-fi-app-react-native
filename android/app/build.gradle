@@ -97,8 +97,8 @@ android {
         applicationId "com.surefi"
         minSdkVersion 18
         targetSdkVersion 23
-        versionCode 17
-        versionName "1.17"
+        versionCode 19
+        versionName "1.19"
         ndk {   
             abiFilters "armeabi-v7a", "x86"
         }

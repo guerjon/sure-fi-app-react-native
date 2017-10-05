@@ -20,14 +20,13 @@ import Background from '../helpers/background'
 
 class Videos extends Component{
 	
-	static navigationOptions ={
-		title : "Videos",
-		headerStyle: {backgroundColor: first_color},
-		headerTitleStyle : {color :"white"},
-		headerBackTitleStyle : {color : "white",alignSelf:"center"},
-		headerTintColor: 'white',
-	}
-
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait'
+    }
+    
 	componentWillMount() {
 	  	
 	  	fetch(GET_USER_VIDEOS,{
@@ -94,11 +93,11 @@ class Videos extends Component{
 
 		console.log("video",id);
 		return (
-			<View style={{backgroundColor:"white",marginVertical:10,width:width}}>
-				<TouchableHighlight  onPress={() => this.playVideo(id)} style={{alignItems:"center"}}>
+			<View style={{backgroundColor:"white",marginVertical:10,width:width,height:100,alignItems:"center",justifyContent:"center"}}>
+				<TouchableHighlight  onPress={() => this.playVideo(id)} style={{alignItems:"center",justifyContent:"center"}}>
 					
-					<Text style={{color:link_color,fontSize:18,paddingVertical:25}}>
-						{array_title[1]}
+					<Text style={{color:link_color,fontSize:18,paddingVertical:25,textAlign:"center"}}>
+						{video.video_title}
 					</Text>
 					
 				</TouchableHighlight>
@@ -119,7 +118,7 @@ class Videos extends Component{
 			<Background>
 				<View style={{alignItems:"center",justifyContent:"center"}}>
 					<Text style={{marginTop:20,fontSize:20,fontWeight: '900'}}>	
-						Sure-Fi - Video Instructions
+						
 					</Text>
 				</View>
 				<View style={{marginVertical:20}}>

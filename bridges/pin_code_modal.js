@@ -21,7 +21,7 @@ import {
 const option_blue = "#5AB0E3"
 
 var modal_width = Dimensions.get('window').width * 0.8
-
+var height = Dimensions.get('window').height
 
 
 class PINCodeModal extends Component{
@@ -80,12 +80,15 @@ class PINCodeModal extends Component{
 	      	<View style={styles.container}>
 	        	<View
 	        		
-	        		style={{backgroundColor:"white",height:50,borderTopRightRadius:10, borderTopLeftRadius: 10}} 
+	        		style={{backgroundColor:"white",borderTopRightRadius:10, borderTopLeftRadius: 10}} 
 	        	>
 	        		<View style={{flexDirection:"row",padding:10,width: modal_width,alignItems:"center",justifyContent:"center"}}>
 		        		<View style={{justifyContent:"flex-start"}}>
-			        		<Text style={{fontSize:20}}>
-			        			Insert the PIN code
+			        		<Text style={{fontSize:20,textAlign:"center"}}>
+			        			Developer Mode
+			        		</Text>
+			        		<Text style={{textAlign:"center"}}>
+			        			Please enter your 6 digit pin to enter developer mode
 			        		</Text>
 		        		</View>
 	        		</View>
@@ -96,10 +99,11 @@ class PINCodeModal extends Component{
 							<View style={{alignItems:"center",justifyContent:"center",height:50,width:200}}>
 								<TextInput 
 									maxLength={20}
-									style={{flex:1,justifyContent:"center",fontSize:25,width:200}} 
+									style={{flex:1,justifyContent:"center",fontSize:25,width:200,textAlign:"center"}} 
 									keyboardType="numeric" 
 									underlineColorAndroid="transparent" 
 									onChangeText={(t) => this.handleNumberChange(t)}
+									placeholder="PIN"
 								/>
 							</View>
 						</View>
@@ -108,7 +112,7 @@ class PINCodeModal extends Component{
 				<View style={{flexDirection:"row"}}>
 		        	<TouchableHighlight
 		        		onPress={() => this.closeModal()}
-		        		style={{backgroundColor:"white",height:50,borderBottomRightRadius:10, borderBottomLeftRadius: 10}} 
+		        		style={{backgroundColor:"white",height:60,borderBottomRightRadius:10, borderBottomLeftRadius: 10}} 
 		        	>
 		        		<View style={{flexDirection:"row",padding:10,width: modal_width/2,alignItems:"center",justifyContent:"center"}}>
 			        		<Text style={{fontSize:20,color:"red"}}>
@@ -118,7 +122,7 @@ class PINCodeModal extends Component{
 		        	</TouchableHighlight>
 		        	<TouchableHighlight
 		        		onPress={() => this.handlePinNumber()}
-		        		style={{backgroundColor:"white",height:50,borderBottomRightRadius:10, borderBottomLeftRadius: 10}} 
+		        		style={{backgroundColor:"white",height:60,borderBottomRightRadius:10, borderBottomLeftRadius: 10}} 
 		        	>
 		        		<View style={{flexDirection:"row",padding:10,width: modal_width/2,alignItems:"center",justifyContent:"center"}}>
 			        		<Text style={{fontSize:20,color:option_blue}}>
@@ -127,7 +131,6 @@ class PINCodeModal extends Component{
 		        		</View>
 		        	</TouchableHighlight>		        	
 	        	</View>
-	         
 	      	</View>
 	    );
 	}
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius:10,
     borderTopLeftRadius: 10,
     backgroundColor: '#ffffff',
-    borderRadius: 5
+    borderRadius: 5,
   },
   title: {
     fontSize: 17,

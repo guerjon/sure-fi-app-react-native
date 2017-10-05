@@ -6,7 +6,8 @@ const initialState = {
 	retry_count_selected : null,
 	heartbeat_period_selected : null,
 	acknowledments_selected : null,
-	hopping_table_selected :null
+	hopping_table_selected :null,
+	sfb_table_selected : null
 }
 
 export default function configureRadioCentralReducer (state = initialState, action) {
@@ -51,6 +52,16 @@ export default function configureRadioCentralReducer (state = initialState, acti
 	    		...state,
 	    		hopping_table_selected : action.hopping_table_selected
 	    	}	
+	    case "UPDATE_SFBTABLE":
+	    	return {
+	    		...state,
+	    		sfb_table_selected : action.sfb_table_selected
+	    	}
+	    case "UPDATE_CHECKBOX_SELECTED":
+	    	return{
+	    		...state,
+	    		checkbox_selected : action.checkbox_selected
+	    	}
 	    default:
 	      return state
   	}

@@ -112,7 +112,7 @@ class MainScreen extends Component {
 
   	componentDidMount(){
   		if(this.props.first_open_app){
-  			this.openScanModal()
+  			this.goToScan()
   			this.props.dispatch({type: "FIRST_OPEN_APP",first_open_app: false})
   		}
   	}
@@ -308,18 +308,38 @@ class MainScreen extends Component {
 		this.password = null
 	}
 
-	openScanModal(){
-		this.props.navigator.showModal({
-			screen : "Bridges",
-			title: "Scan Sure-Fi Bridge",
-			animationType: 'slide-up',
-		})
+	goToScan(){
+
+		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
+
+		if(user_type){
+
+			this.props.navigator.showModal({
+				screen : "Bridges",
+				title: "Scan QR Code",
+				animationType: "slide-up",
+		        rightButtons: [
+		                {
+		                    icon: require('./images/bluetooth-icon.png'),
+		                    id: "devices",
+		                    backgroundColor: "white"
+		                }
+		        ]				
+			})
+
+		}else{
+			this.props.navigator.showModal({
+				screen : "Bridges",
+				title: "Scan QR Code",
+				animationType: 'slide-up',
+			})			
+		}
 	}
 
-	openVideosModal(){
+	goToVideos(){
 		this.props.navigator.push({
 			screen : "Videos",
-			title : "Will it Transmit?",
+			title : "Instruction Videos",
 			animationType: 'slide-up'
 		})
 	}
@@ -353,53 +373,6 @@ class MainScreen extends Component {
 	}
 
 	renderMainScreen(){
-		/*
-
-		<View style={styles.textViewContainer}>
-			<View>
-				<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
-				</Image>
-			</View>
-			<View>
-			</View>
-			<View style={styles.textView}>
-				<Text style={styles.text}>
-					Thermostat Wire Replacement
-				</Text>
-			</View>
-		</View>							
-
-		<View style={styles.textViewContainer}>
-			<View>
-				<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
-				</Image>
-			</View>
-			<View>
-			</View>
-			<View style={styles.textView}>
-				<Text style={styles.text}>
-					Wiegand Wire Replacement
-				</Text>
-			</View>
-		</View>
-		<View style={styles.textViewContainer}>
-			<TouchableHighlight onPress={() => this.openVideosModal()}>
-				<View>
-					<View>
-						<Image source={require('./images/menu_video.imageset/menu_video.png')} >
-						</Image>
-					</View>
-					<View style={styles.textView}>
-						
-							<Text style={styles.text}>
-								Will it Transmit?
-							</Text>
-					</View>
-				</View>
-			</TouchableHighlight>
-		</View>
-
-		*/
 		return (
 			<Background>
 		  		<View style={styles.container}>
@@ -411,7 +384,7 @@ class MainScreen extends Component {
 					  				</View>
 					  				<View style={{alignItems:"flex-end",right:-30}}>
 										<TouchableHighlight style={{top:-20}} onPress={() =>  this.navigateToLogin()}>
-											<Icon name="user-circle" size={30} color="white" />
+											<Icon name="user-circle" size={25} color="white" />
 										</TouchableHighlight>
 					  				</View>
 				  				</View>
@@ -426,18 +399,67 @@ class MainScreen extends Component {
 			  				spacing={230}
 			  			>
 							<View style={styles.textViewContainer}>
+								<View>
+									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
+										<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
+										</Image>
+									</TouchableNativeFeedback>
+								</View>
+								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
+									<Text style={{fontSize:30}}>
+										Wiegand Wire 
+									</Text>
+									<Text style={{fontSize:30}}>
+										Replacement
+									</Text>
+								</View>
+							</View>
+
+							<View style={styles.textViewContainer}>
+								<View>
+									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
+										<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
+										</Image>
+									</TouchableNativeFeedback>	
+								</View>
+								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
+									<Text style={{fontSize:30}}>
+										Thermostat Wire 
+									</Text>
+									<Text style={{fontSize:30}}>
+										Replacement
+									</Text>
+								</View>
+							</View>							
+							<View style={styles.textViewContainer}>
 								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableNativeFeedback onPress={() =>  this.openScanModal()} >
+									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
 										<Image source={require('./images/menu_data.imageset/menu_data.png')}>
 										</Image>
 									</TouchableNativeFeedback>
 								</View>
-								<View style={styles.textView}>
-									<Text style={styles.text}>
-										Wiegand Wire
+								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
+									<Text style={{fontSize:30}}>
+										Serial Data Wire
+									</Text>
+									<Text style={{fontSize:30}}>
+										Replacement
 									</Text>
 								</View>
 							</View>	
+							<View style={styles.textViewContainer}>
+								<View style={{alignItems:"center",justifyContent:"center"}}>
+									<TouchableNativeFeedback onPress={() =>  this.goToVideos()} >
+										<Image source={require('./images/menu_video.imageset/menu_video.png')}>
+										</Image>
+									</TouchableNativeFeedback>
+								</View>
+								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
+									<Text style={{fontSize:30}}>
+										Will it Transmit?
+									</Text>
+								</View>
+							</View>				  			
 			  			</Coverflow>
 		  		</View>
 		  	</Background>
@@ -473,7 +495,8 @@ const mapStateToProps = state => ({
 	phone_state_permission : state.mainScreenReducer.phone_state_permission,
 	sms_permission : state.mainScreenReducer.sms_permission,
 	info : state.mainScreenReducer.info,
-	first_open_app : state.mainScreenReducer.first_open_app
+	first_open_app : state.mainScreenReducer.first_open_app,
+	user_data : state.loginReducer.user_data
 })
 
 export default connect(mapStateToProps)(MainScreen)

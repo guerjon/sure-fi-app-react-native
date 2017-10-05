@@ -26,7 +26,9 @@ const initialState = {
   radio_board_version : "",
   register_board_1 : "",
   register_board_1 : "",
-  show_switch_button : false
+  show_switch_button : false,
+  remote_device_name : "",
+  debug_mode_status : false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -140,6 +142,11 @@ export default function setupCentralReducer (state = initialState, action) {
         ...state,
         device_name : action.device_name
       }
+    case "UPDATE_REMOTE_DEVICE_NAME":
+      return {
+        ...state,
+        remote_device_name : action.remote_device_name
+      }
     case "UPDATE_ACTION_FROM_DISCONNNECT":
       return {
         ...state,
@@ -189,6 +196,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         show_switch_button: false
+      }
+    case "SET_DEBUG_MODE_STATUS":
+      return {
+        ...state,
+        debug_mode_status : action.debug_mode_status
       }
     default:
       return state
