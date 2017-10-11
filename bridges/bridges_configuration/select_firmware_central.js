@@ -78,7 +78,7 @@ class selectFirmwareFile extends Component{
 	}
 
 	renderFirmwareFileList(firmware_files){
-		console.log("renderFirmwareFileList",firmware_files)
+		console.log("renderFirmwareFileList")
 		return (
 			<ScrollView >
 				<FlatList
@@ -92,7 +92,6 @@ class selectFirmwareFile extends Component{
 	}
 
 	listItem(item){
-
 		var file = item.item
 		var values = selectValues(file.firmware_status)
 		

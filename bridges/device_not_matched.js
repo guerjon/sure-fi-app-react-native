@@ -36,8 +36,8 @@ class DeviceNotMatched extends Component{
       	super(props);
       	this.path = ""
       	this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+        console.log("props device not matched",props);
     }
-
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
         console.log("event",event)
@@ -52,9 +52,15 @@ class DeviceNotMatched extends Component{
         
     }
 
-    
+    componentWillUnmount() {
+      console.log("componentWillUnmount()");
+      this.props.dispatch({type:"ALLOW_SCANNING",allow_scanning:true})
+    }
+
     componentWillMount() {
-      	fetch(GET_DEVICE_DOCUMENTS,{
+      console.log("componentWillMount",this.props.device_id,);
+      	
+        fetch(GET_DEVICE_DOCUMENTS,{
       		method: "post",
       		headers: {
       			'Accept' : 'application/json',
@@ -64,19 +70,28 @@ class DeviceNotMatched extends Component{
       			hardware_serial: this.props.device_id
       		})
       	}).then(response => {
-      		let data = JSON.parse(response._bodyInit).data.documents[0]
-      		let path = data.document_path
-      		
-      		this.path = path
+          console.log("response---",response);
+      		let data = JSON.parse(response._bodyInit).data.documents
+          if(data.lenght > 0){
+            let path = data.document_path
+            
+            this.path = path            
+          }else{
+            console.log("error","the response array on documents its empty");
+          }
       		//let path = data.document.path
-
+          
       	}).catch(error => {
       		Alert.alert("Error",error)
       	})
     }
 
     goToAccessControlInstructions(){
-    	Linking.openURL(this.path)
+      console.log("goToAccessControlInstructions()");
+      if(this.path)
+    	 Linking.openURL(this.path)
+      else
+        Alert.alert("Error","The link wasn't found.")
     }
 
 	render(){	
@@ -85,8 +100,8 @@ class DeviceNotMatched extends Component{
 				<View style={{height:height}}>
 					{this.props.showAlert &&
 						(<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
-							<View style={{width:width * .25}}>
-								<Image source={require('../images/account_icon.imageset/account_icon.png')} style={{width:100,height:50,margin:10}}/>
+							<View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
+								<Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
 							</View>
 							<View style={{margin:20,width: width * .75}}>
 								<Text style={{color:"red"}}>

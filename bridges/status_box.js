@@ -22,7 +22,6 @@ import {
 	SUREFI_CMD_WRITE_UUID,
 	PAIR_SUREFI_SERVICE,
 	PAIR_SUREFI_READ_UUID,
-	GET_DEVICE_NAME_ROUTE,
 	UPDATE_DEVICE_NAME_ROUTE,
 	BASE64,
 	DIVIDE_MANUFACTURED_DATA
@@ -44,67 +43,27 @@ class StatusBox extends Component{
 		this.device = props.device
 		this.device_status = props.device_status
 		this.indicator_number = props.indicator_number
-		this.power_voltage = props.power_voltage
+		this.power_voltage = props.power_voltage		
 	}
 
 	componentDidMount() {
 		let device = this.props.device
 		let device_id = device.manufactured_data.device_id.toUpperCase()
 		let remote_device_id = device.manufactured_data.tx.toUpperCase()
-
-		this.fetchDeviceName(device_id,remote_device_id)
-
-	}
-
-	fetchDeviceName(device_id,remote_device_id){
-
-		fetch(GET_DEVICE_NAME_ROUTE,{
-			method: "POST",
-			headers: {
-				'Accept' : 'application/json',
-				'Content-Type' : 'application/json'
-			},
-			body: JSON.stringify({hardware_serial: device_id})
-		})
-		.then(response => {
-			var data = JSON.parse(response._bodyInit).data
-			this.device_name = data.name
-			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name})
-			fetch(GET_DEVICE_NAME_ROUTE,{
-				method: "POST",
-				headers: {
-					'Accept' : 'application/json',
-					'Content-Type' : 'application/json'
-				},
-				body: JSON.stringify({hardware_serial: remote_device_id})
-
-			})
-			.then(response => {
-
-				var data = JSON.parse(response._bodyInit).data
-				
-				this.remote_device_name = data.name
-				this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : data.name})
-			})
-			.catch(error => console.log("error",error))
-		})
-		.catch(error => console.log("error",error))
 	}
 
 	renderConnectingBox(){
 		return (
 			<View>
 	            <View style={{flexDirection: "row",backgroundColor: "white"}}>
-					<View style={{flexDirection:"row",height:50,alignItems:"center",justifyContent:"center"}}>
-						<View style={{width:width-20}}>
+					<View style={{flexDirection:"row",height:50,alignItems:"center",justifyContent:"center",width:width}}>
+						<View>
 							<Text style={{fontSize:15,color:"gray",padding:5}}>
-								Hold the Test button on the Bridge for 5 seconds
+								Hold the Test button for 5 seconds
 							</Text>
 						</View>
-					</View>
-					<View style={{flex:1,alignItems:"center",justifyContent:"center"}}>
 						<ActivityIndicator />
-					</View>							
+					</View>
 				</View>
 			</View>
 		)
@@ -220,7 +179,7 @@ class StatusBox extends Component{
 	
     updateName(){
 
-    	if(this.props.device_name.length > 0 && this.props.device_name.  length < 60){
+    	if(this.props.device_name.length > 0 && this.props.device_name.length < 60){
 	    	let device = this.props.device
 	    	let device_id = device.manufactured_data.device_id.toUpperCase()
 	    	let ret_uuid = device.id
@@ -241,7 +200,7 @@ class StatusBox extends Component{
 	    		let data = JSON.parse(response._bodyInit)
 	    		console.log("data",response);
 	    		if(data.status == "success"){
-	    			this.device_name = this.props.device_name
+	    			this.props.device_name = this.props.device_name
 
 	    			this.finishEditName();
 	    		}else{
@@ -281,10 +240,12 @@ class StatusBox extends Component{
 		if(this.props.device.manufactured_data.hardware_type == "01"){
 			return (
 				<View style={{flexDirection:"row"}}>
-					<Text>
+					 					 	
+			 		<Text style={{marginRight:5}}>
 						Central Serial: {this.props.device.manufactured_data.device_id.toUpperCase()} 
 					</Text>
-					{this.props.device.manufactured_data.tx &&
+						
+					{this.props.device.manufactured_data.tx && this.props.device.manufactured_data.tx != "000000" &&
 						(<Text>
 							Remote Serial: {this.props.device.manufactured_data.tx.toUpperCase()} 
 						</Text>)
@@ -299,7 +260,7 @@ class StatusBox extends Component{
 					<Text style={{fontSize:12,marginRight:5}}>
 						Remote Serial : {this.props.device.manufactured_data.device_id.toUpperCase()}
 					</Text>
-					{this.props.device.manufactured_data.tx &&
+					{this.props.device.manufactured_data.tx && this.props.device.manufactured_data.tx != "000000" &&
 						(<Text  style={{fontSize:12,marginRight:5}}>
 							Central Serial : {this.props.device.manufactured_data.tx.toUpperCase()} 
 						</Text>)
@@ -342,7 +303,7 @@ class StatusBox extends Component{
 	}
 
 	getTextPairedWith(){
-		if(this.props.remote_device_name != ""){
+		if(this.props.remote_device_name != "" && this.props.remote_device_name != "000000" && this.props.remote_device_name ){
 			return <Text style={{fontSize:18,fontWeight:"400",textAlign: 'center'}}>Paired to {this.props.remote_device_name}</Text>
 		}else
 			return null
@@ -362,7 +323,7 @@ class StatusBox extends Component{
 				</View>
 				<View style={{flexDirection:"column",alignItems:"center",flex:0.5,paddingVertical:10}}>
 					<Text style={{fontSize:20,fontWeight:"900",color:"black",textAlign: 'center'}}>
-						{this.device_name}
+						{this.props.device_name}
 					</Text>
 					
 					{this.getTextPairedWith()}
@@ -383,10 +344,9 @@ class StatusBox extends Component{
 	getTextSection(is_editing){
 
 		if(is_editing){
-			
 			return this.getEditing()
-
 		}else{
+
 			return this.getNormalText()
 		}
 	}
@@ -395,7 +355,9 @@ class StatusBox extends Component{
 	
 		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
 		var switch_button =  this.getSwitchButton()
-
+		/*console.log("this.props.device_name",this.props.device_name);
+		console.log("this.props.remote_device_name",this.props.remote_device_name);
+		*/
         return (
             <ScrollView>
 				<View>
@@ -420,10 +382,10 @@ class StatusBox extends Component{
 
 const mapStateToProps = state => ({
 	is_editing : state.setupCentralReducer.is_editing,
-	device_name : state.setupCentralReducer.device_name,
 	options_loaded : state.setupCentralReducer.options_loaded,
 	show_switch_button : state.setupCentralReducer.show_switch_button,
-	remote_device_name : state.setupCentralReducer.remote_device_name
+  	device_name : state.setupCentralReducer.device_name,
+	remote_device_name : state.setupCentralReducer.remote_device_name	
 })
 
 export default connect(mapStateToProps)(StatusBox);

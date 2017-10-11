@@ -23,6 +23,7 @@ import {
 	CRC16,
 	HEX_TO_BYTES
 } from '../constants'
+
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
 import RNFetchBlob from 'react-native-fetch-blob'
@@ -45,7 +46,7 @@ class AppFirmwareUpdate extends Component{
 		this.write_status = 0
 		this.view_kind = props.viewKind
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this);
-
+		this.should_try_again = true
 	}
 
 	componentWillMount() {
@@ -54,22 +55,22 @@ class AppFirmwareUpdate extends Component{
 
 	componentDidMount() {
 		if(this.view_kind == "normal")
-			this.fetchFirmwareUpdate(this.firmware_file)
+			this.fetchFirmwareUpdate(this.firmware_file,this.props.version)
 	}
 
 	componentWillUnmount() {
 		//this.handlerUpdate.remove()
 	}
 
-	fetchFirmwareUpdate(path){
-		
+	fetchFirmwareUpdate(path,version){
+		console.log("fetchFirmwareUpdate()",path,version);
 		var {dispatch} = this.props		
 		
 		if(path){
 
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
-				//console.log("file response on app",res)
+				console.log("file response on app",res)
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -86,7 +87,17 @@ class AppFirmwareUpdate extends Component{
 
 				}	
 				this.bytes_file = byteArrays;
+				
+				if(version){
+					console.log("this.device.manufactured_data.hardware_type",this.device.manufactured_data.hardware_type);
+					if(this.device.manufactured_data.hardware_type == "01")
+						this.props.saveOnCloudLog(version,'FIRMWARE-CENTRAL-APPLICATION')
+					else
+						this.props.saveOnCloudLog(version,'FIRMWARE-REMOTE-APPLICATION')
+				}	
+
 				this.requestBootloaderInfo()
+
 		  	})
 		 	.catch((errorMessage, statusCode) => {
 			    //console.log("ERROR",errorMessage)
@@ -94,8 +105,20 @@ class AppFirmwareUpdate extends Component{
 			    // error handling 
 		  	})
 		}else{
-			Alert.alert("File not found","The file firmware was not found.")
+			//Alert.alert("File not found","The file firmware was not found.")
 		}	
+	} 
+
+	handleKindOfView(file){
+		console.log("handleKindOfView()");
+
+		if(this.view_kind == "normal"){
+			this.fetchFirmwareUpdate(file,this.props.version)
+		}else{
+			var path = file.firmware_path
+			var version = file.firmware_version
+			this.fetchFirmwareUpdate(path,version)
+		}
 	}
 
 	requestBootloaderInfo(){
@@ -131,6 +154,7 @@ class AppFirmwareUpdate extends Component{
 				return
 			case 0x05:
 				//console.log("BleRsp_GenericOk")
+					this.should_try_again = true
 					this.writeFirstPiece()
 				return
 			case 0x06: //Update Finish success
@@ -160,9 +184,12 @@ class AppFirmwareUpdate extends Component{
 				return
 			case 0xE4:
 				console.log("BleRsp_InvalidNumBytesError")
-
-				Alert.alert("Error","Error on firmware update")
-				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+				if(this.should_try_again){
+					this.should_try_again = false
+					this.processRow(this.new_current_row)
+				}
+				/*Alert.alert("Error","Error on firmware update")
+				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})*/
 				//this.errorProcessRows()
 				return
 			case 0xE5:
@@ -376,8 +403,8 @@ class AppFirmwareUpdate extends Component{
 	getAdvanceView(){
 		//console.log("this.props.firmware_files",this.props.firmware_files)
 		return (
-			<View>
-				<View style={{height:100,width:width,marginVertical:5,marginBottom:20,alignItems:"center"}}>
+			<View style={{alignItems:"center"}}>
+				<View style={{height:100,width:width-20,marginVertical:5,marginBottom:20,alignItems:"center"}}>
 					<View style={{padding:10,backgroundColor:"white",borderRadius:10}}>
 						<Text style={{color:"black",fontSize:18,marginBottom:10}}>
 							Bootloader App Data
@@ -394,7 +421,7 @@ class AppFirmwareUpdate extends Component{
 					<SelectFirmwareCentral 
 						device ={this.device}
 						kind_firmware="application" 
-						fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
+						fetchFirmwareUpdate={(file) => this.handleKindOfView(file)}
 						getStartRow={() => this.getStartRow()}
 						firmware_files={this.props.firmware_files}
 					/>

@@ -222,7 +222,8 @@ const initialState = {
   should_connect : true,
   interval : 0,
   indicator_number : null,
-  fast_manager : null
+  fast_manager : null,
+  allow_scanning : true
 }
 
 
@@ -374,8 +375,12 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         fast_manager: action.fast_manager
       }
+    case "ALLOW_SCANNING":
+      return{
+        ...state,
+        allow_scanning: action.allow_scanning
+      }
     default:
       return state
   }
 }
-

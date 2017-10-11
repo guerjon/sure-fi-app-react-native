@@ -164,6 +164,7 @@ class ConfigureRadio extends Component {
 
 		switch(values[0]){
 			case 0x08:
+				console.log("values",values);
 				if(values.length > 7){
 					
 					this.updatePowerValue(values[3])
@@ -185,7 +186,8 @@ class ConfigureRadio extends Component {
 				Alert.alert("Error","Error on Write bytes");
 			break
 			default:
-				Alert.alert("Error","Error on get the radio values.")
+				console.log("Error","No option found to: " + values[0])
+				//Alert.alert("Error","Error on get the radio values.")
 			break
 		}
 	}

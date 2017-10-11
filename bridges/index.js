@@ -498,7 +498,7 @@ class Bridges extends Component{
             passProps: {
                 device_id : device_id,
                 startScanning : () => this.startScanning(),
-                showAlert: true
+                showAlert: true,
             },
             appStyle: {
               orientation: 'portrait',
@@ -544,7 +544,7 @@ class Bridges extends Component{
                                 )
                             }
                         </View>
-                        <View style={{alignItems:"center"}}>
+                        <View style={{alignItems:"center",flex:1,marginTop:20}}>
                             {this.renderSerialInput(this.props.show_serial_input)}
                         </View> 
                         <View>

@@ -65,7 +65,13 @@ class Options extends Component{
 	}
 
     unPair() {
-    	console.log("unPair()")
+    	console.log("unPair999()",this.device.manufactured_data.device_id)
+
+	    this.props.dispatch({
+	    	type: "SET_UNPAIR_DISCONNECT",
+	    	unpair_disconnect: true
+	    })
+
 
 		WRITE_UNPAIR(this.device.id).then(response => {
 			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
@@ -84,13 +90,14 @@ class Options extends Component{
 		            central_device: this.device,
 		        });
 
-	            this.props.dispatch({
-			        type: "NORMAL_CONNECTING_CENTRAL_DEVICE",
-			    })	
-	            DISCONNECT(this.device.id)
-	            .then(() => {
-	            	setTimeout(() => this.props.fastTryToConnect(this.device),1000) 	
-	            })
+		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
+
+                console.log("this.props.debug_mode_status",this.props.debug_mode_status);
+
+                if(this.props.debug_mode_status){
+					this.props.readStatusOnDevice(this.device)
+					setTimeout(() => this.props.readStatusOnDevice(this.device),3000)
+                }		        
 			})
 			.catch(error => Alert.alert("Error",error))
 
@@ -400,8 +407,8 @@ class Options extends Component{
 		var sales_dist = ["SALES","DIST"]		
 		var indicator = this.props.indicatorNumber
 
-		//if(admin_options.lastIndexOf(user_type) !== -1){
-		if(true){
+		if(admin_options.lastIndexOf(user_type) !== -1){
+		//if(true){
 
 			return this.getAdminOptions(indicator)
 
@@ -423,7 +430,6 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
-						{this.getConfigureRadioOption()}
 					</View>
 				)
 			break
@@ -498,6 +504,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}	
 						{this.getDocumentationOption()}
+						{this.getRelayDefaults()}
 					</View>
 				)
 			break
@@ -559,7 +566,8 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}	
+						{this.getDocumentationOption()}
+						{this.getRelayDefaults()}	
 					</View>
 				)
 
@@ -570,6 +578,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
+						{this.getRelayDefaults()}
 					</View>
 				)
 			
@@ -580,6 +589,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
+						{this.getRelayDefaults()}
 					</View>
 				)
 			case 0xE0:
@@ -622,7 +632,8 @@ const mapStateToProps = state => ({
 	device_status : state.setupCentralReducer.device_status,
 	remote_device : state.scanRemoteReducer.remote_device,
 	user_status : state.mainScreenReducer.user_status,
-	user_data : state.loginReducer.user_data
+	user_data : state.loginReducer.user_data,
+	debug_mode_status : state.setupCentralReducer.debug_mode_status,
 });
 
 export default connect(mapStateToProps)(Options);

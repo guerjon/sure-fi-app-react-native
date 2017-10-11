@@ -17,6 +17,7 @@ const initialState = {
   show_modal : false,
   is_editing: false,
   device_name : "",
+  remote_device_name : "",
   hopping_table : 0,
   action_from_disconnect : "",
   write_pair_result : false,
@@ -27,8 +28,12 @@ const initialState = {
   register_board_1 : "",
   register_board_1 : "",
   show_switch_button : false,
-  remote_device_name : "",
-  debug_mode_status : false
+  debug_mode_status : false,
+  pair_disconnect : false,
+  unpair_disconnect : false,
+  deploy_disconnect: false,
+  switch_disconnect : false,
+  show_status_box : true,
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -201,6 +206,31 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         debug_mode_status : action.debug_mode_status
+      }
+    case "SET_PAIR_DISCONNECT":
+      return{
+        ...state,
+        pair_disconnect: action.pair_disconnect
+      }
+    case "SET_UNPAIR_DISCONNECT":
+      return{
+        ...state,
+        unpair_disconnect: action.unpair_disconnect
+      }
+    case "SET_DEPLOY_DISCONNECT":
+      return{
+        ...state,
+        deploy_disconnect: action.deploy_disconnect
+      }
+    case "SET_SWITCH_DISCONNECT":
+      return {
+        ...state,
+        switch_disconnect : action.switch_disconnect
+      }
+    case "SHOW_STATUS_BOX":
+      return{
+        ...state,
+        show_status_box : action.show_status_box
       }
     default:
       return state

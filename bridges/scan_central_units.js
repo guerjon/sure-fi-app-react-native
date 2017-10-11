@@ -59,14 +59,17 @@ class ScanCentralUnits extends Component {
             dispatch
         } = this.props;
         
-        this.scanning = true
+        this.props.dispatch({type: "ALLOW_SCANNING",allow_scanning:true})
+
         this.scan_result = this.props.scan_result
     }
 
+
     onSuccess(scan_result) {
 
-        if(this.scanning){
-            this.scanning = false;          
+        if(this.props.allow_scanning){
+           
+            this.props.dispatch({type: "ALLOW_SCANNING",allow_scanning:false})
             var device_id = scan_result.data.substr(-6).toUpperCase();
             
             this.scan_result_id = device_id
@@ -117,7 +120,8 @@ class ScanCentralUnits extends Component {
 
 
     clearQr(){
-        this.scanning = true
+        
+        this.props.dispatch({type: "ALLOW_SCANNING",allow_scanning:true})
         this.props.dispatch({type: "RESET_CAMERA"})
         this.props.dispatch({type :"SHOW_CAMERA"})
     }
@@ -281,7 +285,8 @@ const mapStateToProps = state => ({
     camera_status : state.scanCentralReducer.camera_status,
     scanner : state.pairReducer.scanner,
     photo_data : state.scanCentralReducer.photo_data,
-    manager : state.scanCentralReducer.manager
+    manager : state.scanCentralReducer.manager,
+    allow_scanning : state.scanCentralReducer.allow_scanning
 
 })
 

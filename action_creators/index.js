@@ -17,7 +17,7 @@ import {
 	SUREFI_SEC_HASH_UUID,
 	WRITE_HARDWARE_LOG,
 	HEADERS_FOR_POST,
-	BASE64
+	BASE64,
 } from '../constants'
 
 import {
@@ -208,9 +208,12 @@ export const POST_LOG = log => {
 		Alert.alert("Error",error)
 	})
 }
+/*
+	if text is included then 
+*/
+export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type,text) => {
 
-export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type) => {
-
+	
 	var log_value = bytesToHex(bytes)
 	log_value = BASE64.btoa(log_value)
 
@@ -222,5 +225,4 @@ export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type) => {
 	}
 
 	return body
-
 }

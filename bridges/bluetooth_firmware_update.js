@@ -69,8 +69,44 @@ class BluetoothFirmwareUpdate extends Component{
 
 	componentDidMount() {
 		if(this.view_kind == "normal")
-			this.fetchFirmwareUpdate(this.firmware_file)
+			this.fetchFirmwareUpdate(this.firmware_file,this.props.version)
 	}
+
+	fetchFirmwareUpdate(path,version){
+	
+		if(path){
+			RNFetchBlob.config({
+			    // add this option that makes response data to be stored as a file,
+			    // this is much more performant.
+			    fileCache : true,
+	  		})
+			.fetch('GET', path,GET_HEADERS)
+			
+			.then((res) => {
+				
+				if(version){
+					if(this.device.manufactured_data.hardware_type == "01")
+						this.props.saveOnCloudLog(version,'FIRMWARE-CENTRAL-BLUETOOTH')
+					else
+						this.props.saveOnCloudLog(version,'FIRMWARE-REMOTE-BLUETOOTH')
+				}	
+				
+				this.filePath = res.path()
+				WRITE_COMMAND(this.device.id,[0x1A])
+				this.searchDevices()
+
+			})
+			.catch((errorMessage, statusCode) => {
+			    console.log("ERROR",errorMessage)
+			    //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
+			    // error handling 
+			})
+
+		}else{
+			//Alert.alert("File not found","The file firmware was not found.")
+		}	
+	
+	}	
 
 	updateGraph(data){
 		var {dispatch} = this.props;
@@ -87,12 +123,12 @@ class BluetoothFirmwareUpdate extends Component{
 		console.log("fastTryToConnect()")
 	    
 		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
-		 dispatch({type: "BT_UPDATE_STATUS",radio_update_status : "updated"})
+		this.props.dispatch({type: "BT_UPDATE_STATUS",radio_update_status : "updated"})
 
 		IS_CONNECTED(this.device.id)
 		.then(response => {
 			if(!response)
-				BleManager.connect(device.id).then(response => {
+				BleManager.connect(this.device.id).then(response => {
 				})
 		})
 	}
@@ -111,37 +147,6 @@ class BluetoothFirmwareUpdate extends Component{
           	clearInterval(this.scanning)
         },60000)
 	}
-
-	fetchFirmwareUpdate(path){
-	
-		if(path){
-			RNFetchBlob.config({
-			    // add this option that makes response data to be stored as a file,
-			    // this is much more performant.
-			    fileCache : true,
-	  		})
-			.fetch('GET', path,GET_HEADERS)
-			
-			.then((res) => {
-				
-				this.filePath = res.path()
-				WRITE_COMMAND(this.device.id,[0x1A])
-				
-				this.searchDevices()
-
-			})
-			.catch((errorMessage, statusCode) => {
-			    console.log("ERROR",errorMessage)
-			    //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
-			    // error handling 
-			})
-
-		}else{
-			Alert.alert("File not found","The file firmware was not found.")
-		}	
-	
-	}
-
 
 	getStartRow(){
 		var {progress,app_version} = this.props
@@ -203,6 +208,20 @@ class BluetoothFirmwareUpdate extends Component{
         }
 	}
 
+	handleKindOfView(file){
+		console.log("handleKindOfView",file);
+
+		if(this.view_kind == "normal"){
+			
+			this.fetchFirmwareUpdate(file,this.props.version)
+		}else{
+
+			var path = file.firmware_path
+			var version = file.firmware_version
+			this.fetchFirmwareUpdate(path,version)
+		}
+	}
+
 	render(){
 		return(
 			<View style={{flex:1}}>
@@ -217,7 +236,7 @@ class BluetoothFirmwareUpdate extends Component{
 						<View style={{height:400}}>
 							<SelectFirmwareCentral 
 								device ={this.device}
-								fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
+								fetchFirmwareUpdate={(file) =>  this.handleKindOfView(file)}
 								getStartRow={() => this.getStartRow()}
 								firmware_files={this.props.firmware_files}
 							/>

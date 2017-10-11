@@ -49,9 +49,9 @@ class RadioFirmwareUpdate extends Component{
 		this.current_row = {}
 		this.write_status = 0
 		this.firmware_file = props.firmwareFile
-		console.log("firmware_file",props.firmwareFile);
 		this.view_kind = props.viewKind
 		this.handleCharacteristicRadioNotification = this.handleCharacteristicRadioNotification.bind(this);
+		this.error_handle = false
 	}	
 
 	componentWillMount() {
@@ -64,21 +64,19 @@ class RadioFirmwareUpdate extends Component{
 
 	componentDidMount() {
 		if(this.view_kind == "normal")
-			this.fetchFirmwareUpdate(this.firmware_file)
+			this.fetchFirmwareUpdate(this.firmware_file,this.props.version)
 	}
 
-	fetchFirmwareUpdate(path){
-		console.log("fetchFirmwareUpdate",path);
+	fetchFirmwareUpdate(path,version){
+		console.log("fetchFirmwareUpdate() on radio",path,version);
 		var {dispatch} = this.props		
 
 		//this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
 		//this.props.dispatch({type: "RESET_FIRMWARE_CENTRAL_REDUCER"})
 
 		if(path){
-			
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
-				
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -94,8 +92,18 @@ class RadioFirmwareUpdate extends Component{
 				    byteArrays.push(byteNumbers);
 
 				}	
+
 				this.bytes_file = byteArrays;
+				if(version){
+
+					if(this.device.manufactured_data.hardware_type == "01")
+						this.props.saveOnCloudLog(version,'FIRMWARE-CENTRAL-RADIO')
+					else{
+						this.props.saveOnCloudLog(version,'FIRMWARE-REMOTE-RADIO')
+					}
+				}	
 				this.requestBootloaderInfo()
+				
 		  	})
 		 	.catch((errorMessage, statusCode) => {
 			    //console.log("ERROR",errorMessage)
@@ -103,16 +111,28 @@ class RadioFirmwareUpdate extends Component{
 			    // error handling 
 		  	})
 		}else{
-			Alert.alert("File not found","The file firmware was not found.")
+			//Alert.alert("File not found","The file firmware was not found.")
 		}	
 	}
 
+	handleKindOfView(file){
+		console.log("handleKindOfView",file);
+
+		if(this.view_kind == "normal"){
+			
+			this.fetchFirmwareUpdate(file,this.props.version)
+		}else{
+
+			var path = file.firmware_path
+			var version = file.firmware_version
+			this.fetchFirmwareUpdate(path,version)
+		}
+	}
+
 	handleCharacteristicRadioNotification(data){
-		
+		console.log("data",data);
 		var {dispatch} = this.props
 		var response = data.value[0]
-
-		
 
 		switch(response){
 			case 1:
@@ -253,6 +273,7 @@ class RadioFirmwareUpdate extends Component{
 		To run this function startRadioRow must be called before 
 	*/
 	processRadioRows(){
+		console.log("processRadioRows()");
 		//console.log("processRadioRows()")
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
@@ -271,6 +292,7 @@ class RadioFirmwareUpdate extends Component{
 
 
 	processRadioRow(row){ // init the radio row
+		console.log("processRadioRow()");
 		this.current_row = row.row
 		this.write(
 			[
@@ -286,6 +308,7 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	writeRadioPiece(){
+		console.log("writeRadioPiece()");
 		var sum = 0
 		var command = [0x0F]
 		while(this.current_row.length > 0){
@@ -294,6 +317,7 @@ class RadioFirmwareUpdate extends Component{
 			
 			this.writeWithoutResponse(data) // no response to this command
 		}
+		console.log("wrf??? -------");
 		this.write([0x10])  // you should wait a 11 if all is ok 	
 	}
 
@@ -302,6 +326,7 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	cutRadioRowToPages(row){
+		console.log("cutRadioRowToPages()");
 		var {dispatch,row_number} = this.props
 		var row_number = this.row_number
 		var first_number = row_number[0]
@@ -341,6 +366,7 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	writeWithoutResponse(data){
+		console.log("writeWithoutResponse()");
 		let device = this.device;
 		BleManagerModule.specialWriteWithoutResponse(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20,16)
 	}
@@ -430,7 +456,7 @@ class RadioFirmwareUpdate extends Component{
 
 	getAdvanceView(){
 		return (
-			<View>
+			<View style={{alignItems:"center"}}>
 				<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
 					{this.props.app_version}
 				</Text>				
@@ -452,9 +478,10 @@ class RadioFirmwareUpdate extends Component{
 					<SelectFirmwareCentral 
 						device ={this.device}
 						kind_firmware="radio" 
-						fetchFirmwareUpdate={(file) => this.fetchFirmwareUpdate(file)}
 						getStartRow={() => this.getStartRow()}
 						firmware_files={this.props.firmware_files}
+						saveOnCloudLog = {(bytes,type) => this.props.saveOnCloudLog(bytes,type)}
+						fetchFirmwareUpdate={(file) => this.handleKindOfView(file)}
 					/>
 				</View>
 			</View>
