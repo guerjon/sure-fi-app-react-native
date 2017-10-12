@@ -3,7 +3,8 @@ const initialState = {
   user : null,
   user_login_status:"logout",
   user_data : null,
-  fetching_data : false
+  fetching_data : false,
+  device_found:false
 }
 
 export default function loginReducer (state = initialState, action) {
@@ -22,6 +23,16 @@ export default function loginReducer (state = initialState, action) {
       return{
         ...state,
         fetching_data: action.fetching_data
+      }
+    case "SET_DOCUMENTATION_PATH": //this is because we don't want create a new reducer for device_not_matched.js class
+      return {
+        ...state,
+        documentation_path : action.documentation_path
+      }
+    case "DEVICE_FOUND":
+      return{
+        ...state,
+        device_found : action.device_found
       }
     default:
       return state

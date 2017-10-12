@@ -116,6 +116,9 @@ class ConfigureRadio extends Component {
 		headerTintColor: 'white'
 
 	}
+	componentWillMount() {
+	  this.props.dispatch({type:"RESTART_CONFIGURATION_RADIO"})
+	}
 
 	componentDidMount() {
 		//bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',(data) => this.handleDisconnectedPeripheral(data) );
@@ -166,8 +169,8 @@ class ConfigureRadio extends Component {
 			[
 				0x0A,
 				powerOptionsReverse.get(power_selected),
-				spreadingFactorReverse.get(spreading_factor_selected),
-				bandWidthReverse.get(band_width_selected),
+				spreadingFactorReverse.get(spreading_factor_selected), //5
+				bandWidthReverse.get(band_width_selected), // 4
 				retryCount.get(retry_count_selected),
 				heartbeatPeriodReverse.get(heartbeat_period_selected),
 				acknowledmentsReverse.get(acknowledments_selected)
@@ -186,6 +189,9 @@ class ConfigureRadio extends Component {
 		var retry_count = values[4]
 		var heartbeat_period = heartbeatPeriod.get(values[5]) 
 		var acknowledments2 = acknowledments.get(values[6]) 
+
+		console.log("spreading_factor",spreading_factor);
+		console.log("band_width",band_width);
 
 		if(values.length > 3){
 			dispatch(

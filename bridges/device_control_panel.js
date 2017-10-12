@@ -134,6 +134,7 @@ class SetupCentral extends Component{
 		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
 		this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
 		this.fast_manager = new FastBleManager()
+
 		this.devices_found = []
 		this.is_in = false
 		this.changing_time = false
@@ -160,8 +161,13 @@ class SetupCentral extends Component{
 		this.activateHandleCharacteristic()
 		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())
 		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
-		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
+		this.startSlowBleManager()
+		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
 
+	}
+
+	startSlowBleManager(){
+		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 	}
 
 	componentDidMount() {
@@ -181,6 +187,7 @@ class SetupCentral extends Component{
 		this.handleConnected.remove()
 		this.disconnect()
 		this.fast_manager.stopDeviceScan()
+		this.props.restartAll()
 
 		//PUSH_CLOUD_STATUS(this.manufactured_device_id"04|04|FFCFFC|FCCFCC").then(response => console.log(response)).catch(error => console.log(error))
 	}
@@ -189,10 +196,21 @@ class SetupCentral extends Component{
 		this.props.navigator.showLightBox({
             screen: "PINCodeModal",
             style: {
+            	flex:1,
                 backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
-                backgroundColor: "backgroundColor: 'rgba(10,10,10,0)" // tint color for the background, you can specify alpha here (optional)
+                backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)" // tint color for the background, you can specify alpha here (optional)
             },
+            passProps: {
+            	hideRightButton: () => this.hideRightButton()
+            }
+
         });
+	}
+
+	hideRightButton(){
+		this.props.navigator.setButtons({
+			rightButtons: []
+		})
 	}
 
 
@@ -282,6 +300,9 @@ class SetupCentral extends Component{
 					console.log("error on connect()",error)
 					this.eraseInterval();
 				} )
+			else
+				this.handleConnectedDevice()
+
 		})
 		.catch(error => console.log("error on connect()",error))
 	}
@@ -547,6 +568,7 @@ class SetupCentral extends Component{
 		console.log("GET_STATUS_CLOUD_ROUTE",GET_STATUS_CLOUD_ROUTE)
 		fetch(GET_STATUS_CLOUD_ROUTE,data)
 		.then(response => {
+			console.log("response on cloud",response);
 			let status = JSON.parse(response._bodyInit).data.status
 			console.log("getCloudStatusResponse",status)
 			this.props.dispatch({type: "SET_HARDWARE_STATUS",hardware_status:status}) //this will be necesary on another component
@@ -567,6 +589,32 @@ class SetupCentral extends Component{
 			current_status_on_cloud = parseInt(current_status_on_cloud,10)
 			expected_status = parseInt(expected_status,10)
 			current_status_on_bridge = parseInt(current_status_on_bridge,10)
+			if(current_status_on_cloud != "" && expected_status){
+				if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
+	    			switch(current_status_on_bridge){
+	    				case 1: 
+	    					this.handleUnpairedFail(expected_status) // the device is currently unpair
+	    				break
+	    				case 2:
+	    					this.handlePairingFail(expected_status) 
+	    				break
+	    				case 3:
+	    					this.handlePairedFail(expected_status) 
+	    				break
+	    				case 4:
+	    					this.handleDeployedFail(expected_status)
+	    				break
+	    				default:
+	    					Alert.alert("Error","The internal state on the device its wrong.")
+	    				break
+	    			}    		
+	    		}else{
+	    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
+	    		}
+
+			}else{
+    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
+    		}
 
 
     		/*this.props.dispatch({type: "UPDATE_OPTIONS",device_status : current_device_status})
@@ -575,27 +623,7 @@ class SetupCentral extends Component{
     		this.pushStatusToCloud(device,current_device_status,current_status_on_cloud,expected_status)
 			*/
     		
-    		if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
-    			switch(current_status_on_bridge){
-    				case 1: 
-    					this.handleUnpairedFail(expected_status) // the device is currently unpair
-    				break
-    				case 2:
-    					this.handlePairingFail(expected_status) 
-    				break
-    				case 3:
-    					this.handlePairedFail(expected_status) 
-    				break
-    				case 4:
-    					this.handleDeployedFail(expected_status)
-    				break
-    				default:
-    					Alert.alert("Error","The internal state on the device its wrong.")
-    				break
-    			}
-    		}else{
-    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
-    		}
+
 
     		//console.log("current_device_status",current_device_status)
     		//console.log("expected_status",expected_status)
@@ -991,7 +1019,7 @@ class SetupCentral extends Component{
 						Alert.alert("Last Connection","The last connection was made about just now")	
 					}
 				}else{
-					Alert.alert("Last Connection no registred")	
+					Alert.alert("No connection has been made since power up.")	
 				}
 			break;
 			case 0x1A:
@@ -1176,6 +1204,7 @@ class SetupCentral extends Component{
 	}
 
 	getResetCauses(){
+		console.log("getResetCauses()");
 		WRITE_COMMAND(this.device.id,[0x26])
 		.then(response => {
 		})
@@ -1187,7 +1216,7 @@ class SetupCentral extends Component{
 	  	let app_board_version = this.props.app_board_version.split(" ")
 	  	console.log("app_board_version",app_board_version)
 		fetch(
-			TESTING_RESULTS_ROUTE,
+			TEcNG_RESULTS_ROUTE,
 			{
 				method: "POST",
 				headers: HEADERS_FOR_POST,
@@ -1336,7 +1365,7 @@ class SetupCentral extends Component{
 
 		return (
 				<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => params.callback()}>
-					<View style={{padding:10,flexDirection:"row"}}>
+					<View style={{pang:10,flexDirection:"row"}}>
 						<View style={{flex:0.7}}>
 							<Text style={{fontSize:14}}>
 								{params.name}
@@ -1418,7 +1447,7 @@ class SetupCentral extends Component{
 
 		
 		this.handleCharacteristic.remove()
-		
+		this.eraseSecondInterval()		
 
 		this.props.navigator.showModal(
 			{
@@ -1430,7 +1459,7 @@ class SetupCentral extends Component{
 				},
 				rightButtons: [
 		            {
-		                title: 'Add ID', // for a textual button, provide the button title (label)
+		                title: 'Manual', // for a textual button, provide the button title (label)
 		                id: 'insert_pin', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
 		            },
 		        ],					
@@ -1477,6 +1506,7 @@ class SetupCentral extends Component{
 		        passProps: {
 		        	fastTryToConnect: () => this.fastTryToConnect(),
 		        	saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
+		        	activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
 		        	admin : true
 		        	//device : this.device
 		        }
@@ -1488,7 +1518,8 @@ class SetupCentral extends Component{
 				fastTryToConnect : () => this.fastTryToConnect(),
 				passProps: {
 					fastTryToConnect: () => this.fastTryToConnect(),
-					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type)
+					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
+					activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
 					//device : this.device
 				}
 			})			
@@ -1500,7 +1531,10 @@ class SetupCentral extends Component{
 		this.props.navigator.showModal(
 			{
 				screen:"ConfigureRadio",
-				title: "Configure Radio"
+				title: "Configure Radio",
+				passProps: {
+					activateHandleCharacteristic : () => this.activateHandleCharacteristic()
+				}
 			}
 		)
 	}
@@ -1514,6 +1548,14 @@ class SetupCentral extends Component{
 			passProps: {
 				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
 				saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type)
+			},
+			navigatorButtons: {
+				rightButtons: [
+					{
+						id : "update",
+						title : "UPDATE"
+					}
+				]
 			}
 		})
 	}
@@ -1567,6 +1609,7 @@ class SetupCentral extends Component{
 
 	goToDocumentation(){
 		console.log("goToDocumentation");
+
 		this.props.navigator.push({
 			screen: "DeviceNotMatched",
 			title: "Documentation",
@@ -1778,8 +1821,9 @@ class SetupCentral extends Component{
 		})
 		.then(response => {
 			var data = JSON.parse(response._bodyInit).data
-			
-			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name})
+			console.log("data on fetch device name",data);
+
+			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name,original_name:data.name})
 			fetch(GET_DEVICE_NAME_ROUTE,{
 				method: "POST",
 				headers: {

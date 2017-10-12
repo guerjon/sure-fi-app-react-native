@@ -78,7 +78,7 @@ const Item = params => {
 							SNR
 						</Text>
 					</View>
-					<View style={{height:30,backgroundColor:"white",width:width/4}}>
+					<View style={{height:30,backgroundColor:"white",width:width/4,alignItems:"center",justifyContent:"center"}}>
 						<Text style={{color:"black"}}>
 							{params.snr} 
 						</Text>					

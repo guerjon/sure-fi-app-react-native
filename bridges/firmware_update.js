@@ -249,6 +249,10 @@ class UpdateFirmwareCentral extends Component {
         this.fetchFirmwareFiles()
     }
 
+    componentWillUnmount() {
+        this.props.activateHandleCharacteristic()
+    }    
+
     changeView(){
         let view_kind = this.props.view_kind
         if(view_kind == "normal")
@@ -708,7 +712,7 @@ class UpdateFirmwareCentral extends Component {
                             onPress={() => this.startFirmwareUpdate()} 
                             style={{
                                 width:width-20,
-                                backgroundColor:success_green,
+                                backgroundColor:"#009900",
                                 borderRadius:10,
                                 alignItems:"center",
                                 padding:10,
@@ -783,7 +787,7 @@ class UpdateFirmwareCentral extends Component {
                             </View>
                         </View>
                         <Text style={{fontWeight:"900",fontSize:25,color:"black",padding:5}}>
-                            Up To Date - {props.largest_version.length > 1 ? ("V" + props.largest_version) : ("V" + props.largest_version + ".0")}
+                            Up To Date - {PRETY_VERSION(props.largest_version)}
                         </Text>
                     </View>
                     <View style={{flexDirection:"row",justifyContent:"center"}}>

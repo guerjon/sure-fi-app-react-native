@@ -22,7 +22,7 @@ import ScannedDevicesList from '../helpers/scanned_devices_list'
 import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
-import { BleManager,Service,Characteristic } from 'react-native-ble-plx';
+import { BleManager,Service,Characteristic,Navigation } from 'react-native-ble-plx';
 
 import SlowBleManager from 'react-native-ble-manager'
 
@@ -41,6 +41,7 @@ const refreshIcon = (<Icon name="refresh" size={30} color="black"/>)
 const serialIcon = (<Icon name="keyboard-o" size={40} color="black"/>)
 const cameraIcon = (<Icon name="camera" size={40} color="white" />)
 const fab_buttons_background = 'white'
+
 class Bridges extends Component{
     
     static navigatorStyle = {
@@ -54,7 +55,6 @@ class Bridges extends Component{
     constructor(props) {
         super(props);
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
-        this.manager = new BleManager();
         this.stared_scanning = false
     }
 
@@ -80,9 +80,7 @@ class Bridges extends Component{
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
-        this.props.dispatch({type :"SHOW_CAMERA"})
-        this.props.dispatch({type :"SHOW_QR_IMAGE"})
-        
+
     }
 
     componentWillUnmount() {
@@ -147,6 +145,7 @@ class Bridges extends Component{
         console.log("continueToBluetoothState()")
         this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
         this.props.dispatch({type: "NO_DEVICE_FOUND"})
+        this.props.dispatch({type: "SHOW_CAMERA",show_camera:true})
         
         SlowBleManager.enableBluetooth()
           .then((response) => {
@@ -186,7 +185,7 @@ class Bridges extends Component{
                 this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
                 this.props.dispatch({type: "RESET_PAIR_REDUCER"})
                 this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
-                this.props.dispatch({type :"SHOW_CAMERA"})
+                this.props.dispatch({type :"SHOW_CAMERA",show_camera: true})
             }
         })
     }
@@ -236,11 +235,11 @@ class Bridges extends Component{
     goToDeviceControl(device){
         
         this.stopScan()
-        
-        this.props.navigator.dismissModal({
+        this.hideCamera()      
+/*        this.props.navigator.dismissModal({
             animationType: 'slide-down'
         })
-
+*/
         console.log("this.props.user_data",this.props.user_data);
 
         if(this.props.user_data){
@@ -249,23 +248,50 @@ class Bridges extends Component{
                 title : "Device Details",
                 appStyle: {
                   orientation: 'portrait',
-                }                
+                },
+                passProps:{
+                    restartAll: () => this.restartAll()
+                },
             })            
         }else{
             this.props.navigator.push({
                 screen: "DeviceControlPanel",
                 title : "Device Details",
-                rightButtons: [
-                    {
-                        id: "pin_number",
-                        icon: require('../images/settings_bar_icon.imageset/settings_bar_icon.png'), 
-                    }
-                ],
+                navigatorButtons: {
+                    rightButtons: [
+                        {
+                            id: "pin_number",
+                            icon: require('../images/settings_bar_icon.imageset/settings_bar_icon.png'), 
+                        }
+                    ],
+                },
                 appStyle: {
                   orientation: 'portrait',
+                },
+                passProps: {
+                    restartAll: () => this.restartAll()
                 }                
             })            
         }   
+    }
+
+    restartAll(){
+        var {dispatch} = this.props 
+        dispatch({type: "RESET_CENTRAL_REDUCER"})
+        dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
+        dispatch({type: "RESET_PAIR_REDUCER"})
+        dispatch({type: "NO_DEVICE_FOUND"})
+        this.showCamera()
+        this.startScanning()
+
+    }
+
+    showCamera(){
+        this.props.dispatch({type:"SHOW_CAMERA",show_camera: true})
+    }
+
+    hideCamera(){
+         this.props.dispatch({type: "SHOW_CAMERA",show_camera:false})
     }
 
     requestMultiplePermissions(){
@@ -294,8 +320,9 @@ class Bridges extends Component{
     startScanning(){
         console.log("startScanning(1)")
         
-
         var devices = this.props.devices
+        
+        this.manager = new BleManager();
 
         this.stared_scanning = true
         
@@ -306,7 +333,7 @@ class Bridges extends Component{
                 return
             }
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-
+                //console.log("device",device.id);
                 if (!FIND_ID(devices, device.id)) {
                     
                     var data = this.getManufacturedData(device)
@@ -419,14 +446,6 @@ class Bridges extends Component{
         }   
     }
 
-    showOrHideSerialInput(){
-        if(this.props.show_serial_input){
-            this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
-        }else{
-            this.props.dispatch({type:"SHOW_SERIAL_INPUT"})
-        }
-    }
-
     closeModalAndRequestPermissions(){
         this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
         this.requestMultiplePermissions()
@@ -437,8 +456,12 @@ class Bridges extends Component{
         dispatch({type : "HIDE_DEVICES_LIST"})
     
         if(this.props.show_serial_input){
+            console.log("54321");
+            this.showCamera()
             dispatch({type:"HIDE_SERIAL_INPUT"})
         }else{
+            console.log("12345");
+            this.hideCamera()
             dispatch({type:"SHOW_SERIAL_INPUT"})
         }
     }
@@ -497,8 +520,9 @@ class Bridges extends Component{
             title : device_id,
             passProps: {
                 device_id : device_id,
-                startScanning : () => this.startScanning(),
                 showAlert: true,
+                startScanning : () => this.startScanning(),
+                goToDeviceControl : (matched_device) => this.goToDeviceControl(matched_device)
             },
             appStyle: {
               orientation: 'portrait',
@@ -507,7 +531,6 @@ class Bridges extends Component{
     }
 
     render(){
-        //console.log("this.props",this.props.list_status,this.props.show_serial_input,this.props.show_qr_image)
         if(this.props.show_serial_input) {
             var camera_style = {}
             var touchable_icon = (
@@ -527,12 +550,15 @@ class Bridges extends Component{
         if(this.props.show_permissions_modal){
             return this.renderModal()
         }else{
+            
+            console.log("this.props.show_camera",this.props.show_camera);
+
             return(
                 <Background>
                     <View style={{justifyContent:'space-between',height:height-150}}>
                         <View style={camera_style}>
-                            {!this.props.show_serial_input && ( 
-                                <ScanCentralUnits 
+                            {this.props.show_camera && ( 
+                                <ScanCentralUnits
                                     navigation={this.props.navigation} 
                                     goToDeviceControl={(device)=> this.goToDeviceControl(device)}
                                     scanResult = {this.scan_result}
@@ -584,7 +610,8 @@ const mapStateToProps = state => ({
     devices : state.pairReducer.devices,
     show_serial_input : state.scanCentralReducer.show_serial_input,
     show_permissions_modal : state.scanCentralReducer.show_permissions_modal,
-    user_data : state.loginReducer.user_data
+    user_data : state.loginReducer.user_data,
+    show_camera : state.scanCentralReducer.show_camera
 })
 
 export default connect(mapStateToProps)(Bridges)

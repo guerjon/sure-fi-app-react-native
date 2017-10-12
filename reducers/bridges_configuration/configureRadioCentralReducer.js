@@ -7,11 +7,15 @@ const initialState = {
 	heartbeat_period_selected : null,
 	acknowledments_selected : null,
 	hopping_table_selected :null,
-	sfb_table_selected : null
+	sfb_table_selected : null,
+	radio_values_lenght : 8,
 }
 
 export default function configureRadioCentralReducer (state = initialState, action) {
 	switch (action.type) {
+		case "RESTART_CONFIGURATION_RADIO":
+			return initialState
+			
 		case "UPDATE_POWER":
 	      	return {
 	        	...state,
@@ -61,6 +65,11 @@ export default function configureRadioCentralReducer (state = initialState, acti
 	    	return{
 	    		...state,
 	    		checkbox_selected : action.checkbox_selected
+	    	}
+	    case "SET_RADIO_VALUES_LENGHT":
+	    	return {
+	    		...state,
+	    		radio_values_lenght : action.radio_values_lenght
 	    	}
 	    default:
 	      return state

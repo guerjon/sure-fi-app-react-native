@@ -51,6 +51,7 @@ class StatusBox extends Component{
 		let device_id = device.manufactured_data.device_id.toUpperCase()
 		let remote_device_id = device.manufactured_data.tx.toUpperCase()
 	}
+	
 
 	renderConnectingBox(){
 		return (
@@ -202,7 +203,9 @@ class StatusBox extends Component{
 	    		if(data.status == "success"){
 	    			this.props.device_name = this.props.device_name
 
-	    			this.finishEditName();
+	    			this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: this.props.device_name,original_name:this.props.device_name})
+					this.props.dispatch({type: "FINISH_EDITING"})
+
 	    		}else{
 	    			Alert.alert("Error on update","Something was wrong on update the name")
 	    		} 
@@ -214,7 +217,7 @@ class StatusBox extends Component{
     		if(this.props.device_name == 0)
 				Alert.alert("Error!","The name can't be empty.")
 			else{
-				Alert.alert("Error!","The name is so large.")
+				Alert.alert("Error!","The name is too long.")
 			}
     	}
     }
@@ -224,6 +227,8 @@ class StatusBox extends Component{
 	}
 
 	finishEditName(){
+		console.log("this.original_name 2",this.props.original_name);
+		this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: this.props.original_name})
 		this.props.dispatch({type: "FINISH_EDITING"})
 	}
 
@@ -274,30 +279,32 @@ class StatusBox extends Component{
 
 	getEditing(){
 		return (
-			<View style={{flexDirection:"row",alignItems:"center"}}>
-				<View style={{flex:0.8}}>
-					<TextInput
-						placeholder = "Write your new name"
-						style={{height: 40, width:width -80, borderColor: 'gray', borderWidth: 0.3,borderRadius:5,backgroundColor:"white"}} 
-						underlineColorAndroid="transparent"
-						onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
-						value = {this.props.device_name}
-					/>					
+			<View style={{}}>
+				<View style={{margin:10,flexDirection:"row",alignItems:"center"}}>
+					<View style={{flex:0.5}}>
+						<TextInput
+							placeholder = "Write your new name"
+							style={{height: 40, width:width -80, borderColor: 'black', borderWidth: 0.7,borderRadius:5,backgroundColor:"white"}} 
+							underlineColorAndroid="transparent"
+							onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
+							value = {this.props.device_name}
+						/>					
+					</View>
+					<View style={{flex:0.2}}>
+						<TouchableHighlight 
+							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
+							onPress={() => this.finishEditName()}
+						>
+							<Icon name="times" size={25} color="red"/>
+						</TouchableHighlight>
+						<TouchableHighlight 
+							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
+							onPress={() => this.updateName()}
+						>
+							<Icon name="upload" size={25} color="green"/>
+						</TouchableHighlight>
+					</View>	
 				</View>
-				<View style={{flex:0.2}}>
-					<TouchableHighlight 
-						style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-						onPress={() => this.finishEditName()}
-					>
-						<Icon name="times" size={25} color="red"/>
-					</TouchableHighlight>
-					<TouchableHighlight 
-						style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-						onPress={() => this.updateName()}
-					>
-						<Icon name="upload" size={25} color="green"/>
-					</TouchableHighlight>
-				</View>	
 			</View>
 		)
 	}
@@ -331,7 +338,7 @@ class StatusBox extends Component{
 					{this.getSerialInfo()}
 				</View>
 				<TouchableHighlight 
-					style={{flex:0.1,alignItems:"flex-end",justifyContent:"center"}}
+					style={{flex:0.2,alignItems:"flex-end",justifyContent:"center"}}
 					onPress={() => this.startEditName()}
 				>
 					<Icon name="edit" size={20} color="gray"/>			
@@ -355,6 +362,7 @@ class StatusBox extends Component{
 	
 		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
 		var switch_button =  this.getSwitchButton()
+		console.log("this.props.original_name",this.props.original_name);
 		/*console.log("this.props.device_name",this.props.device_name);
 		console.log("this.props.remote_device_name",this.props.remote_device_name);
 		*/
@@ -385,7 +393,8 @@ const mapStateToProps = state => ({
 	options_loaded : state.setupCentralReducer.options_loaded,
 	show_switch_button : state.setupCentralReducer.show_switch_button,
   	device_name : state.setupCentralReducer.device_name,
-	remote_device_name : state.setupCentralReducer.remote_device_name	
+	remote_device_name : state.setupCentralReducer.remote_device_name,
+	original_name: state.setupCentralReducer.original_name
 })
 
 export default connect(mapStateToProps)(StatusBox);

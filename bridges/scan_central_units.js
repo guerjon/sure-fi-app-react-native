@@ -130,7 +130,7 @@ class ScanCentralUnits extends Component {
         if(this.props.id_input)
             message = this.props.id_input
 
-        if(this.props.camera_status == "showed")
+        if(this.props.show_camera)
             return(
                 <View style={{alignItems:"center"}}>
                         <Camera
@@ -241,7 +241,7 @@ class ScanCentralUnits extends Component {
         var clear_button = this.getClearButton()
         var confirm_buttons = this.getConfirmButtons()
         let scan_result = this.props.scanResult ? this.props.scanResult : this.scan_result_id
-
+        console.log("scanning_status",scanning_status);
         switch (scanning_status) {
             case "no_device_found":
                 var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>
@@ -282,7 +282,7 @@ const mapStateToProps = state => ({
     manufactured_data: state.scanCentralReducer.manufactured_data,
     scanning_status: state.scanCentralReducer.scanning_status,
     devices : state.pairReducer.devices,
-    camera_status : state.scanCentralReducer.camera_status,
+    show_camera : state.scanCentralReducer.show_camera,
     scanner : state.pairReducer.scanner,
     photo_data : state.scanCentralReducer.photo_data,
     manager : state.scanCentralReducer.manager,

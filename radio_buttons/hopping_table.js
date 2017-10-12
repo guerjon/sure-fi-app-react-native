@@ -61,7 +61,7 @@ class HoppingTable extends Component{
 			    				editable={!this.props.checkbox_selected}
 			    				onChangeText={(hopping_table_selected) => this.updateHoppingTable(hopping_table_selected)}
 			    				underlineColorAndroid="transparent" 
-			    				value={this.props.current_value.toString()}
+			    				value={this.props.current_value ?  this.props.current_value.toString() : ""}
 			    				placeholder="XXX"
 			  				/>
 		  				</View>

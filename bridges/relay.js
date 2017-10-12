@@ -39,7 +39,22 @@ class Relay extends Component{
     	super(props);
     	this.device = this.props.device
     	this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
+    	this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
+
+    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
+        
+        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
+            switch(event.id){
+                case "update":
+                    this.save()
+                break
+                default:
+                break
+            }
+        } 
+    }
+
 
 	handleCharacteristicNotification(data){
 		var value = data.value[0]
@@ -257,6 +272,20 @@ class Relay extends Component{
 			)
 		}
 
+		/*
+
+							<View style={{flexDirection:"row",marginHorizontal:20}}>
+								<TouchableHighlight 
+									style={{backgroundColor:success_green,width:width/2,marginVertical:20,marginHorizontal:10,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}
+									onPress={() => this.save()}
+								>
+									<Text style={{color:"white",fontWeight:'900'}}>
+										Save
+									</Text>
+								</TouchableHighlight>
+
+		*/
+
 		return(
 			<ScrollView style={styles.pairContainer}>
 				<Background>
@@ -323,25 +352,9 @@ class Relay extends Component{
 									Relay Defaults - {this.props.slider_value ? "ENABLED" : "DISABLED"} 
 								</Text>
 							</View>
-							{this.props.slider_value ? this.renderRelayOptions(this.props.slider_value) : null}
-							<View style={{flexDirection:"row",marginHorizontal:20}}>
-								<TouchableHighlight 
-									style={{backgroundColor:success_green,width:width/2,marginVertical:20,marginHorizontal:10,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}
-									onPress={() => this.save()}
-								>
-									<Text style={{color:"white",fontWeight:'900'}}>
-										Save
-									</Text>
-								</TouchableHighlight>
-								<TouchableHighlight 
-									style={{backgroundColor:red_error,height:40,width:width/4,marginVertical:20,marginHorizontal:10,alignItems:"center",justifyContent:"center",borderRadius:10}}
-									onPress={() => this.refresh()}
-								>
-									<Text style={{color:"white",fontWeight:'900'}}>
-										Refresh
-									</Text>
-								</TouchableHighlight>
-							</View>
+							
+							{this.props.slider_value ? this.renderRelayOptions(this.props.slider_value) : null}	
+							
 						</View>
 					</View>
 				</Background>

@@ -1,129 +1,253 @@
-import React, {Component} from 'react'
+import React, {
+    Component
+} from 'react'
 import {
-  	Text,
-  	View,
-  	Image,
-  	ScrollView,
-  	Linking,
-  	Alert
+    Text,
+    View,
+    Image,
+    ScrollView,
+    Linking,
+    Alert,
+    TouchableHighlight
 } from 'react-native'
-import {styles,first_color,height,width} from '../styles/index.js'
-import { connect } from 'react-redux';
-import { 
-	LOADING,
-	GET_DEVICE_DOCUMENTS
+import {
+    styles,
+    first_color,
+    height,
+    width
+} from '../styles/index.js'
+import {
+    connect
+} from 'react-redux';
+import {
+    LOADING,
+    GET_DEVICE_DOCUMENTS,
+    MATCH_DEVICE
 } from '../constants'
 import Background from '../helpers/background'
-import {WhiteRowLink} from '../helpers/white_row_link'
+import {
+    WhiteRowLink
+} from '../helpers/white_row_link'
 
-class DeviceNotMatched extends Component{
-	
+interval = 0
+
+class DeviceNotMatched extends Component {
+
     static navigatorStyle = {
-        navBarBackgroundColor : first_color,
-        navBarTextColor : "white",
+        navBarBackgroundColor: first_color,
+        navBarTextColor: "white",
         navBarButtonColor: "white",
         orientation: 'portrait'
     }
 
-	static navigatorButtons = {
-	  leftButtons: [{
-	    id: 'back',
-	    title: 'Back'
-	  }]
-	}
-
-    constructor(props) {
-      	super(props);
-      	this.path = ""
-      	this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
-        console.log("props device not matched",props);
+    static navigatorButtons = {
+        leftButtons: [{
+            id: 'back',
+            title: 'Back'
+        }]
     }
 
-    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        console.log("event",event)
-        switch(event.id){
-            case "didDisappear":
-            	//if(this.props.showAlert)
-                	//this.props.startScanning()
-            break
-            default:
-            break
-        }
-        
+    constructor(props) {
+        super(props);
+        this.path = ""
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+        this.devices = this.props.devices
+    }
+
+
+    componentDidMount() {
+        this.createInterval()
     }
 
     componentWillUnmount() {
-      console.log("componentWillUnmount()");
-      this.props.dispatch({type:"ALLOW_SCANNING",allow_scanning:true})
+      this.eraseInterval()
+    }
+
+    createInterval() {
+        console.log("createInterval()")
+        if (interval == 0) {
+            interval = setInterval(() => this.checkForDevice(), 2000)
+            console.log("interval created")
+        } else {
+            console.log("the interval can't be created it was created previosly")
+        }
+    }
+
+    eraseInterval(){
+    	console.log("eraseInterval()");
+    	if(interval){
+    		clearInterval(interval)
+    	}else{
+    		console.log("The interval was erase previously");
+    	}
+    }
+
+    checkForDevice() {
+        var device_id = this.props.device_id
+        var devices = this.props.devices
+
+        this.matched_devices = MATCH_DEVICE(devices, device_id)
+
+        if (this.matched_devices.length > 0) {
+            this.props.dispatch({
+                type: "DEVICE_FOUND",
+                device_found: true
+            })
+        } else {
+            this.props.dispatch({
+                type: "DEVICE_FOUND",
+                device_found: false
+            })
+        }
+    }
+
+    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
+        console.log("event", event)
+        switch (event.id) {
+            case "didDisappear":
+                //if(this.props.showAlert)
+                //this.props.startScanning()
+                break
+            default:
+                break
+        }
+
+    }
+
+    componentWillUnmount() {
+        console.log("componentWillUnmount()");
+        this.props.dispatch({
+            type: "ALLOW_SCANNING",
+            allow_scanning: true
+        })
     }
 
     componentWillMount() {
-      console.log("componentWillMount",this.props.device_id,);
-      	
-        fetch(GET_DEVICE_DOCUMENTS,{
-      		method: "post",
-      		headers: {
-      			'Accept' : 'application/json',
-      			'Content-Type' : 'application/json'
-      		},
-      		body: JSON.stringify({
-      			hardware_serial: this.props.device_id
-      		})
-      	}).then(response => {
-          console.log("response---",response);
-      		let data = JSON.parse(response._bodyInit).data.documents
-          if(data.lenght > 0){
-            let path = data.document_path
-            
-            this.path = path            
-          }else{
-            console.log("error","the response array on documents its empty");
-          }
-      		//let path = data.document.path
-          
-      	}).catch(error => {
-      		Alert.alert("Error",error)
-      	})
+        console.log("componentWillMount", this.props.device_id, );
+
+        fetch(GET_DEVICE_DOCUMENTS, {
+            method: "post",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                hardware_serial: this.props.device_id
+            })
+        }).then(response => {
+            let data = JSON.parse(response._bodyInit).data.documents
+
+            if (data.length > 0) {
+
+                let path = data[0].document_path
+
+                this.path = data[0].document_path
+                this.props.dispatch({
+                    type: "SET_DOCUMENTATION_PATH",
+                    documentation_path: path
+                })
+
+            } else {
+                console.log("error", "the response array on documents its empty");
+            }
+            //let path = data.document.path
+
+        }).catch(error => {
+            Alert.alert("Error", error)
+        })
     }
 
-    goToAccessControlInstructions(){
-      console.log("goToAccessControlInstructions()");
-      if(this.path)
-    	 Linking.openURL(this.path)
-      else
-        Alert.alert("Error","The link wasn't found.")
+    goToAccessControlInstructions() {
+        console.log("goToAccessControlInstructions()", this.props.documentation_path);
+        if (this.path)
+            Linking.openURL(this.path)
+        else
+            Alert.alert("Error", "The link wasn't found.")
     }
 
-	render(){	
-		return(
-			<Background>
+    renderDeviceNotFound() {
+    	console.log("renderDeviceNotFound()");
+    	
+		return (
+			<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
+			  <View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
+				<Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
+			  </View>
+			  <View style={{margin:20,width: width * .75}}>
+				<Text style={{color:"red"}}>
+				  Sure-Fi was unable to find the Device  {this.props.device_id} via Bluetooth. 
+				  Please make sure you are within range and the device is powered on.
+				</Text>
+			  </View>
+			</View>
+		)
+    }
+
+    renderDeviceFound(){
+    	console.log("renderDeviceFound()");
+    	return(
+			<TouchableHighlight onPress={() => this.handleDeviceSelected()}>
+				<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
+				  	<View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
+						<Image source={require('../images/menu_success.imageset/menu_success.png')} style={{width:50,height:50,margin:10}}/>
+				  	</View>
+				  	<View style={{margin:20,width: width * .75}}>
+						<Text style={{color:"green"}}>
+							Your Device: {this.props.device_id} has been discoverd via Bluetooth. Touch here to connect to your device.  	
+						</Text>
+				  	</View>
+			  	</View>
+			</TouchableHighlight>
+    	)
+    }
+
+    handleDeviceSelected(){
+		
+		var matched_device = this.matched_devices[0]
+        
+        this.props.dispatch({
+            type: "CENTRAL_DEVICE_MATCHED",
+            central_device: matched_device
+        });
+
+        this.props.navigator.dismissModal()
+        this.props.goToDeviceControl(matched_device)
+    }
+
+
+    renderMessage(){
+    	console.log("renderMessage()");
+    	if(this.props.showAlert){
+	    	if(this.props.device_found)
+	    		return this.renderDeviceFound()
+	    	
+	    	return this.renderDeviceNotFound()    		
+    	}
+
+    	return null
+    }
+
+    render() {
+        return (
+	        <Background>
 				<View style={{height:height}}>
-					{this.props.showAlert &&
-						(<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
-							<View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
-								<Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
-							</View>
-							<View style={{margin:20,width: width * .75}}>
-								<Text style={{color:"red"}}>
-									Sure-Fi was unable to find the Device  {this.props.device_id} via Bluetooth. 
-									Please make sure you are within range and the device is powered on.
-								</Text>
-							</View>
-						</View>)
-					}
-					<View>
-						<Text style={styles.device_control_title}>AVAIBLE DOCUMENTS</Text>
+				  	<View>
+						<Text style={styles.device_control_title}>AVAILABLE DOCUMENTS</Text>
 						<WhiteRowLink callback={() => this.goToAccessControlInstructions()}  name="Access Control Bridge Instructions"/>
-					</View>
+				  	</View>
+				  	<View>
+				  		{this.renderMessage()}
+				  	</View>
 				</View>
-			</Background>
-		);	
-	}
+	  		</Background>
+        );
+    }
 }
 
 const mapStateToProps = state => ({
-
+    documentation_path: state.loginReducer.documentation_path,
+    device_found: state.loginReducer.device_found,
+    devices : state.pairReducer.devices,
 });
 
 export default connect(mapStateToProps)(DeviceNotMatched);
-

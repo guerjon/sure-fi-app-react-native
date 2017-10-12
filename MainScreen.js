@@ -314,7 +314,7 @@ class MainScreen extends Component {
 
 		if(user_type){
 
-			this.props.navigator.showModal({
+			this.props.navigator.push({
 				screen : "Bridges",
 				title: "Scan QR Code",
 				animationType: "slide-up",
@@ -328,7 +328,7 @@ class MainScreen extends Component {
 			})
 
 		}else{
-			this.props.navigator.showModal({
+			this.props.navigator.push({
 				screen : "Bridges",
 				title: "Scan QR Code",
 				animationType: 'slide-up',

@@ -448,7 +448,7 @@ const mapStateToProps = state => ({
   	remote_device : state.scanRemoteReducer.remote_device,
   	devices : state.pairReducer.devices,
   	device_status : state.setupCentralReducer.device_status,
-  	manager : state.scanCentralReducer.manager,
+  	manager : state.scanCentralReducer.fast_manager,
   	remote_device_status : state.scanRemoteReducer.remote_device_status,
   	device: state.scanCentralReducer.central_device,
     debug_mode_status : state.setupCentralReducer.debug_mode_status,

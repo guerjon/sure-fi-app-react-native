@@ -34,6 +34,7 @@ const initialState = {
   deploy_disconnect: false,
   switch_disconnect : false,
   show_status_box : true,
+  original_name: ""
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -145,7 +146,8 @@ export default function setupCentralReducer (state = initialState, action) {
     case "UPDATE_DEVICE_NAME":
       return {
         ...state,
-        device_name : action.device_name
+        device_name : action.device_name,
+        original_name : action.original_name ? action.original_name : state.original_name
       }
     case "UPDATE_REMOTE_DEVICE_NAME":
       return {
