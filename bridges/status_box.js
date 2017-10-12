@@ -179,12 +179,14 @@ class StatusBox extends Component{
     }
 	
     updateName(){
+    	console.log("updateName()",this.props.device_name);
+    	var device_name = this.props.device_name.trim()
 
-    	if(this.props.device_name.length > 0 && this.props.device_name.length < 60){
+    	if(device_name.length > 0 && device_name.length < 60){
 	    	let device = this.props.device
 	    	let device_id = device.manufactured_data.device_id.toUpperCase()
 	    	let ret_uuid = device.id
-	    	let name = BASE64.btoa(this.props.device_name)
+	    	let name = BASE64.btoa(device_name)
 
 	    	fetch(UPDATE_DEVICE_NAME_ROUTE,{
 	    		method: "POST",
@@ -201,9 +203,8 @@ class StatusBox extends Component{
 	    		let data = JSON.parse(response._bodyInit)
 	    		console.log("data",response);
 	    		if(data.status == "success"){
-	    			this.props.device_name = this.props.device_name
 
-	    			this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: this.props.device_name,original_name:this.props.device_name})
+	    			this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: device_name,original_name:device_name})
 					this.props.dispatch({type: "FINISH_EDITING"})
 
 	    		}else{
@@ -214,7 +215,7 @@ class StatusBox extends Component{
 	    	.catch(error => console.log("error",error))
 
     	}else{
-    		if(this.props.device_name == 0)
+    		if(device_name.length == 0)
 				Alert.alert("Error!","The name can't be empty.")
 			else{
 				Alert.alert("Error!","The name is too long.")
