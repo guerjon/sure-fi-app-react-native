@@ -119,8 +119,7 @@ class ConfigureRadio extends Component {
 		} = this.props
 
 		let heart_hex_value =  heartbeat_period_selected.toString(16) 
-		console.log("sfb_table_selected",sfb_table_selected)
-		console.log("band_width_selected",band_width_selected);
+		
 		let heart_value = HEX_TO_BYTES(heart_hex_value)
 
 
@@ -167,6 +166,8 @@ class ConfigureRadio extends Component {
 				]			
 		}
 
+		console.log("spreading_factor_selected",spreading_factor_selected)
+		console.log("band_width_selected",band_width_selected);
 
 			console.log("data",data);
 		WRITE_COMMAND(
@@ -182,27 +183,24 @@ class ConfigureRadio extends Component {
 		console.log("notification on configure_radio",data)
 		var {dispatch} = this.props
 		var values = data.value
-		var heartbeat_period = TWO_BYTES_TO_INT(values[5],values[6])
+		
 
 		switch(values[0]){
 			case 0x08:
-
-				this.props.dispatch({type: "SET_RADIO_VALUES_LENGHT",radio_values_lenght : values.length -1})
-
-
-				console.log("spreadingFactor",values[2]); // 5
-				console.log("bandWidth",values[1]); // 6
+				values.shift()
+				console.log("values",values.length);
+				this.props.dispatch({type: "SET_RADIO_VALUES_LENGHT",radio_values_lenght : values.length})
 
 				if(this.props.radio_values_lenght == 9){
 					
-					this.updatePowerValue(values[3])
-					this.updateSpreadingFactor(values[2])
 					this.updateBandWidth(values[1])
-					this.updateRetryCount(values[4])
-					this.updateHeartBeatPeriod(heartbeat_period)
-					this.updateAcknowledments(values[7])
-					this.updateHoppingTable(values[8])
-					this.updateSFBTable(values[9])
+					this.updateSpreadingFactor(values[0])
+					this.updatePowerValue(values[2])
+					this.updateRetryCount(values[3])
+					this.updateHeartBeatPeriod(TWO_BYTES_TO_INT(values[4],values[5]))
+					this.updateAcknowledments(values[6])
+					this.updateHoppingTable(values[7])
+					this.updateSFBTable(values[8])
 
 					this.props.dispatch({type: "UPDATE_PAGE_STATUS",page_status:"loaded"})
 
@@ -210,13 +208,13 @@ class ConfigureRadio extends Component {
 				}
 				else if (this.props.radio_values_lenght == 8){
 
-					this.updatePowerValue(values[3])
-					this.updateSpreadingFactor(values[2])
 					this.updateBandWidth(values[1])
-					this.updateRetryCount(values[4])
-					this.updateHeartBeatPeriod(heartbeat_period)
-					this.updateAcknowledments(values[7])
-					this.updateHoppingTable(values[8])
+					this.updateSpreadingFactor(values[0])
+					this.updatePowerValue(values[2])
+					this.updateRetryCount(values[3])
+					this.updateHeartBeatPeriod(TWO_BYTES_TO_INT(values[4],values[5]))
+					this.updateAcknowledments(values[6])
+					this.updateHoppingTable(values[7])
 
 					this.props.dispatch({type: "UPDATE_PAGE_STATUS",page_status:"loaded"})
 

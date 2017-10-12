@@ -144,10 +144,10 @@ class StatusBox extends Component{
 									alignItems:"center",
 									flexDirection: "row"
 								}}>
-									<Text style={{color: "#00DD00",padding: 2,fontSize:18}}>
+									<Text style={{color: "#009900",padding: 2,fontSize:18}}>
 										Status:
 									</Text >
-									<Text style={{color: "#00DD00",padding: 2,fontSize:18}}> 
+									<Text style={{color: "#009900",padding: 2,fontSize:18}}> 
 										Connected
 									</Text>
 								</View>
@@ -262,7 +262,7 @@ class StatusBox extends Component{
 		}else{
 
 			return (
-				<View style={{flexDirection:"row"}}>
+				<View style={{flexDirection:"row",justifyContent:"center"}}>
 					<Text style={{fontSize:12,marginRight:5}}>
 						Remote Serial : {this.props.device.manufactured_data.device_id.toUpperCase()}
 					</Text>
@@ -312,12 +312,13 @@ class StatusBox extends Component{
 
 	getTextPairedWith(){
 		if(this.props.remote_device_name != "" && this.props.remote_device_name != "000000" && this.props.remote_device_name ){
-			return <Text style={{fontSize:18,fontWeight:"400",textAlign: 'center'}}>Paired to {this.props.remote_device_name}</Text>
+			return <Text style={{fontSize:18,fontWeight:"400",textAlign: 'center',color:"black"}}>Paired to {this.props.remote_device_name}</Text>
 		}else
 			return null
 	}
 
 	getNormalText(){
+		
 		if(this.props.device.manufactured_data.hardware_type == "01"){
 			var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
 		}else{
@@ -326,24 +327,32 @@ class StatusBox extends Component{
 
 		return (
 			<View style={{flexDirection:"row"}}>
-				<View>
+				<View style={{width: 50}}>
 					{image}
 				</View>
-				<View style={{flexDirection:"column",alignItems:"center",flex:0.5,paddingVertical:10}}>
-					<Text style={{fontSize:20,fontWeight:"900",color:"black",textAlign: 'center'}}>
-						{this.props.device_name}
-					</Text>
-					
-					{this.getTextPairedWith()}
-
-					{this.getSerialInfo()}
+				<View style={{width: width -100}}>
+					<View style={{flexDirection:"row",height:50,justifyContent:"center",alignItems:"center"}}>
+						<Text style={{fontSize:20,fontWeight:"200",color:"black",textAlign:'center',justifyContent:"center"}}>
+							{this.props.device_name}
+						</Text>
+					</View>
+					<View>
+						{this.getTextPairedWith()}
+					</View>
+					<View style={{marginTop:10}}>
+						{this.getSerialInfo()}
+					</View>
 				</View>
-				<TouchableHighlight 
-					style={{flex:0.2,alignItems:"flex-end",justifyContent:"center"}}
-					onPress={() => this.startEditName()}
-				>
-					<Icon name="edit" size={20} color="gray"/>			
-				</TouchableHighlight>
+				<View style={{width: 50}}>
+					<TouchableHighlight 
+						style={{justifyContent:"center",height:50,justifyContent:"center",alignItems:"center"}}
+						onPress={() => this.startEditName()}
+					>
+						<Icon name="edit" size={20} color="gray"/>			
+					</TouchableHighlight>
+
+				</View>
+
 			</View>
 		)		
 	
@@ -370,7 +379,7 @@ class StatusBox extends Component{
         return (
             <ScrollView>
 				<View>
-					<View style={styles.touchableSectionContainer}>
+					<View style={{backgroundColor:"white"}}>
 						<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
 							{this.getTextSection(this.props.is_editing)}
 						</View>

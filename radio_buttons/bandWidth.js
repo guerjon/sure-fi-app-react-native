@@ -24,13 +24,13 @@ class BandWidth extends Component{
 				<Title name="BandWidth" type=""/>
 				<View>
 					<View style={styles.row_style}>
-						<Button text="31.25 kHz" active={this.props.current_value == 1} handleTouchButton={() => this.props.updateValue(1)}/>
-						<Button text="62.50 kHz" active={this.props.current_value == 2} handleTouchButton={() => this.props.updateValue(2)}/>
-						<Button text="125 kHz" active={this.props.current_value == 3} handleTouchButton={() => this.props.updateValue(3)}/>
+						<Button text="31.25 kHz" active={this.props.current_value == 0} handleTouchButton={() => this.props.updateValue(0)}/>
+						<Button text="62.50 kHz" active={this.props.current_value == 1} handleTouchButton={() => this.props.updateValue(1)}/>
+						<Button text="125 kHz" active={this.props.current_value == 2} handleTouchButton={() => this.props.updateValue(2)}/>
 					</View>
 					<View style={styles.row_style}>	
-						<Button text="250 kHz" active={this.props.current_value == 4} handleTouchButton={() => this.props.updateValue(4)}/>
-						<Button text="500 kHz" active={this.props.current_value == 5} handleTouchButton={() => this.props.updateValue(5)}/>
+						<Button text="250 kHz" active={this.props.current_value == 3} handleTouchButton={() => this.props.updateValue(3)}/>
+						<Button text="500 kHz" active={this.props.current_value == 4} handleTouchButton={() => this.props.updateValue(4)}/>
 					</View>		
 				</View>
 			</View>	

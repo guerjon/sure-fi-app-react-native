@@ -1019,7 +1019,7 @@ class SetupCentral extends Component{
 						Alert.alert("Last Connection","The last connection was made about just now")	
 					}
 				}else{
-					Alert.alert("No connection has been made since power up.")	
+					Alert.alert("Last Connection","No connection has been made since power up.")	
 				}
 			break;
 			case 0x1A:
@@ -1297,9 +1297,9 @@ class SetupCentral extends Component{
 			var admin_values = (
 				<View>
 					<View>
-						<View style={styles.device_control_title_container}>
-							<Text style={styles.device_control_title}>
-								CURRENT FIRMWARE VERSION
+						<View style={{alignItems:"center"}}>
+							<Text style={{color:"gray",fontSize:20,marginBottom:5}}>
+								FIRMWARE VERSIONS
 							</Text>
 						</View>
 						<WhiteRow name="Application" value={PRETY_VERSION(this.props.app_version) }/>
@@ -1308,7 +1308,7 @@ class SetupCentral extends Component{
 					</View>
 					<View>
 						<View style={styles.device_control_title_container}>
-							<Text style={styles.device_control_title}>
+							<Text style={{color:"gray",fontSize:20,marginVertical:5}}>
 								RADIO SETTINGS
 							</Text>
 						</View>
@@ -1318,16 +1318,7 @@ class SetupCentral extends Component{
 						<WhiteRow name="Hopping table" value ={this.props.hopping_table}/>
 
 					</View>
-					<View>
-						<View style={styles.device_control_title_container}>
-							<Text style={styles.device_control_title}>
-								HARDWARE INFO
-							</Text>
-						</View>
-						
-						<WhiteRowInfoLink callback={() => this.setBoardVersion(this.props.register_board_1)} name="App Board" value={this.props.register_board_1 +  "  " +"\n"+ this.props.app_board_version }/>
-						<WhiteRowInfoLink callback={() => this.setBoardVersion(this.props.register_board_2)} name="Radio Board" value={this.props.register_board_2 +  "  " +"\n"+ this.props.radio_board_version}/>
-					</View>										
+										
 				</View>
 			)
 		else
@@ -1339,12 +1330,27 @@ class SetupCentral extends Component{
 					<View>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
-								POWER LEVELS
+								POWER VALUES
 							</Text>
 						</View>
 						<WhiteRow name="Power Voltage" value={this.props.power_voltage + " volts"}/>
 						<WhiteRow name="Battery Voltage" value={this.props.battery_voltage + " volts"}/>
-					</View>
+					</View>					
+					{
+						user_type && (
+							<View>
+								<View style={styles.device_control_title_container}>
+									<Text style={styles.device_control_title}>
+										HARDWARE INFO
+									</Text>
+								</View>
+								
+								<WhiteRowInfoLink callback={() => this.setBoardVersion(this.props.register_board_1)} name="App Board" value={this.props.register_board_1 +  "  " +"\n"+ this.props.app_board_version }/>
+								<WhiteRowInfoLink callback={() => this.setBoardVersion(this.props.register_board_2)} name="Radio Board" value={this.props.register_board_2 +  "  " +"\n"+ this.props.radio_board_version}/>
+							</View>
+						)
+					}
+
 					
 					
 					<View style={{marginBottom:80}}>
@@ -1387,16 +1393,16 @@ class SetupCentral extends Component{
 			console.log("this.props.debug_mode_status",this.props.debug_mode_status);
 			return (
 				<View>
-					<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
-					<WhiteRowLink name={this.props.debug_mode_status ? "DISABLE DEBUG MODE" : "ENABLED DEBUG MODE"}  callback={() => this.setDebugModeStatus()}/>
-					<WhiteRowLink name="GET LAST PACKET TIME" callback={() => this.getLastPackageTime()}/>
-					<WhiteRowLink name="RESET CAUSES" callback={() => this.getResetCauses()}/>
+					<WhiteRowLink name="Restart Application Board" callback={() => this.resetBoard()}/>
+					<WhiteRowLink name={this.props.debug_mode_status ? "Disable Debug Mode" : "Enable Debug Mode"}  callback={() => this.setDebugModeStatus()}/>
+					<WhiteRowLink name="Get Last Packet Time" callback={() => this.getLastPackageTime()}/>
+					<WhiteRowLink name="Reset Causes" callback={() => this.getResetCauses()}/>
 				</View>
 			)
 		}else{
 			return (
 				<View style={{marginBottom:20}}>
-					<WhiteRowLink name="RESET APPLICATION BOARD" callback={() => this.resetBoard()}/>
+					<WhiteRowLink name="Restart Application Board" callback={() => this.resetBoard()}/>
 				</View>
 			)
 		}

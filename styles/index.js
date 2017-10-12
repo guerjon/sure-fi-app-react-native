@@ -228,7 +228,8 @@ export  const styles = StyleSheet.create({
       alignItems:"flex-start"
     },
     white_touchable_text: {
-      fontSize: 25
+      fontSize: 25,
+      color:"black"
     },
     device_control_title_container : {
       alignItems:"center"

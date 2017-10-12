@@ -26,6 +26,25 @@ import {
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
+var bytes_values = [
+	"0000",
+	"0001",
+	"0010",
+	"0011",
+	"0100",
+	"0101",
+	"0110",
+	"0111",
+	"1000",
+	"1001",
+	"1010",
+	"1011",
+	"1100",
+	"1101",
+	"1110",
+	"1111",
+]
+
 class Relay extends Component{
 
     static navigatorStyle = {
@@ -64,11 +83,11 @@ class Relay extends Component{
 				data.value.shift()
 				console.log("old_value",data.value);
 				
+				if(data.value.length > 0)
+					this.updateQsValues(data.value[0])
+				else
+					console.log("Error","Someting is wrong getting the values");
 
-
-				this.updateQsValues(data.value[0])
-
-				
 				break
 			case 0x18:
 				data.value.shift()
@@ -110,12 +129,10 @@ class Relay extends Component{
 
     updateQsValues(value){
     	console.log("updateQsValues",value);
-    	var binary_value = DEC2BIN(value)
-    	console.log("bynay_value",binary_value);
     	
-    	console.log("binary_value.substr(0,1)",binary_value.substr(0,1));
-
-    	if(binary_value.substr(3,1) == "0")
+    	var binary_value = bytes_values[value]
+    	
+    	if(binary_value.substr(0,1) == "0")
     		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: false})
     	else
     		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: true})
@@ -158,8 +175,9 @@ class Relay extends Component{
 		WRITE_COMMAND(this.device.id,[0x23, this.props.slider_value,this.props.relay_1_image_status,this.props.relay_2_image_status])
 		.then(() => {
 			setTimeout(() => {
+				console.log("this.props.qs",this.props.qs);
 				var number = parseInt(this.props.qs,2)
-
+				console.log("number",number);
 				WRITE_COMMAND(this.device.id,[0x0C,number])
 				.then(() =>{
 					Alert.alert("Update Complete","Sure-Fi Relay Settings successfully updated.")
@@ -261,7 +279,10 @@ class Relay extends Component{
 
 	updateQs(pos){
 		//we need change the value before save it!
+		console.log("pos",pos);
+		console.log("this.props.qs.substr",this.props.qs);
 		var value = this.props.qs.substr(pos,1)
+
 		console.log("value before",value);
 		
 		if(value == "1")
@@ -271,7 +292,7 @@ class Relay extends Component{
 
 		var new_qs = this.props.qs.substr(0, pos) + value + this.props.qs.substr(pos + value.length);
 				
-		if(pos == 3){
+		if(pos == 0){
 			if(value == "1")
 				this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: true})
 			else
@@ -292,10 +313,10 @@ class Relay extends Component{
 				<View>
 					<View style={styles.relay_option}>
 						<Switch 
-							onValueChange={slider_value => this.updateQs(2)} 
+							onValueChange={slider_value => this.updateQs(1)} 
 							onTintColor={option_blue}
 							tintColor="orange"
-							value={this.props.qs.substr(2,1) == "1" ? true : false}
+							value={this.props.qs.substr(1,1) == "1" ? true : false}
 						/>
 						<Text style={{marginLeft:20,fontSize:18}}>
 							Activate for All Messages
@@ -305,10 +326,10 @@ class Relay extends Component{
 
 					<View style={styles.relay_option}>
 						<Switch 
-							onValueChange={slider_value => this.updateQs(0)} 
+							onValueChange={slider_value => this.updateQs(3)} 
 							onTintColor={option_blue}
 							tintColor="orange"
-							value={this.props.qs.substr(0,1) == "1" ? true : false}
+							value={this.props.qs.substr(3,1) == "1" ? true : false}
 						/>
 						<Text style={{marginLeft:20,fontSize:18}}>
 							Enable Long Duration
@@ -346,10 +367,10 @@ class Relay extends Component{
 
 							<View style={styles.relay_option}>
 								<Switch 
-									onValueChange={slider_value => this.updateQs(1)} 
+									onValueChange={slider_value => this.updateQs(2)} 
 									onTintColor={option_blue}
 									tintColor="orange"
-									value={this.props.qs.substr(1,1) == "1" ? true : false}
+									value={this.props.qs.substr(2,1) == "1" ? true : false}
 								/>
 								<Text style={{marginLeft:20,fontSize:18}}>
 									Active for Status Indications
@@ -358,10 +379,10 @@ class Relay extends Component{
 
 							<View style={styles.relay_option}>
 								<Switch 
-									onValueChange={slider_value => this.updateQs(3)} 
+									onValueChange={slider_value => this.updateQs(0)} 
 									onTintColor={option_blue}
 									tintColor="orange"
-									value={this.props.qs.substr(3,1) == "1" ? true : false}
+									value={this.props.qs.substr(0,1) == "1" ? true : false}
 								/>
 								<Text style={{marginLeft:20,fontSize:18}}>
 									Quality of Service Lights

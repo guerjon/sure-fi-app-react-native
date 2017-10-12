@@ -479,17 +479,17 @@ export const PRETY_VERSION = version => {
 		if(version < 1){
 			var version_split = version.toString().split(".")
 
-			return ("V" + version_split[0] + ".0" + version_split[1])
+			return ("v" + version_split[0] + ".0" + version_split[1])
 		}
 			
 		if (version == 1)
-			return "V1.0"
+			return "v1.0"
 		if (version > 1){
 			var version_split = version.toString().split(".")
-			return ("V" + version_split[0] +  ".0" + version_split[1]  )
+			return ("v" + version_split[0] +  ".0" + version_split[1]  )
 		}
 
-		return ("V" + version.toString())
+		return ("v" + version.toString())
 	}else{
 		return ""
 	}
@@ -679,4 +679,7 @@ var Base64 = {
 
         return string;
     }
+
 }
+
+

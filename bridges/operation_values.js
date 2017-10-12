@@ -331,8 +331,8 @@ class OperationValues extends Component{
 	}
 
 	getCentralImages(){
-		var relay_nc = <Image style={{width:100,height:100}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
-		var relay_no = <Image style={{width:100,height:100}} source={require('../images/relay_no.imageset/relay_no.png') }/>
+		var relay_nc = <Image style={{width:80,height:80}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
+		var relay_no = <Image style={{width:80,height:80}} source={require('../images/relay_no.imageset/relay_no.png') }/>
 
 		if(this.props.central_relay_image_1){
 			var central_relay_image_1 = relay_nc
@@ -350,17 +350,23 @@ class OperationValues extends Component{
 			<View style={{flexDirection:"row"}}>
 				<View>
 					{central_relay_image_1}
+					<Text style={{textAlign:"center",fontSize:12}}>
+						Relay 1
+					</Text>
 				</View>
 				<View>
 					{central_relay_image_2}
+					<Text style={{textAlign:"center",fontSize:12}}>
+						Relay 2
+					</Text>
 				</View>
 			</View>
 		)
 	}
 
 	getRemoteImages(){
-		var relay_nc = <Image style={{width:100,height:100}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
-		var relay_no = <Image style={{width:100,height:100}} source={require('../images/relay_no.imageset/relay_no.png') }/>
+		var relay_nc = <Image style={{width:80,height:80}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
+		var relay_no = <Image style={{width:80,height:80}} source={require('../images/relay_no.imageset/relay_no.png') }/>
 
 		if(this.props.remote_relay_image_1){
 			var remote_relay_image_1 = relay_nc
@@ -368,20 +374,25 @@ class OperationValues extends Component{
 			var remote_relay_image_1 = relay_no
 		}
 
-		if(this.props.central_relay_image_2){
+		if(this.props.remote_relay_image_2){
 			var remote_relay_image_2 = relay_nc
 		}else{
 			var remote_relay_image_2 = relay_no
 		}
 
-
 		return (
 			<View style={{flexDirection:"row"}}>
 				<View>
 					{remote_relay_image_1}
+					<Text style={{textAlign:"center",fontSize:12}}>
+						Relay 1
+					</Text>
 				</View>
 				<View>
 					{remote_relay_image_2}
+					<Text style={{textAlign:"center",fontSize:12}}>
+						Relay 2
+					</Text>
 				</View>
 			</View>
 		)
@@ -429,6 +440,14 @@ class OperationValues extends Component{
 		)
 	}
 
+	doPrettyZeros(number){
+		if(number == "0"){
+			return "0x0000000000"
+		}else{
+			return "0x" + number
+		}
+	}
+
 	renderWiegandValues(wiegand_values){
 		return (
 			<View>
@@ -444,7 +463,7 @@ class OperationValues extends Component{
 						</View>
 						<View style={text_style}>
 							<Text>
-								{"0x" + parseInt(wiegand_values.wiegand_bytes, 2).toString(16) }
+								{this.doPrettyZeros(parseInt(wiegand_values.wiegand_bytes, 2).toString(16))}
 							</Text>
 						</View>
 					</View>

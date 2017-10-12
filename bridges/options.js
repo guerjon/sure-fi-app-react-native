@@ -7,7 +7,8 @@ import {
   	Alert,
 } from 'react-native'
 
-import {styles,first_color} from '../styles/index.js'
+import {styles,first_color,width} from '../styles/index.js'
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
 import { 
 	IS_EMPTY
@@ -27,14 +28,19 @@ const next_step = <Text style={styles.device_control_title_container}>NEXT STEP<
 
 const Option = params => {
 	return (
-		<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => params.callback()}>
-			<View style={styles.white_touchable_highlight_inner_container}>
-				<View style={styles.white_touchable_highlight_image_container}>
-					<Image source={params.image} style={styles.white_touchable_highlight_image}/>
+		<TouchableHighlight style={{width:width,backgroundColor:"white"}} onPress={() => params.callback()}>
+			<View style={{flexDirection:"row"}}>
+				<View style={{width:70}}>
+					<Image source={params.image} style={{width:60,height:60,margin:5}}/>
 				</View>
-				<View style={styles.white_touchable_text_container}>
-					<Text style={styles.white_touchable_text}>
+				<View style={{width:width-120,alignItems:"center",justifyContent:"center"}}>
+					<Text style={{color:"black",fontSize:28}}>
 						{params.name}
+					</Text>
+				</View>
+				<View style={{width:50,alignItems:"center",justifyContent:"center"}}>
+					<Text style={{fontSize:20,color:"rgba(10,10,10,0.3)"}}>
+						>
 					</Text>
 				</View>
 			</View>
@@ -242,11 +248,19 @@ class Options extends Component{
     }
 
     getInstructionalVideos(){
-    	return <Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
+
+    	return (
+    		<View>
+				<Text style={{textAlign:"center",fontSize:19,color:"black"}}>
+					ADDITIONAL OPTIONS
+				</Text>    		
+    			<Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
+    		</View>
+    	)
     }
 
     getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay.imageset/menu_relay.png')} name="Default settings" />
+    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay.imageset/menu_relay.png')} name="Default Settings" />
    	}
 
    	getSureFiChat(){
