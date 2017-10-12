@@ -3,7 +3,8 @@ const initialState = {
   relay_1_image_status : false,
   relay_2_image_status : false,
   relay_loading: true,
-  qs : "0000"
+  qs : "0000",
+  show_quality_dependes : false
 }
 
 export default function relayReducer (state = initialState, action) {
@@ -33,8 +34,14 @@ export default function relayReducer (state = initialState, action) {
         ...state,
         qs : action.qs
       }
+    case "SHOW_QUALITY_DEPENDES":
+      return {
+        ...state,
+        show_quality_dependes: action.show_quality_dependes
+      }
     case "RESET_RELAY_REDUCER":
       return initialState
+
     default:
       return state
   }

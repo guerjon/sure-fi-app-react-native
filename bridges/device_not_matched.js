@@ -66,7 +66,7 @@ class DeviceNotMatched extends Component {
     createInterval() {
         console.log("createInterval()")
         if (interval == 0) {
-            interval = setInterval(() => this.checkForDevice(), 2000)
+            interval = setInterval(() => this.checkForDevice(), 1000)
             console.log("interval created")
         } else {
             console.log("the interval can't be created it was created previosly")

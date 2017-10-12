@@ -62,7 +62,13 @@ class Relay extends Component{
 		switch(value){
 			case 0x02:
 				data.value.shift()
+				console.log("old_value",data.value);
+				
+
+
 				this.updateQsValues(data.value[0])
+
+				
 				break
 			case 0x18:
 				data.value.shift()
@@ -106,6 +112,14 @@ class Relay extends Component{
     	console.log("updateQsValues",value);
     	var binary_value = DEC2BIN(value)
     	console.log("bynay_value",binary_value);
+    	
+    	console.log("binary_value.substr(0,1)",binary_value.substr(0,1));
+
+    	if(binary_value.substr(3,1) == "0")
+    		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: false})
+    	else
+    		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: true})
+    		
 
     	this.props.dispatch({type: "SET_QS",qs : binary_value})
     	this.props.dispatch({type: "SET_RELAY_LOADING",relay_loading: false})
@@ -249,15 +263,62 @@ class Relay extends Component{
 		//we need change the value before save it!
 		var value = this.props.qs.substr(pos,1)
 		console.log("value before",value);
+		
 		if(value == "1")
 			value = "0"
 		else
 			value = "1"
 
-		var new_qs = this.props.qs.substr(0, pos) + value+ this.props.qs.substr(pos + value.length);
+		var new_qs = this.props.qs.substr(0, pos) + value + this.props.qs.substr(pos + value.length);
 				
+		if(pos == 3){
+			if(value == "1")
+				this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: true})
+			else
+				this.props.dispatch({type: "SHOW_QUALITY_DEPENDES", show_quality_dependes: false})
+		}
+
+		console.log("new_qs",new_qs);
+
 		this.props.dispatch({type: "SET_QS",qs: new_qs})
 
+	}
+
+	renderQualityDependes(){
+		
+
+		if(this.props.show_quality_dependes){
+			return (
+				<View>
+					<View style={styles.relay_option}>
+						<Switch 
+							onValueChange={slider_value => this.updateQs(2)} 
+							onTintColor={option_blue}
+							tintColor="orange"
+							value={this.props.qs.substr(2,1) == "1" ? true : false}
+						/>
+						<Text style={{marginLeft:20,fontSize:18}}>
+							Activate for All Messages
+						</Text>
+					</View>
+
+
+					<View style={styles.relay_option}>
+						<Switch 
+							onValueChange={slider_value => this.updateQs(0)} 
+							onTintColor={option_blue}
+							tintColor="orange"
+							value={this.props.qs.substr(0,1) == "1" ? true : false}
+						/>
+						<Text style={{marginLeft:20,fontSize:18}}>
+							Enable Long Duration
+						</Text>
+					</View>				
+				</View>
+			)
+		}
+
+		return null
 	}
 
 	render(){	
@@ -272,39 +333,18 @@ class Relay extends Component{
 			)
 		}
 
-		/*
-
-							<View style={{flexDirection:"row",marginHorizontal:20}}>
-								<TouchableHighlight 
-									style={{backgroundColor:success_green,width:width/2,marginVertical:20,marginHorizontal:10,height:40,alignItems:"center",justifyContent:"center",borderRadius:10}}
-									onPress={() => this.save()}
-								>
-									<Text style={{color:"white",fontWeight:'900'}}>
-										Save
-									</Text>
-								</TouchableHighlight>
-
-		*/
-
 		return(
 			<ScrollView style={styles.pairContainer}>
 				<Background>
 					<View style={{height: height}}>
-						<View style={{marginVertical:30,backgroundColor:"white"}}>
+						<View style={{justifyContent:"center",alignItems:"center",marginTop:30}}>
+							<Text style={{fontSize:20}}>
+								LED SETTINGS
+							</Text>
+						</View>
+						<View style={{marginBottom:30,backgroundColor:"white"}}>
 
-							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
-								<Switch 
-									onValueChange={slider_value => this.updateQs(0)} 
-									onTintColor={option_blue}
-									tintColor="orange"
-									value={this.props.qs.substr(0,1) == "1" ? true : false}
-								/>
-								<Text style={{marginLeft:20,fontSize:18}}>
-									Long Duration
-								</Text>
-							</View>
-
-							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+							<View style={styles.relay_option}>
 								<Switch 
 									onValueChange={slider_value => this.updateQs(1)} 
 									onTintColor={option_blue}
@@ -312,23 +352,11 @@ class Relay extends Component{
 									value={this.props.qs.substr(1,1) == "1" ? true : false}
 								/>
 								<Text style={{marginLeft:20,fontSize:18}}>
-									Status Indications
+									Active for Status Indications
 								</Text>
 							</View>
 
-							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
-								<Switch 
-									onValueChange={slider_value => this.updateQs(2)} 
-									onTintColor={option_blue}
-									tintColor="orange"
-									value={this.props.qs.substr(2,1) == "1" ? true : false}
-								/>
-								<Text style={{marginLeft:20,fontSize:18}}>
-									All Messages
-								</Text>
-							</View>
-
-							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
+							<View style={styles.relay_option}>
 								<Switch 
 									onValueChange={slider_value => this.updateQs(3)} 
 									onTintColor={option_blue}
@@ -341,20 +369,31 @@ class Relay extends Component{
 							</View>
 
 
-							<View style={{flexDirection:"row",marginVertical:5,marginHorizontal:20}}>
-								<Switch 
-									onValueChange={slider_value => this.updateSwitch(slider_value)} 
-									onTintColor={option_blue}
-									tintColor="orange"
-									value={this.props.slider_value > 0 ? true : false}
-								/>
-								<Text style={{marginLeft:20,fontSize:18}}>
-									Relay Defaults - {this.props.slider_value ? "ENABLED" : "DISABLED"} 
+							{this.renderQualityDependes()}
+
+						</View>
+						<View>
+							<View style={{alignItems:"center",justifyContent:"center"}}>
+								<Text style={{fontSize:20}}>
+									RELAY SETTINGS
 								</Text>
 							</View>
-							
-							{this.props.slider_value ? this.renderRelayOptions(this.props.slider_value) : null}	
-							
+							<View style={{backgroundColor:"white"}}>
+								<View style={styles.relay_option}>
+									<Switch 
+										onValueChange={slider_value => this.updateSwitch(slider_value)} 
+										onTintColor={option_blue}
+										tintColor="orange"
+										value={this.props.slider_value > 0 ? true : false}
+									/>
+									<Text style={{marginLeft:20,fontSize:18}}>
+										Relay Defaults - {this.props.slider_value ? "ENABLED" : "DISABLED"} 
+									</Text>
+								</View>
+								<View>
+									{this.props.slider_value ? this.renderRelayOptions(this.props.slider_value) : null}	
+								</View>
+							</View>
 						</View>
 					</View>
 				</Background>
@@ -370,7 +409,9 @@ const mapStateToProps = state => ({
 	relay_2_image_status : state.relayReducer.relay_2_image_status,
 	relay_loading : state.relayReducer.relay_loading,
 	qs : state.relayReducer.qs,
-	device : state.scanCentralReducer.central_device
+	show_quality_dependes : state.relayReducer.show_quality_dependes,
+	device : state.scanCentralReducer.central_device,
+
 });
 
 export default connect(mapStateToProps)(Relay);

@@ -258,6 +258,15 @@ export  const styles = StyleSheet.create({
       flexDirection:"row",
       alignItems:"center",
       justifyContent:"center"
+    },
+    relay_option: {
+      flexDirection:"row",
+      padding:10,
+      marginLeft:20,
+      borderBottomWidth: 0.2,
+      borderBottomColor: "gray",
+      alignItems:"center",
+
     }
 });
 
