@@ -27,22 +27,26 @@ class HeartbeatPeriod extends Component{
 					</View>
 					<View style={styles.row_style}>	
 						<Button text="2 min" active={this.props.current_value == 120} handleTouchButton={() => this.props.updateValue(120)}/>
+						<Button text="4 min" active={this.props.current_value == 240} handleTouchButton={() => this.props.updateValue(240)}/>
 						<Button text="5 min" active={this.props.current_value == 300} handleTouchButton={() => this.props.updateValue(300)}/>
 						<Button text="10 min" active={this.props.current_value == 600} handleTouchButton={() => this.props.updateValue(600)}/>
-						<Button text="15 min" active={this.props.current_value == 900} handleTouchButton={() => this.props.updateValue(900)}/>
+						
 					</View>
 					<View style={styles.row_style}>	
+						<Button text="15 min" active={this.props.current_value == 900} handleTouchButton={() => this.props.updateValue(900)}/>
 						<Button text="30 min" active={this.props.current_value == 1800} handleTouchButton={() => this.props.updateValue(1800)}/>
 						<Button text="1 hour" active={this.props.current_value == 3600} handleTouchButton={() => this.props.updateValue(3600)}/> 
 						<Button text="2 hours" active={this.props.current_value == 7200} handleTouchButton={() => this.props.updateValue(7200)}/>
-						<Button text="4 hours" active={this.props.current_value == 14400} handleTouchButton={() => this.props.updateValue(14400)}/>
+						
 					</View>
 					<View style={styles.row_style}>	
+						<Button text="4 hours" active={this.props.current_value == 14400} handleTouchButton={() => this.props.updateValue(14400)}/>
 						<Button text="8 hours" active={this.props.current_value == 28800} handleTouchButton={() => this.props.updateValue(28800)}/>
 						<Button text="12 hours" active={this.props.current_value == 43200} handleTouchButton={() => this.props.updateValue(43200)}/>
 					</View>
 				</View>
 			</View>	
+
 		);	
 	}
 }

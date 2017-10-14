@@ -68,12 +68,7 @@ class ForcePair extends Component{
     forcePair(){
     	let txUUID = HEX_TO_BYTES(this.remote_device_id)
     
-    	if(this.device.manufactured_data.hardware_type == "01")
-    		var type_of_device = 0x1
-    	else
-    		var type_of_device = 0x2
-
-    	WRITE_COMMAND(this.device.id,[0x20,type_of_device])
+    	WRITE_COMMAND(this.device.id,[0x20,0x01]) // 0x01 its for set false the origin
     	.then(() => {
     		WRITE_PAIRING(this.device.id,txUUID).then(() => {
     			
@@ -84,6 +79,8 @@ class ForcePair extends Component{
     			.then(response => {
 
 	    			this.device.manufactured_data.device_state = "0004"
+	    			this.device.manufactured_data.tx = this.remote_device_id;
+	    			
 	    			this.props.dispatch({
 	                    type: "CENTRAL_DEVICE_MATCHED",
 	                    central_device: this.device
@@ -92,6 +89,7 @@ class ForcePair extends Component{
 	                this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 4})
 
 	                this.props.dispatch({type:"HIDE_CAMERA"})
+	                this.props.setConnectionEstablished()
 	                this.props.navigator.dismissModal();
     			})
 

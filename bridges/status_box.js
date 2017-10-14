@@ -245,7 +245,7 @@ class StatusBox extends Component{
 	getSerialInfo(){
 		if(this.props.device.manufactured_data.hardware_type == "01"){
 			return (
-				<View style={{flexDirection:"row"}}>
+				<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
 					 					 	
 			 		<Text style={{marginRight:5}}>
 						Central Serial: {this.props.device.manufactured_data.device_id.toUpperCase()} 
@@ -372,7 +372,6 @@ class StatusBox extends Component{
 	
 		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
 		var switch_button =  this.getSwitchButton()
-		console.log("this.props.original_name",this.props.original_name);
 		/*console.log("this.props.device_name",this.props.device_name);
 		console.log("this.props.remote_device_name",this.props.remote_device_name);
 		*/

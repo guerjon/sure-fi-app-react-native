@@ -21,6 +21,7 @@ const initialState = {
   hopping_table : 0,
   action_from_disconnect : "",
   write_pair_result : false,
+  write_unpair_result: false,
   hardware_status : null,
   options_loaded : false,
   app_board_version : "",
@@ -34,7 +35,9 @@ const initialState = {
   deploy_disconnect: false,
   switch_disconnect : false,
   show_status_box : true,
-  original_name: ""
+  original_name: "",
+  show_disconnect_notification : true,
+  allow_notifications : true
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -164,6 +167,11 @@ export default function setupCentralReducer (state = initialState, action) {
         ...state,
         write_pair_result : action.write_pair_result
       }
+    case "SET_WRITE_UNPAIR_RESULT":
+      return {
+        ...state,
+        write_unpair_result: action.write_unpair_result
+      }
     case "SET_HARDWARE_STATUS":
       return {
         ...state,
@@ -233,6 +241,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         show_status_box : action.show_status_box
+      }
+    case "ALLOW_NOTIFICATIONS":
+      return{
+        ...state,
+        allow_notifications : action.allow_notifications
       }
     default:
       return state

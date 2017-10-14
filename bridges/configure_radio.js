@@ -118,10 +118,11 @@ class ConfigureRadio extends Component {
 			sfb_table_selected
 		} = this.props
 
-		let heart_hex_value =  heartbeat_period_selected.toString(16) 
-		
-		let heart_value = HEX_TO_BYTES(heart_hex_value)
 
+		let heart_hex_value =  heartbeat_period_selected.toString(16) 
+		console.log("heart_hex_value",heart_hex_value);
+		let heart_value = HEX_TO_BYTES(heart_hex_value)
+		console.log("heart_value",heart_value);
 
 
 		if(heart_value.length == 1){
@@ -166,10 +167,7 @@ class ConfigureRadio extends Component {
 				]			
 		}
 
-		console.log("spreading_factor_selected",spreading_factor_selected)
-		console.log("band_width_selected",band_width_selected);
 
-			console.log("data",data);
 		WRITE_COMMAND(
 			this.device.id,
 			data
@@ -179,8 +177,16 @@ class ConfigureRadio extends Component {
 		
 	}
 
+	bytesToHex(bytes) {
+	    for (var hex = [], i = 0; i < bytes.length; i++) {
+	        hex.push((bytes[i] >>> 4).toString(16));
+	        hex.push((bytes[i] & 0xF).toString(16));
+	    }
+	    return hex.join("");
+	}
+
 	handleCharacteristicNotification(data){
-		console.log("notification on configure_radio",data)
+		//console.log("notification on configure_radio",data)
 		var {dispatch} = this.props
 		var values = data.value
 		
@@ -188,16 +194,29 @@ class ConfigureRadio extends Component {
 		switch(values[0]){
 			case 0x08:
 				values.shift()
-				console.log("values",values.length);
+				console.log("updateHeartBeatPeriod",values[4],values[5]);
 				this.props.dispatch({type: "SET_RADIO_VALUES_LENGHT",radio_values_lenght : values.length})
+					
+				
+				var byte_1 = this.bytesToHex([values[4]])
+				var byte_2 = this.bytesToHex([values[5]])
 
+				if(byte_2.charAt(0) == "0")
+					byte_2 = byte_2.charAt(1)
+
+
+ 				var byte_hex = byte_1 + byte_2
+
+				var heart = parseInt(byte_hex,16)
+
+				console.log("heart",heart);
 				if(this.props.radio_values_lenght == 9){
 					
 					this.updateBandWidth(values[1])
 					this.updateSpreadingFactor(values[0])
 					this.updatePowerValue(values[2])
 					this.updateRetryCount(values[3])
-					this.updateHeartBeatPeriod(TWO_BYTES_TO_INT(values[4],values[5]))
+					this.updateHeartBeatPeriod(heart)
 					this.updateAcknowledments(values[6])
 					this.updateHoppingTable(values[7])
 					this.updateSFBTable(values[8])
@@ -212,7 +231,7 @@ class ConfigureRadio extends Component {
 					this.updateSpreadingFactor(values[0])
 					this.updatePowerValue(values[2])
 					this.updateRetryCount(values[3])
-					this.updateHeartBeatPeriod(TWO_BYTES_TO_INT(values[4],values[5]))
+					this.updateHeartBeatPeriod(heart)
 					this.updateAcknowledments(values[6])
 					this.updateHoppingTable(values[7])
 
@@ -278,7 +297,6 @@ class ConfigureRadio extends Component {
 			color:"white"
 		}
 
-		console.log("this.props.",this.props.hopping_table_selected)
 
 		if(this.props.page_status == "loaded"){
 			return (
@@ -303,12 +321,18 @@ class ConfigureRadio extends Component {
 							<Acknowledments current_value={this.props.acknowledments_selected} updateValue={(value) => this.updateAcknowledments(value)}/>
 						</View>
 						<View style={{backgroundColor:"white",marginTop:10}}>
-							<HoppingTable current_value={this.props.hopping_table_selected} checkbox_selected={this.props.checkbox_selected} />
+							<HoppingTable 
+								current_value={this.props.hopping_table_selected}
+								text_input_editable = {this.props.text_input_editable} 
+								checkbox_selected={this.props.checkbox_selected} />
 						</View>
 						{this.props.radio_values_lenght == 9 && 
 							(
 								<View>
-									<SFBTable current_value={this.props.sfb_table_selected} updateValue={(value) => this.updateSFBTable(value)}/>
+									<SFBTable 
+										current_value={this.props.sfb_table_selected} 
+										updateValue={(value) => this.updateSFBTable(value)}
+									/>
 								</View>
 							)
 						}
@@ -333,6 +357,7 @@ const mapStateToProps = state => ({
   	sfb_table_selected : state.configureRadioCentralReducer.sfb_table_selected,
     radio_values_lenght : state.configureRadioCentralReducer.radio_values_lenght,
     checkbox_selected : state.configureRadioCentralReducer.checkbox_selected,
+    text_input_editable : state.configureRadioCentralReducer.text_input_editable,
     device: state.scanCentralReducer.central_device,
 });
 

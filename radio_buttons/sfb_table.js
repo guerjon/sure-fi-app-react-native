@@ -23,7 +23,7 @@ class SFBTable extends Component{
 	render(){	
 		return(
 			<View>
-				<Title name="SFBTable" type=""/>
+				<Title name="SFB Table" type=""/>
 				<View style={styles.row_style}>
 					<Button text="Disabled" active={this.props.current_value == 0} handleTouchButton={(text) => this.props.updateValue(0)}/>
 					<Button text="Enabled" active={this.props.current_value == 1} handleTouchButton={(text) => this.props.updateValue(1)}/>

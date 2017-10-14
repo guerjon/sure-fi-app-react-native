@@ -99,11 +99,10 @@ class Relay extends Component{
 		}
 	}
 
-
     componentWillMount() {
     	this.props.dispatch({type :"RESET_RELAY_REDUCER"});
     	this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification)
-    	this.getRelayValues() 
+    	setTimeout(() => this.getRelayValues(),1000)
     }
 
     componentWillUnmount() {

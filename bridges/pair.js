@@ -57,9 +57,11 @@ class PairBridge extends Component{
 		this.central_device = props.device
 		this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
 		this.devices = []
-		this.scanDevices()
 	}
 
+    componentWillMount() {
+        this.scanDevices()
+    }
 
 	componentDidMount() {
 		this.props.dispatch({type: "RESET_REMOTE_REDUCER"})
@@ -88,24 +90,6 @@ class PairBridge extends Component{
           console.log("error on getManufacturedData device is null or 0")
         }
         return device;
-    }
-
-    scanDevices(){
-        console.log("scanRemoteDevices()")
-        var devices = this.devices
-        this.fast_manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
-            if(error){
-                return
-            }
-            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                
-                if (!FIND_ID(devices, device.id)) {   
-                    var data = this.getManufacturedData(device)
-                    devices.push(data)
-                    this.devices = devices
-                }                
-            }
-        })
     }
 
     goToInsertIDModal(){
@@ -155,6 +139,28 @@ class PairBridge extends Component{
     	this.fast_manager.stopDeviceScan();
     }
 
+    scanDevices(){
+        console.log("scanRemoteDevices()")
+        var devices = this.devices
+        this.fast_manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
+            if(error){
+                console.log("error on scan devices",error)
+                return
+            }
+
+            console.log("device.id",device.id);
+            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+
+                if (!FIND_ID(devices, device.id)) {   
+                    var data = this.getManufacturedData(device)
+                    console.log("device.id",data.manufactured_data.device_id);
+                    devices.push(data)
+                    this.devices = devices
+                }                
+            }
+        })
+    }
+
     pair(){
     	console.log("pair()")
 		var {remote_device,dispatch} = this.props
@@ -163,9 +169,12 @@ class PairBridge extends Component{
 
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
-    	this.fast_manager.stopDeviceScan();
+    	
 
-       this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
+        if(!this.props.debug_mode_status)
+            this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
+
+        this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
 
 	    WRITE_PAIRING(this.central_device.id,remote_id_bytes)
 			.then(response => {
@@ -173,22 +182,27 @@ class PairBridge extends Component{
 		    	.then(response => {	
 		    		PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
 		    		.then(response => {
+                        
+                        this.fast_manager.stopDeviceScan();
 
 						this.central_device.manufactured_data.tx = txUUID
 						this.central_device.manufactured_data.device_state = "0004";
 						this.central_device.writePairResult = true
-
-			    		this.props.dispatch({
+                        
+                        this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
+			    		
+                        this.props.dispatch({
 		                    type: "CENTRAL_DEVICE_MATCHED",
 		                    central_device: this.central_device
 		                });
                         
                         if(this.props.debug_mode_status){
-                           setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000) 
-                           this.props.navigator.dismissModal();
-                        }else{
-                            this.props.navigator.dismissModal();
+                            this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+                            setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000)
+                            setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
                         }
+
+                        this.props.navigator.dismissModal();
 		               
 	    			}).catch(error => console.log(error))
 	    		}).catch(error => console.log("error",error))
@@ -225,7 +239,7 @@ class PairBridge extends Component{
         var matched_device = []
 
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
-                
+        
             var matched_devices = MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
 
             if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are REMOTE i.e hardware_type == 01 return true
@@ -250,7 +264,7 @@ class PairBridge extends Component{
                         }else{
                            Alert.alert(
                             "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.",
+                            "Device " + device_id.toUpperCase() +" is not on pairing mode.",
                             [
                                 {text: "Accept", onPress: () => this.showCamera()}
                             ],

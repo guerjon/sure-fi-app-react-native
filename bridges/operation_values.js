@@ -6,7 +6,8 @@ import {
   	ScrollView,
   	NativeModules,
   	NativeEventEmitter,
-  	ActivityIndicator
+  	ActivityIndicator,
+  	Alert
 } from 'react-native'
 import {styles,first_color,width,height} from '../styles/index.js'
 import { connect } from 'react-redux';
@@ -42,6 +43,12 @@ function bytesToHex(bytes) {
 
 const Item = params => {
 	console.log("params",params.snr);
+	if(params.message_success){
+		var text_style = {color:"green"} 
+	}else{
+		var text_style = {color: "red"}
+	}
+
 	return (
 		<View>
 			<Text style={styles.device_control_title}>
@@ -55,7 +62,7 @@ const Item = params => {
 						</Text>
 					</View>
 					<View style={{height:30,backgroundColor:"white",width:width/2,alignItems:"center",justifyContent:"center"}}>
-						<Text>
+						<Text style={text_style}>
 							{params.success}
 						</Text>
 					</View>
@@ -118,8 +125,6 @@ class OperationValues extends Component{
     }
 
 	handleCharacteristicNotification(data){
-		console.log("handleCharacteristicNotification()",data.value);
-			
 			var device = this.device;
 			switch(data.value[0]){
 				case 0x19:
@@ -276,6 +281,7 @@ class OperationValues extends Component{
 	        this.maxRetries = parseInt(values_hex.substr(18,2), 16)
 	        this.rssiValue = 0 - (parseInt(values_hex.substr(20,4), 16) - 20)
 	        this.snrValue = 0 - (parseInt(values_hex.substr(24,2) - 20), 16)
+	        console.log("txSuccess",this.txSuccess);
 	        this.props.dispatch(
 	        	{
 	        		type:"SET_TRANSMIT_VALUES",
@@ -510,13 +516,22 @@ class OperationValues extends Component{
 
 	renderTransmitValues(transmit_values){
 		//console.log("transmit_values",transmit_values);
+		if(transmit_values.txSuccess){
+			var message = "Success " + transmit_values.numRetries + " of " + transmit_values.maxRetries + " Retries. " ;
+			var message_success = true
+		}else{
+			var message = "Failure " + transmit_values.numRetries  + " of " + transmit_values.maxRetries + " Retries. ";
+			var message_success = false
+		}
+
 		return(
 			<View>
 				<Item 
 					title="TRANSMIT VALUES" 
-					success={transmit_values.txSuccess == 1 ? "Success" : ("Failure " + transmit_values.numRetries + " of " + transmit_values.maxRetries + " Retries ") } 
+					success={message} 
 					rssi={transmit_values.rssiValue + " dBm"}
 					snr={transmit_values.snrValue + " dBm"} 
+					message_success = {message_success}
 				/>
 			</View>						
 		)

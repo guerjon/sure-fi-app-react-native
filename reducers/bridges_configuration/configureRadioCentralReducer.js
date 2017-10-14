@@ -9,6 +9,7 @@ const initialState = {
 	hopping_table_selected :null,
 	sfb_table_selected : null,
 	radio_values_lenght : 8,
+	text_input_editable : false
 }
 
 export default function configureRadioCentralReducer (state = initialState, action) {
@@ -65,6 +66,11 @@ export default function configureRadioCentralReducer (state = initialState, acti
 	    	return{
 	    		...state,
 	    		checkbox_selected : action.checkbox_selected
+	    	}
+	    case "TEXT_INPUT_EDITABLE":
+	    	return{
+	    		...state,
+	    		text_input_editable: action.text_input_editable
 	    	}
 	    case "SET_RADIO_VALUES_LENGHT":
 	    	return {

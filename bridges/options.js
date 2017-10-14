@@ -5,6 +5,8 @@ import {
   	Image,
   	TouchableHighlight,
   	Alert,
+  	TouchableNativeFeedback,
+  	TouchableWithoutFeedback
 } from 'react-native'
 
 import {styles,first_color,width} from '../styles/index.js'
@@ -28,23 +30,25 @@ const next_step = <Text style={styles.device_control_title_container}>NEXT STEP<
 
 const Option = params => {
 	return (
-		<TouchableHighlight style={{width:width,backgroundColor:"white"}} onPress={() => params.callback()}>
-			<View style={{flexDirection:"row"}}>
-				<View style={{width:70}}>
-					<Image source={params.image} style={{width:60,height:60,margin:5}}/>
+		<View  style={{width:width,backgroundColor:"white"}}>
+			<TouchableWithoutFeedback onPress={() => params.callback()}>
+				<View style={{flexDirection:"row"}}>
+					<View style={{width:70}}>
+						<Image source={params.image} style={{width:60,height:60,margin:5}}/>
+					</View>
+					<View style={{width:width-120,alignItems:"center",justifyContent:"center"}}>
+						<Text style={{color:"black",fontSize:28}}>
+							{params.name}
+						</Text>
+					</View>
+					<View style={{width:50,alignItems:"center",justifyContent:"center"}}>
+						<Text style={{fontSize:20,color:"rgba(10,10,10,0.3)"}}>
+							>
+						</Text>
+					</View>
 				</View>
-				<View style={{width:width-120,alignItems:"center",justifyContent:"center"}}>
-					<Text style={{color:"black",fontSize:28}}>
-						{params.name}
-					</Text>
-				</View>
-				<View style={{width:50,alignItems:"center",justifyContent:"center"}}>
-					<Text style={{fontSize:20,color:"rgba(10,10,10,0.3)"}}>
-						>
-					</Text>
-				</View>
-			</View>
-		</TouchableHighlight>
+			</TouchableWithoutFeedback>
+		</View>
 	)    		
 }
 
@@ -60,9 +64,11 @@ class Options extends Component{
 
 	showAlertUnpair(){
 		var {device} = this.props
+		let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
+
 		Alert.alert(
 			"Continue UnPairing",
-			"Are you sure you wish to UnPair the Following Sure-Fi Devices: \n\n" + "Central : " + device.manufactured_data.device_id.toUpperCase() +" \n From \n" + "Remote : " + device.manufactured_data.tx.toUpperCase(),
+			"Are you sure you wish to UnPair the Following Sure-Fi Device: \n\n" + "ID : " + device.manufactured_data.device_id.toUpperCase(),
 			[
 				{text : "Cancel", onPress:() => console.log("Cancel unpairing")},
 				{text : "UNPAIR", onPress:() => this.unPair()}
@@ -71,13 +77,16 @@ class Options extends Component{
 	}
 
     unPair() {
-    	console.log("unPair999()",this.device.manufactured_data.device_id)
+    	console.log("unPair123----()",this.device.manufactured_data.device_id)
 
-	    this.props.dispatch({
-	    	type: "SET_UNPAIR_DISCONNECT",
-	    	unpair_disconnect: true
-	    })
+	    if(!this.props.debug_mode_status){
+		    this.props.dispatch({
+		    	type: "SET_UNPAIR_DISCONNECT",
+		    	unpair_disconnect: true
+		    })
+		}
 
+		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
 
 		WRITE_UNPAIR(this.device.id).then(response => {
 			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
@@ -87,7 +96,9 @@ class Options extends Component{
 			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,state)
 			.then(response => {
 				PUSH_CLOUD_STATUS(this.device.manufactured_data.tx,remote_state)
-				//console.log("resopnse",response);
+				
+				
+
 				this.device.manufactured_data.tx = "000000"
 				this.device.manufactured_data.device_state = "0001"
 				this.device.writeUnpairResult = true
@@ -95,19 +106,18 @@ class Options extends Component{
 		            type: "CENTRAL_DEVICE_MATCHED",
 		            central_device: this.device,
 		        });
-
+		    	this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: true})
 		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
 
-                console.log("this.props.debug_mode_status",this.props.debug_mode_status);
 
                 if(this.props.debug_mode_status){
-					this.props.readStatusOnDevice(this.device)
-					setTimeout(() => this.props.readStatusOnDevice(this.device),3000)
-                }		        
+                	this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+                	this.props.readStatusAfterUnpair(this.device)
+                }
 			})
-			.catch(error => Alert.alert("Error",error))
+			.catch(error => console.log("error on unPair() 1",error))
 
-		}).catch(error => console.log(error))
+		}).catch(error => console.log("error on Unpair 2",error ))
     }
 
     forceUnPair(){
@@ -133,7 +143,9 @@ class Options extends Component{
 	                    central_device: device
 	                });
 					
-		    		this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 1})
+					this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 1})
+		    		this.props.setConnectionEstablished()
+		    		
 
 				})
 				.catch(error => console.log("error",error))

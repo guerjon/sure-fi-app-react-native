@@ -105,6 +105,7 @@ class MainScreen extends Component {
   	}
 
   	componentWillMount() {
+  		console.log("2rfdsfdsfds");
   		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
   		this.checkRegister()
@@ -317,7 +318,7 @@ class MainScreen extends Component {
 			this.props.navigator.push({
 				screen : "Bridges",
 				title: "Scan QR Code",
-				animationType: "slide-up",
+				animated: false,
 		        rightButtons: [
 		                {
 		                    icon: require('./images/bluetooth-icon.png'),
@@ -340,6 +341,7 @@ class MainScreen extends Component {
 		this.props.navigator.push({
 			screen : "Videos",
 			title : "Instruction Videos",
+			animated: false,
 			animationType: 'slide-up'
 		})
 	}

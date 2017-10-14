@@ -24,14 +24,14 @@ class SpreadingFactor extends Component{
 				<Title name="Spreading Factor" type=""/>
 				<View>
 					<View style={styles.row_style}>
-						<Button text="SF7" active={this.props.current_value == 7} handleTouchButton={() => this.props.updateValue(7)}/>
-						<Button text="SF8" active={this.props.current_value == 8} handleTouchButton={() => this.props.updateValue(8)}/>
-						<Button text="SF9" active={this.props.current_value == 9} handleTouchButton={() => this.props.updateValue(9)}/>
+						<Button text="SF7" active={this.props.current_value == 1} handleTouchButton={() => this.props.updateValue(1)}/>
+						<Button text="SF8" active={this.props.current_value == 2} handleTouchButton={() => this.props.updateValue(2)}/>
+						<Button text="SF9" active={this.props.current_value == 3} handleTouchButton={() => this.props.updateValue(3)}/>
 					</View>
 					<View style={styles.row_style}>	
-						<Button text="SF10" active={this.props.current_value == 10} handleTouchButton={() => this.props.updateValue(10)}/>
-						<Button text="SF11" active={this.props.current_value == 11} handleTouchButton={() => this.props.updateValue(11)}/>
-						<Button text="SF12" active={this.props.current_value == 12} handleTouchButton={() => this.props.updateValue(12)}/>
+						<Button text="SF10" active={this.props.current_value == 4} handleTouchButton={() => this.props.updateValue(4)}/>
+						<Button text="SF11" active={this.props.current_value == 5} handleTouchButton={() => this.props.updateValue(5)}/>
+						<Button text="SF12" active={this.props.current_value == 6} handleTouchButton={() => this.props.updateValue(6)}/>
 					</View>
 				</View>
 			</View>	

@@ -60,7 +60,8 @@ class DeviceNotMatched extends Component {
     }
 
     componentWillUnmount() {
-      this.eraseInterval()
+        this.eraseInterval()
+        clearInterval(interval)
     }
 
     createInterval() {
@@ -203,15 +204,24 @@ class DeviceNotMatched extends Component {
 
     handleDeviceSelected(){
 		
-		var matched_device = this.matched_devices[0]
-        
-        this.props.dispatch({
-            type: "CENTRAL_DEVICE_MATCHED",
-            central_device: matched_device
-        });
+        if(this.matched_devices){
+            if(this.matched_devices.length > 0){
 
-        this.props.navigator.dismissModal()
-        this.props.goToDeviceControl(matched_device)
+                var matched_device = this.matched_devices[0]
+                
+                this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: matched_device
+                });
+
+                this.props.navigator.dismissModal()
+                this.props.goToDeviceControl(matched_device)            
+            }else{
+                this.props.navigator.dismissModal()    
+            }
+        }else{
+            this.props.navigator.dismissModal()    
+        }
     }
 
 
