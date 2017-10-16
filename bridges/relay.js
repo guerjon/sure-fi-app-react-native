@@ -106,7 +106,7 @@ class Relay extends Component{
     }
 
     componentWillUnmount() {
-      this.props.activateHandleCharacteristic()
+    	this.handleCharacteristic.remove()
     }
 
     updateRelayValues(values){

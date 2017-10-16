@@ -167,6 +167,7 @@ class ConfigureRadio extends Component {
 				]			
 		}
 
+		this.props.dispatch({type: "UPDATE_HOPPING_TABLE_SELECTED",hopping_table_selected:parseInt(hopping_table_selected)})
 
 		WRITE_COMMAND(
 			this.device.id,
@@ -256,11 +257,11 @@ class ConfigureRadio extends Component {
 	}
 
 	updateSpreadingFactor(spreading_factor_selected){
-		this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor_selected :spreading_factor_selected})
+		this.props.dispatch({type: "UPDATE_SPREADING_FACTOR_SELECTED",spreading_factor_selected :spreading_factor_selected})
 	}
 
 	updateBandWidth(band_width_selected){
-		this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width_selected:band_width_selected})
+		this.props.dispatch({type: "UPDATE_BAND_WIDTH_SELECTED",band_width_selected:band_width_selected})
 	}
 
 	updateRetryCount(retry_count_selected){
@@ -280,7 +281,7 @@ class ConfigureRadio extends Component {
 	}
 
 	updateHoppingTable(hopping_table_selected){
-		this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table_selected:hopping_table_selected})
+		this.props.dispatch({type: "UPDATE_HOPPING_TABLE_SELECTED",hopping_table_selected:hopping_table_selected})
 	}
 
 	render(){

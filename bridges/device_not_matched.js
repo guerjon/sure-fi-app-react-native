@@ -14,7 +14,8 @@ import {
     styles,
     first_color,
     height,
-    width
+    width,
+    option_blue
 } from '../styles/index.js'
 import {
     connect
@@ -243,7 +244,20 @@ class DeviceNotMatched extends Component {
 				<View style={{height:height}}>
 				  	<View>
 						<Text style={styles.device_control_title}>AVAILABLE DOCUMENTS</Text>
-						<WhiteRowLink callback={() => this.goToAccessControlInstructions()}  name="Access Control Bridge Instructions"/>
+                        <TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => this.goToAccessControlInstructions()}>
+                            <View style={{padding:15,flexDirection:"row"}}>
+                                <View style={{width:(width * .75),justifyContent:"center"}}>
+                                    <Text style={{fontSize:16,color:option_blue}}>
+                                        Access Control Bridge Instructions
+                                    </Text>
+                                </View>
+                                <View>
+                                    <Text style={{fontSize:20,alignItems:"flex-end",justifyContent:"center",alignItems:"center"}}>
+                                        >
+                                    </Text>                                
+                                </View>
+                            </View>
+                        </TouchableHighlight>
 				  	</View>
 				  	<View>
 				  		{this.renderMessage()}

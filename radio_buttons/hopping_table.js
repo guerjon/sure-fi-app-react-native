@@ -28,11 +28,14 @@ class HoppingTable extends Component{
 	  		console.log("no etra?")
 	  		this.props.dispatch({type:"UPDATE_CHECKBOX_SELECTED",checkbox_selected:0})
 	  		this.props.dispatch({type: "TEXT_INPUT_EDITABLE",text_input_editable:false})
+	  	}else{
+	  		this.props.dispatch({type:"UPDATE_CHECKBOX_SELECTED",checkbox_selected:1})
+	  		this.props.dispatch({type: "TEXT_INPUT_EDITABLE",text_input_editable:true})
 	  	}
 	}
 
 	updateHoppingTable(hopping_table_selected){
-		this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table_selected:hopping_table_selected})
+		this.props.dispatch({type: "UPDATE_HOPPING_TABLE_SELECTED",hopping_table_selected:hopping_table_selected})
 	}
 
 	handleCheckBoxSelected(checkbox_selected){

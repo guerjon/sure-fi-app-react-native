@@ -55,7 +55,6 @@ class Bridges extends Component{
     constructor(props) {
         super(props);
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
-        this.stared_scanning = false
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
@@ -80,16 +79,40 @@ class Bridges extends Component{
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
-
+        this.createScan()
+        this.startScanning()
     }
 
     componentWillUnmount() {
-        this.stopScan()
+        this.deleteScan()
+    }
+
+    deleteScan(){
+        console.log("deleteScan()")
+        if(this.manager != null){
+            this.stopScan()
+            this.manager.destroy()
+            this.manager = null;                        
+        }else{
+            console.log("Delete scan can't delete the scan because it is null.")
+        }
     }
 
     stopScan(){
-        this.manager.stopDeviceScan();
-        this.manager.destroy()
+        if(this.manager){
+            this.manager.stopDeviceScan()
+        }else{
+            console.log("stopScan() can't stop the scan because the scan object is null",text)
+        }
+    }
+
+    createScan(){
+        console.log("createScan()")
+        if(!this.manager){
+            this.manager = new BleManager();
+        }else{
+            console.log("createScan can't create a new scan previous exits")
+        }
     }
 
     stopWithoutDestroy(){
@@ -235,11 +258,8 @@ class Bridges extends Component{
     goToDeviceControl(device){
         
         this.stopScan()
-        this.hideCamera()      
-/*        this.props.navigator.dismissModal({
-            animationType: 'slide-down'
-        })
-*/
+        this.hideCamera()
+
         console.log("this.props.user_data",this.props.user_data);
 
         if(this.props.user_data){
@@ -276,17 +296,52 @@ class Bridges extends Component{
     }
 
     restartAll(){
+        console.log("restartAll()")
         var {dispatch} = this.props 
         dispatch({type: "RESET_CENTRAL_REDUCER"})
         dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         dispatch({type: "RESET_PAIR_REDUCER"})
         dispatch({type: "NO_DEVICE_FOUND"})
+
         this.showCamera()
-        this.startScanning()
+
+        setTimeout(() => this.startScanning(),2000) 
 
     }
 
+    startScanning(){
+        console.log("startScanning(1)")
+        
+        var devices = this.props.devices
+        
+
+        if(this.manager){
+            this.manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
+                
+                if(error){
+                    Alert.alert("Error",error.message)
+                    return
+                }
+                if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+                    //console.log("device",device.id);
+                    if (!FIND_ID(devices, device.id)) {
+                        
+                        var data = this.getManufacturedData(device)
+                        devices.push(data)
+
+                        this.devices = devices
+                        this.remote_devices = this.filterRemoteDevices(devices)
+                        this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
+                    }                
+                }
+            })            
+        }else{
+            console.log("startScanning() can't start the scann the scan object its empty")
+        }
+    }    
+
     showCamera(){
+        console.log("showCamera()")
         this.props.dispatch({type:"SHOW_CAMERA",show_camera: true})
     }
 
@@ -316,36 +371,6 @@ class Bridges extends Component{
             }
         })
     }   
-
-    startScanning(){
-        console.log("startScanning(1)")
-        
-        var devices = this.props.devices
-        
-        this.manager = new BleManager();
-
-        this.stared_scanning = true
-        
-        this.manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
-            
-            if(error){
-                Alert.alert("Error",error.message)
-                return
-            }
-            if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                //console.log("device",device.id);
-                if (!FIND_ID(devices, device.id)) {
-                    
-                    var data = this.getManufacturedData(device)
-                    devices.push(data)
-
-                    this.devices = devices
-                    this.remote_devices = this.filterRemoteDevices(devices)
-                    this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
-                }                
-            }
-        })
-    }
 
     filterRemoteDevices(devices){
         let remote_revices = devices.filter(device => {

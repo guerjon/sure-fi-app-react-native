@@ -22,12 +22,12 @@ export default function configureRadioCentralReducer (state = initialState, acti
 	        	...state,
 	        	power_selected : action.power_selected,
 	      	}
-	    case "UPDATE_SPREADING_FACTOR":
+	    case "UPDATE_SPREADING_FACTOR_SELECTED":
 	      	return {
 	        	...state,
 	        	spreading_factor_selected : action.spreading_factor_selected,
 	      	}
-	    case "UPDATE_BAND_WIDTH":
+	    case "UPDATE_BAND_WIDTH_SELECTED":
 	      	return {
 	        	...state,
 	        	band_width_selected : action.band_width_selected
@@ -52,7 +52,7 @@ export default function configureRadioCentralReducer (state = initialState, acti
 	    		...state,
 	    		page_status : action.page_status
 	    	}      
-	    case "UPDATE_HOPPING_TABLE":
+	    case "UPDATE_HOPPING_TABLE_SELECTED":
 	    	return {
 	    		...state,
 	    		hopping_table_selected : action.hopping_table_selected
