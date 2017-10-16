@@ -171,7 +171,7 @@ class DeviceNotMatched extends Component {
     	console.log("renderDeviceNotFound()");
     	
 		return (
-			<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
+			<View style={{backgroundColor:"white",flexDirection:"row"}}>
 			  <View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
 				<Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
 			  </View>
@@ -189,7 +189,7 @@ class DeviceNotMatched extends Component {
     	console.log("renderDeviceFound()");
     	return(
 			<TouchableHighlight onPress={() => this.handleDeviceSelected()}>
-				<View style={{marginVertical:30,backgroundColor:"white",flexDirection:"row"}}>
+				<View style={{backgroundColor:"white",flexDirection:"row"}}>
 				  	<View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
 						<Image source={require('../images/menu_success.imageset/menu_success.png')} style={{width:50,height:50,margin:10}}/>
 				  	</View>
@@ -242,6 +242,9 @@ class DeviceNotMatched extends Component {
         return (
 	        <Background>
 				<View style={{height:height}}>
+                    <View>
+                        {this.renderMessage()}
+                    </View>
 				  	<View>
 						<Text style={styles.device_control_title}>AVAILABLE DOCUMENTS</Text>
                         <TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => this.goToAccessControlInstructions()}>
@@ -258,9 +261,6 @@ class DeviceNotMatched extends Component {
                                 </View>
                             </View>
                         </TouchableHighlight>
-				  	</View>
-				  	<View>
-				  		{this.renderMessage()}
 				  	</View>
 				</View>
 	  		</Background>

@@ -325,15 +325,18 @@ class SetupCentral extends Component{
 		let manufactured_data = device.manufactured_data.security_string
 		IS_CONNECTED(device.id)
 		.then(response => {
-			if(!response)
+			if(!response){
+				console.log("response 1")
 				SlowBleManager.connect(device.id)
 				.then(response => console.log("response connect()",response))
 				.catch(error => {
 					console.log("error on connect()",error)
 					this.eraseInterval();
 				} )
-			else
+			}else{
+				console.log("response 2")
 				this.handleConnectedDevice()
+			}
 
 		})
 		.catch(error => console.log("error on connect()",error))
@@ -423,8 +426,6 @@ class SetupCentral extends Component{
 		})
 	}
 
-	
-
     handleConnectedDevice(){
 
     	var state = this.device.manufactured_data.device_state.slice(-2)
@@ -452,7 +453,6 @@ class SetupCentral extends Component{
     setConnectionEstablished(){
     	console.log("setConnectionEstablished()")
 		
-
 		if(this.props.pair_disconnect || this.props.unpair_disconnect){
     		
 
@@ -553,10 +553,6 @@ class SetupCentral extends Component{
     		
     	}else if(this.props.manual_disconnect){
     		console.log("entra aqui 3 - manual");
-    		/*this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
-			this.props.dispatch({
-				type : "DISCONNECT_CENTRAL_DEVICE"
-			})*/
 
 		}else if(this.props.deploy_disconnect){
 			console.log("entra aqui 4 - deploy");
@@ -564,6 +560,7 @@ class SetupCentral extends Component{
     	}
     	else if(this.props.switch_disconnect){
     		console.log("entra aqui - 5");
+
     		this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
     		
     		if(this.props.debug_mode_status)
