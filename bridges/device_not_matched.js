@@ -215,13 +215,13 @@ class DeviceNotMatched extends Component {
                     central_device: matched_device
                 });
 
-                this.props.navigator.dismissModal()
+                this.props.navigator.pop()
                 this.props.goToDeviceControl(matched_device)            
             }else{
-                this.props.navigator.dismissModal()    
+                this.props.navigator.pop()    
             }
         }else{
-            this.props.navigator.dismissModal()    
+            this.props.navigator.pop()    
         }
     }
 

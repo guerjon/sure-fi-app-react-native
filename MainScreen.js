@@ -29,7 +29,6 @@ import { StackNavigator } from 'react-navigation';
 import Coverflow from 'react-native-coverflow'
 import {styles} from './styles'
 import { connect } from 'react-redux';
-import RNFirebase from 'react-native-firebase'
 import { NavigationActions } from 'react-navigation'
 import ActivityIndicator from './helpers/centerActivityIndicator'
 import Background from './helpers/background'

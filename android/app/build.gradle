@@ -98,7 +98,7 @@ android {
         minSdkVersion 18
         targetSdkVersion 23
         versionCode 23
-        versionName "1.23"
+        versionName "1.23 "
         ndk {   
             abiFilters "armeabi-v7a", "x86"
         }
@@ -161,13 +161,10 @@ dependencies {
     compile 'com.google.android.gms:play-services-maps:11.0.0'
     
     compile project(':react-native-youtube')
-    //compile project(':react-native-sms')
-    compile project(':react-native-smart-barcode')
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':react-native-randombytes')
     compile project(':react-native-keychain')
     compile project(':react-native-image-to-base64')
-    compile project(':react-native-firebase')
     compile project(':react-native-vector-icons')
     compile project(':react-native-fetch-blob')
     compile project(':react-native-camera')

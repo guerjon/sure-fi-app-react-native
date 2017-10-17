@@ -108,14 +108,19 @@ class PairBridge extends Component{
     showAlertConfirmation(remote_device_id){
   
         var remote_device_id = remote_device_id ? remote_device_id : this.props.remote_device_id;
-
-    	let central_id = this.central_device.manufactured_data.hardware_type == "01" ? remote_device_id :  this.central_device.manufactured_data.device_id 
-    	let remote_id = this.central_device.manufactured_data.hardware_type == "02" ? this.central_device.manufactured_data.device_id : remote_device_id
     	
+        if(this.central_device.manufactured_data.hardware_type == "01"){
+            var central_id = this.central_device.manufactured_data.device_id
+            var remote_id = remote_device_id
+        }else{
+            var central_id = remote_device_id
+            var remote_id = this.central_device.manufactured_data.device_id
+        }
+
         this.props.dispatch({type: "HIDE_REMOTE_CAMERA"})
     	Alert.alert(
     		"Continue Pairing",
-    		"Are you sure you wish to Pair the following Sure-Fi Devices: \n \n" + "Central : " + central_id + "\n\n" + " Remote : " + remote_id,
+    		"Are you sure you wish to Pair with the following Sure-Fi devices: \n \n" + "Central : " + central_id + "\n\n" + " Remote : " + remote_id,
     		[
     		 	
     		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
@@ -132,7 +137,7 @@ class PairBridge extends Component{
             type: "CENTRAL_DEVICE_MATCHED",
             central_device: this.central_device
         });
-		this.props.navigator.dismissModal()    	
+		this.props.navigator.pop()    	
     }
 
     componentWillUnmount() {
@@ -202,7 +207,7 @@ class PairBridge extends Component{
                             setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
                         }
 
-                        this.props.navigator.dismissModal();
+                        this.props.navigator.pop();
 		               
 	    			}).catch(error => console.log(error))
 	    		}).catch(error => console.log("error",error))

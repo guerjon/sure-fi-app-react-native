@@ -77,9 +77,6 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
         DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
         UUID uuid = device_uuid.getDeviceUuid();
 
-        MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
-        String token = service.getToken();
-
         String version = "1";
 
         try {
@@ -103,7 +100,6 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
             json.put("app_version",version);
             json.put("device_title",getDeviceName());
             json.put("email",getEmail(context));
-            json.put("token",token);
             json.put("device_id",uuid.toString());
 
         } catch (JSONException e) {
@@ -130,8 +126,6 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
         TelephonyManager tMgr = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
         String mPhoneNumber = tMgr.getLine1Number();
         String device_id =  tMgr.getDeviceId();
-        MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
-        String token = service.getToken();
 
         String version = "1";
 
@@ -159,7 +153,6 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
             json.put("number",mPhoneNumber);
             json.put("device_title",getDeviceName());
             json.put("email",getEmail(context));
-            json.put("token",token);
             json.put("device_id",uuid.toString());
 
         } catch (JSONException e) {
@@ -185,10 +178,8 @@ public class PushNotificationModule extends ReactContextBaseJavaModule {
         Intent sendIntent = new Intent(Intent.ACTION_VIEW);
         sendIntent.setData(Uri.parse("sms:"));
         sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        MyFirebaseInstanceIDService service = new MyFirebaseInstanceIDService();
-        String token = service.getToken();
 
-        String token_encode = Base64.encodeToString(token.getBytes(),Base64.DEFAULT);
+
 
         DeviceUuidFactory device_uuid = new DeviceUuidFactory(context);
         UUID uuid = device_uuid.getDeviceUuid();

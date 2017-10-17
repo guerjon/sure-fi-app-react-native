@@ -247,6 +247,11 @@ export default function setupCentralReducer (state = initialState, action) {
         ...state,
         allow_notifications : action.allow_notifications
       }
+    case "UPDATE_POWER":
+      return{
+        ...state,
+        power: action.power
+      }
     default:
       return state
   }

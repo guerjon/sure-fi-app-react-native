@@ -306,6 +306,22 @@ class Bridges extends Component{
         this.showCamera()
 
         setTimeout(() => this.startScanning(),2000) 
+        //setInterval(() this.reviewDevices(),1000)
+
+    }
+
+    reviewDevices(){
+        var devices = this.props.devices;
+        var copy_devices = this.props.devices;
+
+        for (var i = devices.length - 1; i >= 0; i--) {
+            var device = devices[i]
+            if(device.time > -10){
+                copy_devices[i].time = copy_devices.time -1
+            }else{
+                copy_devices.splice(i,1) //delete de element from the array
+            }
+        }
 
     }
 
@@ -382,6 +398,7 @@ class Bridges extends Component{
     getManufacturedData(device) {
         if (device) {
             device.manufactured_data = DIVIDE_MANUFACTURED_DATA(device.CORRECT_DATA.substring(14), device.id);
+            device.time = 10
             delete device.manufacturerData
             delete device.CORRECT_DATA;
         }else{
@@ -540,7 +557,7 @@ class Bridges extends Component{
         //this.props.dispatch({type:"UPDATE_DEVICES",devices:[]})
         //this.stopWithoutDestroy();
 
-        this.props.navigator.showModal({
+        this.props.navigator.push({
             screen: "DeviceNotMatched",
             title : device_id,
             passProps: {

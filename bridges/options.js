@@ -67,8 +67,8 @@ class Options extends Component{
 		let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
 
 		Alert.alert(
-			"Continue UnPairing",
-			"Are you sure you wish to UnPair the Following Sure-Fi Device: \n\n" + "ID : " + device.manufactured_data.device_id.toUpperCase(),
+			"Continue Un-Pairing",
+			"Are you sure you with to Un-Pair with the following Sure-Fi device? \n ID: " + device.manufactured_data.tx.toUpperCase(),
 			[
 				{text : "Cancel", onPress:() => console.log("Cancel unpairing")},
 				{text : "UNPAIR", onPress:() => this.unPair()}
@@ -77,7 +77,7 @@ class Options extends Component{
 	}
 
     unPair() {
-    	console.log("unPair123----()",this.device.manufactured_data.device_id)
+    	console.log("unPair123",this.device.manufactured_data.device_id)
 
 	    if(!this.props.debug_mode_status){
 		    this.props.dispatch({

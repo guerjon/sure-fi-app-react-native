@@ -90,7 +90,8 @@ class ForcePair extends Component{
 
 	                this.props.dispatch({type:"HIDE_CAMERA"})
 	                this.props.setConnectionEstablished()
-	                this.props.navigator.dismissModal();
+	                this.props.fetchDeviceName(this.device.manufactured_data.device_id,this.remote_device_id)
+	                this.props.navigator.pop();
     			})
 
     		}).catch(error => console.log("error",error))
@@ -116,12 +117,12 @@ class ForcePair extends Component{
 			var first_title = "Sure-Fi Bridge Remote"
 			var second_title = "Remote Unit Unpaired"
 
-			var id_central = remote_device_id
+			var remote_device = remote_device_id
 
 			var tx_first_title = "Sure-Fi Bridge Central"
 			var tx_second_title = "Central Unit Paired"
 
-			var remote_device = device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") 
+			var id_central = device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") 
 		}
 
 		return(

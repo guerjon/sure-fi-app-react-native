@@ -217,6 +217,32 @@ class ConfigureRadio extends Component {
 	}
 
 
+	shouldRenderSpreadingFactor(options_selected,spreadingFactor){
+		if(options_selected == "spreading_factor_options"){
+			console.log("this.props.spreading_factor_selected",this.props.spreading_factor_selected)
+			if(this.props.spreading_factor_selected){
+				return this.renderOptions(spreadingFactor)
+			}else{
+				return null
+			}
+		}
+		return null
+	}
+
+	shouldRenderBandWidthOptions(options_selected,bandWidth){
+		if(options_selected == "bandwidth_options"){
+			console.log("this.props.spreadingFactor",this.props.spreadingFactor)			
+			if(this.props.spreadingFactor){
+				return this.renderOptions(bandWidth)	
+			}else{
+				return null
+			}
+			
+		}
+
+		return null
+	}
+
 	getOptions(){
 		var {
 			power_selected,
@@ -245,11 +271,11 @@ class ConfigureRadio extends Component {
 				</View>
 				<View style={{marginVertical:20}}>
 					{this.getRow("Spreading Factor", spreading_factor_selected ? spreading_factor_selected : "Unknown")}
-					{options_selected == "spreading_factor_options" ? this.renderOptions(spreadingFactor) : null}
+					{this.shouldRenderSpreadingFactor(options_selected,spreadingFactor)}
 				</View>
 				<View style={{marginVertical:20}}>
 					{this.getRow("BandWidth",band_width_selected ?  band_width_selected : "Unknown")}
-					{options_selected == "bandwidth_options" ? this.renderOptions(bandWidth) : null}
+					{this.shouldRenderBandWidthOptions(options_selected,bandWidth)}
 				</View>
 				<View style={{marginVertical:20}}>
 					{this.getRow("Retry Count",retry_count_selected ?  retry_count_selected : "Unknown")}

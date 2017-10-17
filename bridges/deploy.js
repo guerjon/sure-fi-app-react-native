@@ -115,7 +115,7 @@ class SetupRemote extends Component{
             type: "CENTRAL_DEVICE_MATCHED",
             central_device: this.device,
         });
-        this.props.navigator.dismissModal();
+        this.props.navigator.pop();
     	this.props.getCloudStatus(this.device)
     }
 

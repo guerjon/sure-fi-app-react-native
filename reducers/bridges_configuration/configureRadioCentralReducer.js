@@ -17,7 +17,7 @@ export default function configureRadioCentralReducer (state = initialState, acti
 		case "RESTART_CONFIGURATION_RADIO":
 			return initialState
 			
-		case "UPDATE_POWER":
+		case "UPDATE_POWER_SELECTED":
 	      	return {
 	        	...state,
 	        	power_selected : action.power_selected,

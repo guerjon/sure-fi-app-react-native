@@ -18,7 +18,9 @@ import Title from '../helpers/title'
 
 class BandWidth extends Component{
 	
-	render(){	
+	render(){
+		console.log("this.props.sfb_table_selected",this.props.sfb_table_selected)
+		if(this.props.sfb_table_selected === 0)
 		return(
 			<View>
 				<Title name="BandWidth" type=""/>
@@ -35,11 +37,12 @@ class BandWidth extends Component{
 				</View>
 			</View>	
 		);	
+		return null
 	}
 }
 
 const mapStateToProps = state => ({
-
+	sfb_table_selected : state.configureRadioCentralReducer.sfb_table_selected,
 });
 
 export default connect(mapStateToProps)(BandWidth);

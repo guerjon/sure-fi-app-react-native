@@ -36,6 +36,10 @@ import HoppingTable from '../radio_buttons/hopping_table'
 import SFBTable from '../radio_buttons/sfb_table'
 import BleManager from 'react-native-ble-manager'
 
+import {
+COMMAND_GET_HOPPING_TABLE,
+} from '../commands'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -120,10 +124,8 @@ class ConfigureRadio extends Component {
 
 
 		let heart_hex_value =  heartbeat_period_selected.toString(16) 
-		console.log("heart_hex_value",heart_hex_value);
 		let heart_value = HEX_TO_BYTES(heart_hex_value)
-		console.log("heart_value",heart_value);
-
+	
 
 		if(heart_value.length == 1){
 			var first_value = 0
@@ -132,7 +134,6 @@ class ConfigureRadio extends Component {
 			var first_value = heart_value[0]
 			var second_value = heart_value[1]
 		}
-
 
 		if(this.props.radio_values_lenght == 9){
 			data = 		
@@ -149,11 +150,13 @@ class ConfigureRadio extends Component {
 					sfb_table_selected
 				]
 
-
+			console.log("sfb_table_selected",sfb_table_selected)
+			
+			this.updateHoppingTableOnDeviceDetails(sfb_table_selected,hopping_table_selected)
 
 		}else{
 
-			data = 		
+			data =
 				[
 					0x0A,
 					spreading_factor_selected,
@@ -165,9 +168,10 @@ class ConfigureRadio extends Component {
 					acknowledments_selected,
 					parseInt(hopping_table_selected)
 				]			
+
 		}
 
-		this.props.dispatch({type: "UPDATE_HOPPING_TABLE_SELECTED",hopping_table_selected:parseInt(hopping_table_selected)})
+		this.updatePower(power_selected)
 
 		WRITE_COMMAND(
 			this.device.id,
@@ -176,6 +180,29 @@ class ConfigureRadio extends Component {
 
 		Alert.alert("Success","Update successful")
 		
+	}
+
+	updateHoppingTableOnDeviceDetails(sfb_table_selected,hopping_table){
+		console.log("updateHoppingTableOnDeviceDetails()",sfb_table_selected,hopping_table) 
+		if(sfb_table_selected == 0){
+			this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:hopping_table})	
+		}else{
+			
+			setTimeout(() => {
+				console.log("entra")
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_HOPPING_TABLE])
+	    		.then(response => {
+	    			console.log("response",response)
+	    		})				
+			},2000)
+
+		}
+	}
+
+
+	updatePower(power_selected){
+		var values = ["","1/8 Watt","1/4 Watt","1/2 Watt","1 Watt"]
+		this.props.dispatch({type:"UPDATE_POWER",power:values[power_selected]})
 	}
 
 	bytesToHex(bytes) {
@@ -187,12 +214,13 @@ class ConfigureRadio extends Component {
 	}
 
 	handleCharacteristicNotification(data){
-		//console.log("notification on configure_radio",data)
+		console.log("notification on configure_radio",data)
 		var {dispatch} = this.props
 		var values = data.value
 		
 
 		switch(values[0]){
+
 			case 0x08:
 				values.shift()
 				console.log("updateHeartBeatPeriod",values[4],values[5]);
@@ -242,9 +270,20 @@ class ConfigureRadio extends Component {
 					Alert.alert("Error","Error on get the radio values.")
 				}
 			break
+			case 0x20: //get hopping table
+				console.log("getting hopping table",data.value);
+				
+				var selectedDeviceHoppingTable = data.value[0]
+				selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
+				this.props.saveOnCloudLog(data.value,"HOPPINGTABLE")
+
+				this.props.selectHoppingTable(selectedDeviceHoppingTable,data.value[0])
+				
+				break
 			case 0xE:
 				Alert.alert("Error","Error on Write bytes");
 			break
+
 			default:
 				console.log("Error","No option found to: " + values[0])
 				//Alert.alert("Error","Error on get the radio values.")
@@ -253,7 +292,7 @@ class ConfigureRadio extends Component {
 	}
 
 	updatePowerValue(power_selected){
-		this.props.dispatch({type:"UPDATE_POWER",power_selected:power_selected})
+		this.props.dispatch({type:"UPDATE_POWER_SELECTED",power_selected:power_selected})
 	}
 
 	updateSpreadingFactor(spreading_factor_selected){
@@ -306,6 +345,16 @@ class ConfigureRadio extends Component {
 						<View style={{marginTop:10}}>
 							<Power current_value={this.props.power_selected} updateValue={(value => this.updatePowerValue(value))}/>
 						</View>
+						{this.props.radio_values_lenght == 9 && 
+							(
+								<View>
+									<SFBTable 
+										current_value={this.props.sfb_table_selected} 
+										updateValue={(value) => this.updateSFBTable(value)}
+									/>
+								</View>
+							)
+						}						
 						<View>
 							<SpreadingFactor current_value={this.props.spreading_factor_selected} updateValue={(value) => this.updateSpreadingFactor(value) }/>
 						</View>	
@@ -327,16 +376,7 @@ class ConfigureRadio extends Component {
 								text_input_editable = {this.props.text_input_editable} 
 								checkbox_selected={this.props.checkbox_selected} />
 						</View>
-						{this.props.radio_values_lenght == 9 && 
-							(
-								<View>
-									<SFBTable 
-										current_value={this.props.sfb_table_selected} 
-										updateValue={(value) => this.updateSFBTable(value)}
-									/>
-								</View>
-							)
-						}
+
 					</ScrollView>											
 				</Background>
 			)			

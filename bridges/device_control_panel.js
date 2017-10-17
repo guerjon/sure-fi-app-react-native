@@ -525,8 +525,8 @@ class SetupCentral extends Component{
 		.catch(error => console.log("Error readStatusOnDevice",error))
 	}
 
-    handleDisconnectedPeripheral(){		
-    	
+    handleDisconnectedPeripheral(info){		
+    	console.log("handleDisconnectedPeripheral",info)
     	console.log("handleDisconnectedPeripheral()",
     		this.props.pair_disconnect,
     		this.props.unpair_disconnect,
@@ -554,6 +554,21 @@ class SetupCentral extends Component{
     	}else if(this.props.manual_disconnect){
     		console.log("entra aqui 3 - manual");
 
+    // 		this.props.navigator.screenIsCurrentlyVisible().then(response => {
+    			
+    // 			if(!response){
+    // 				this.props.navigator.pop()
+    // 			}
+
+				// Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
+				// this.props.dispatch({
+				// 	type : "DISCONNECT_CENTRAL_DEVICE"
+				// })
+    			
+    // 		})
+
+
+
 		}else if(this.props.deploy_disconnect){
 			console.log("entra aqui 4 - deploy");
 
@@ -571,13 +586,23 @@ class SetupCentral extends Component{
     		}
 
     	}else{
+    		
     		console.log("this.props.show_disconnect_notification",this.props.show_disconnect_notification);
+			
+			this.props.navigator.screenIsCurrentlyVisible().then(response => {
+    			console.log("response",response)
+    			if(!response){
+    				this.props.navigator.pop()
+    			}    			
+    		})
+
     		if(this.props.show_disconnect_notification)
     			Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
 
 			this.props.dispatch({
 				type : "DISCONNECT_CENTRAL_DEVICE"
-			})    		
+			})    
+
 			this.fastTryToConnect(this.device)
     	}
 	}
@@ -712,8 +737,7 @@ class SetupCentral extends Component{
 
 	getAllInfo(device){
     	console.log("getAllInfo()")// the last one on be called its 0x07
-    	
-    	this.turnOnNotifications()
+    
     	setTimeout(() => this.getFirmwareVersion(device),2000)
 
 	}
@@ -843,12 +867,18 @@ class SetupCentral extends Component{
 	}
 
 	handleCharacteristicNotification(data){
-		console.log("handleCharacteristicNotification",this.props.allow_notifications,data.value)
-		if(this.props.allow_notifications){
+		//console.log("handleCharacteristicNotification",this.props.allow_notifications,data.value)
+		console.log("handleCharacteristicNotification",data)
+		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
 			var value = data.value[0]
 			var device = this.device;
 			//console.log("handleCharacteristicNotification on device ()",value);
-			data.value.shift()
+			
+			
+			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26]
+
+			if(commands.indexOf(data.value[0]) !== -1)
+				data.value.shift()
 
 			switch(value){
 				case 0x01 : //app firmware version
@@ -857,7 +887,6 @@ class SetupCentral extends Component{
 					WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
 			    	.then(response => {
 
-		    			
 		    			this.saveOnCloudLog(data.value,"APPFIRMWARE")
 		    			if(data.value.length > 1)
 							this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(data.value[0].toString() +"." + data.value[1].toString())  })
@@ -877,19 +906,7 @@ class SetupCentral extends Component{
 
 					
 					break
-				case 9 : // radio firmware version
-					console.log("getting radio firmware_version");
-					WRITE_COMMAND(device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
-					.then(response => {
-						
-						this.saveOnCloudLog(data.value,"RADIOFIRMWARE")
-						if(data.value.length > 1)
-							this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(data.value[0].toString() +"." + data.value[1].toString())  })
-					})
-					.catch(error => console.log("error getting Radio firmware version",error))
-					
-					break
-				case 8 : //radio settings
+				case 0x08 : //radio settings
 					
 					console.log("getting radio settings",data.value);
 					
@@ -919,17 +936,19 @@ class SetupCentral extends Component{
 
 					}).catch(error => console.log("error",error))
 					break
-				case 18 : //bluetooth firmware version
-					console.log("getting bluetooth firmware version");
-					
-					WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_SETTINGS])
+				case 0x09 : // radio firmware version
+					console.log("getting radio firmware_version");
+					WRITE_COMMAND(device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
 					.then(response => {
 						
-						this.saveOnCloudLog(data.value,"BLUETOOTHFIRMWARE")
-						this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[0].toString() + "." + data.value[1].toString()) })
-					}).catch(error => console.log("error",error))
+						this.saveOnCloudLog(data.value,"RADIOFIRMWARE")
+						if(data.value.length > 1)
+							this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(data.value[0].toString() +"." + data.value[1].toString())  })
+					})
+					.catch(error => console.log("error getting Radio firmware version",error))
 					
-					break
+					break					
+
 
 				case 0x10: //Register Board name 1
 					console.log("getting Register Board name 1");
@@ -959,40 +978,17 @@ class SetupCentral extends Component{
 						this.props.dispatch({type: "SET_REGISTER_BOARD_2",register_board_2: register_board_2})
 					}).catch(error => console.log("error",error))								
 					break
-				case 0x25: // App pic Version
-					
-					console.log("getting App pic Version");
-					
-			    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_PIC_VERSION])
-			    	.then(response => {
-						if(data.value.length > 3){					
-							
-							this.app_hex_board_version = this.getCorrectHexVersion(data)
-							let app_board_version = this.getCorrectStringVerison(this.app_hex_board_version)
-							this.props.dispatch({type: "SET_APP_BOARD",app_board_version: app_board_version})
 
-						}else{
-							Alert.alert("Error","Something is wrong with the app pic version values.")
-						}
+				case 0x12 : //bluetooth firmware version
+					console.log("getting bluetooth firmware version");
+					
+					WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_SETTINGS])
+					.then(response => {
 						
-
-			    	}).catch(error => console.log("error",error))			    				
-					break
-				case 0x26: // Radio Pic Version
-						console.log("getting Radio Pic Version");
-						WRITE_COMMAND(device.id,[COMMAND_GET_HOPPING_TABLE])
-			    		.then(response => {
-							if(data.value.length > 3){
-								
-								this.radio_hex_board_version = this.getCorrectHexVersion(data)
-								let radio_board_version = this.getCorrectStringVerison(this.radio_hex_board_version)
-								this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: radio_board_version})
-
-							}else{
-								Alert.alert("Error","Something is wrong with the radio pic version values.")
-							}
-			    		})
-			    		.catch(error => console.log("error",error))		
+						this.saveOnCloudLog(data.value,"BLUETOOTHFIRMWARE")
+						this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[0].toString() + "." + data.value[1].toString()) })
+					}).catch(error => console.log("error",error))
+					
 					break
 
 				case 0x14: //Voltage
@@ -1050,24 +1046,13 @@ class SetupCentral extends Component{
 					}
 					this.turnOffNotifications()
 					break
+
 				case 0x1E: // all versions
 					
 					console.log("getting all versions");
 
 					this.saveOnCloudLog(data.value,"FIRMWAREVERSIONS")
 					this.getBootloaderInfo()
-					break
-
-				case 0x20: //get hopping table
-					console.log("getting hopping table",data.value);
-					
-					var selectedDeviceHoppingTable = data.value[0]
-					selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
-					this.saveOnCloudLog(data.value,"HOPPINGTABLE")
-
-					this.selectHoppingTable(selectedDeviceHoppingTable,data.value[0])
-					this.getDebugModeStatus()
-					
 					break
 				case 0x1B: //get debug mode status
 					console.log("get debug mode status");
@@ -1124,7 +1109,55 @@ class SetupCentral extends Component{
 					this.saveOnCloudLog(data.value,"RESETCAUSES")
 					this.handleResetCauseNotification(data.value)
 
-				break;
+				break;					
+
+				case 0x20: //get hopping table
+					console.log("getting hopping table",data.value);
+					
+					var selectedDeviceHoppingTable = data.value[0]
+					selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
+					this.saveOnCloudLog(data.value,"HOPPINGTABLE")
+
+					this.selectHoppingTable(selectedDeviceHoppingTable,data.value[0])
+					this.getDebugModeStatus()
+					
+					break
+				case 0x25: // App pic Version
+					
+					console.log("getting App pic Version");
+					
+			    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_PIC_VERSION])
+			    	.then(response => {
+						if(data.value.length > 3){					
+							
+							this.app_hex_board_version = this.getCorrectHexVersion(data)
+							let app_board_version = this.getCorrectStringVerison(this.app_hex_board_version)
+							this.props.dispatch({type: "SET_APP_BOARD",app_board_version: app_board_version})
+
+						}else{
+							Alert.alert("Error","Something is wrong with the app pic version values.")
+						}
+						
+
+			    	}).catch(error => console.log("error",error))			    				
+					break
+				case 0x26: // Radio Pic Version
+						console.log("getting Radio Pic Version");
+						WRITE_COMMAND(device.id,[COMMAND_GET_HOPPING_TABLE])
+			    		.then(response => {
+							if(data.value.length > 3){
+								
+								this.radio_hex_board_version = this.getCorrectHexVersion(data)
+								let radio_board_version = this.getCorrectStringVerison(this.radio_hex_board_version)
+								this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: radio_board_version})
+
+							}else{
+								Alert.alert("Error","Something is wrong with the radio pic version values.")
+							}
+			    		})
+			    		.catch(error => console.log("error",error))		
+					break					
+
 				default:
 					//console.log("No options found to: " + value)
 				return
@@ -1550,7 +1583,7 @@ class SetupCentral extends Component{
 
 		this.eraseSecondInterval()		
 		this.fast_manager.stopDeviceScan()
-		this.props.navigator.showModal(
+		this.props.navigator.push(
 			{
 				screen:"PairBridge",
 				title : "Pair Sure-Fi Device",
@@ -1577,7 +1610,7 @@ class SetupCentral extends Component{
 		this.handleCharacteristic.remove()
 		var getCloudStatus = (device) => this.getCloudStatus(device)
 		
-		/*this.props.navigator.showModal({
+		/*this.props.navigator.push({
 		  	screen: 'Deploy', // unique ID registered with Navigation.registerScreen
 		  	title: "Deploy Sure-Fi Bridge",
 			passProps:
@@ -1597,7 +1630,7 @@ class SetupCentral extends Component{
 		
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){
-			this.props.navigator.showModal({
+			this.props.navigator.push({
 				screen: "FirmwareUpdate",
 				title : "Firmware Update",
 				rightButtons: [
@@ -1616,7 +1649,7 @@ class SetupCentral extends Component{
 		        }
 			})			
 		}else{
-			this.props.navigator.showModal({
+			this.props.navigator.push({
 				screen: "FirmwareUpdate",
 				title : "Firmware Update",
 				fastTryToConnect : () => this.fastTryToConnect(),
@@ -1633,12 +1666,14 @@ class SetupCentral extends Component{
 
 	goToConfigureRadio(){
 		this.handleCharacteristic.remove()
-		this.props.navigator.showModal(
+		this.props.navigator.push(
 			{
 				screen:"ConfigureRadio",
 				title: "Configure Radio",
 				passProps: {
-					activateHandleCharacteristic : () => this.activateHandleCharacteristic()
+					activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
+					saveOnCloudLog : (data,type)  => this.saveOnCloudLog(data,type),
+					selectHoppingTable : (hopping_table,data) => this.selectHoppingTable(hopping_table,data)
 				}
 			}
 		)
@@ -1647,7 +1682,7 @@ class SetupCentral extends Component{
 	goToRelay(){
 		console.log("goToRelay()");
 		
-		this.props.navigator.showModal({
+		this.props.navigator.push({
 			screen: "Relay",
 			title: "Default Settings",
 			animated: false,
@@ -1685,7 +1720,7 @@ class SetupCentral extends Component{
 		
 		var getCloudStatus = (device) => this.getCloudStatus(device)
 		
-		this.props.navigator.showModal(
+		this.props.navigator.push(
 		{
 			screen:"ForcePair",
 			title: "Force Pair",
@@ -1693,7 +1728,8 @@ class SetupCentral extends Component{
 			passProps:
 			{
 				getCloudStatus:getCloudStatus,
-				setConnectionEstablished : () => this.setConnectionEstablished()
+				setConnectionEstablished : () => this.setConnectionEstablished(),
+				fetchDeviceName: (device_id,remote_device_id) => this.fetchDeviceName(device_id,remote_device_id) 
 			}
 		})
 	}
@@ -1708,7 +1744,7 @@ class SetupCentral extends Component{
 	
 	goToOperationValues(){
 		this.disactivateHandleCharacteristic()
-		this.props.navigator.showModal({
+		this.props.navigator.push({
 			screen : "OperationValues",
 			title : "Operating Values",
 			animated: false,
@@ -1777,7 +1813,7 @@ class SetupCentral extends Component{
 	}
 
 	scanByFiveSeconds(device){
-		console.log("scanByFiveSeconds()")
+		//console.log("scanByFiveSeconds()")
 		this.devices_found = []
 		this.is_in = false
 		this.startDeviceScan(device)

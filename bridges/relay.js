@@ -76,6 +76,7 @@ class Relay extends Component{
 
 
 	handleCharacteristicNotification(data){
+		console.log("data",data)
 		var value = data.value[0]
 		
 		switch(value){
