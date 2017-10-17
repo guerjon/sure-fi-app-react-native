@@ -104,7 +104,7 @@ export const WRITE_COMMAND = (id,data) => {
 				fulfill(response)
 			})
 			.catch(error => {
-				console.log("error",error)
+				console.log("Error on WRITE_COMMAND",error)
 				reject(error)
 			})
 		})

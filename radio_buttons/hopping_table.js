@@ -25,7 +25,6 @@ class HoppingTable extends Component{
 	componentWillMount() {
 
 	  	if(this.props.current_value == 255){
-	  		console.log("no etra?")
 	  		this.props.dispatch({type:"UPDATE_CHECKBOX_SELECTED",checkbox_selected:0})
 	  		this.props.dispatch({type: "TEXT_INPUT_EDITABLE",text_input_editable:false})
 	  	}else{

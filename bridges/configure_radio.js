@@ -152,7 +152,12 @@ class ConfigureRadio extends Component {
 
 			console.log("sfb_table_selected",sfb_table_selected)
 			
-			this.updateHoppingTableOnDeviceDetails(sfb_table_selected,hopping_table_selected)
+			this.updateHoppingTableOnDeviceDetails(
+				sfb_table_selected,
+				hopping_table_selected,
+				spreading_factor_selected,
+				band_width_selected
+			)
 
 		}else{
 
@@ -182,10 +187,19 @@ class ConfigureRadio extends Component {
 		
 	}
 
-	updateHoppingTableOnDeviceDetails(sfb_table_selected,hopping_table){
+	updateHoppingTableOnDeviceDetails(sfb_table_selected,hopping_table,selectedDeviceSF,selectedDeviceBandwidth){
 		console.log("updateHoppingTableOnDeviceDetails()",sfb_table_selected,hopping_table) 
 		if(sfb_table_selected == 0){
-			this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:hopping_table})	
+
+			
+			var sf = this.choseSpreadingFactor(selectedDeviceSF)
+			var bw = this.chooseBandWidth(selectedDeviceBandwidth)
+			console.log("sf",sf)
+			this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:hopping_table})
+        	this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor:sf})
+        	this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width:bw})
+
+
 		}else{
 			
 			setTimeout(() => {
@@ -195,10 +209,20 @@ class ConfigureRadio extends Component {
 	    			console.log("response",response)
 	    		})				
 			},2000)
-
 		}
 	}
 
+	choseSpreadingFactor(value){
+		console.log("spreading_factor",value)
+		var options = ["","SF7","SF8","SF9","SF10","SF11","SF12"]
+		var spreading_factor = options[value]
+		return spreading_factor
+	}
+
+	chooseBandWidth(value){
+		var options = ["","31.25 kHz","62.50 kHz","125 kHz","250 kHz","500 kHz"]
+		return options[value]
+	}
 
 	updatePower(power_selected){
 		var values = ["","1/8 Watt","1/4 Watt","1/2 Watt","1 Watt"]

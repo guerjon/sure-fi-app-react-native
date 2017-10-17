@@ -80,7 +80,8 @@ import {
 	COMMAND_GET_RADIO_PIC_VERSION,
 	COMMAND_GET_HOPPING_TABLE,
 	COMMAND_GET_BOOTLOADER_INFO,
-	COMMAND_GET_ALL_VERSIONS
+	COMMAND_GET_ALL_VERSIONS,
+	COMMAND_GET_DEBUG_MODE_STATUS
 } from '../commands'
 import {
 	powerOptions,
@@ -102,7 +103,19 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 var interval = 0;
 var second_interval = 0;
-
+var general_interval = 0;
+/*var app_firmware_version_interval = 0
+var radio_firmware_version_interval = 0
+var bluetooth_firmware_version_interval = 0
+var radio_settings_interval = 0
+var voltage_interval = 0
+var register_board_1 = 0
+var register_board_2 = 0
+var app_pic_version = 0
+var radio_pic_version = 0
+var hopping_table_interval = 0
+var debug_mode_status_interval = 0
+*/
 class SetupCentral extends Component{
 	
     static navigatorStyle = {
@@ -149,6 +162,7 @@ class SetupCentral extends Component{
 		
 		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
+		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
 		
 		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())
 
@@ -469,6 +483,9 @@ class SetupCentral extends Component{
     	this.props.dispatch({type: "SHOW_DISCONNECT_NOTIFICATION",show_disconnect_notification: true})
     	this.props.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:false})
     	
+    	this.props.dispatch({type: "CONNECTED_CENTRAL_DEVICE"})
+
+
     	this.changing_time = false
     	this.startNotification(this.device)
     }
@@ -554,20 +571,16 @@ class SetupCentral extends Component{
     	}else if(this.props.manual_disconnect){
     		console.log("entra aqui 3 - manual");
 
-    // 		this.props.navigator.screenIsCurrentlyVisible().then(response => {
+     		this.props.navigator.screenIsCurrentlyVisible().then(response => {
     			
-    // 			if(!response){
-    // 				this.props.navigator.pop()
-    // 			}
-
-				// Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
-				// this.props.dispatch({
-				// 	type : "DISCONNECT_CENTRAL_DEVICE"
-				// })
-    			
-    // 		})
-
-
+     			if(!response){
+     				this.props.navigator.pop()
+					Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
+					this.props.dispatch({
+						type : "DISCONNECT_CENTRAL_DEVICE"
+					})
+     			}
+     		})
 
 		}else if(this.props.deploy_disconnect){
 			console.log("entra aqui 4 - deploy");
@@ -731,25 +744,8 @@ class SetupCentral extends Component{
 			}else{
     			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
     		}
-
-    		this.getAllInfo(device)
+			this.checkPairOrUnPairResult()			
     }
-
-	getAllInfo(device){
-    	console.log("getAllInfo()")// the last one on be called its 0x07
-    
-    	setTimeout(() => this.getFirmwareVersion(device),2000)
-
-	}
-
-	getFirmwareVersion(device){
-		console.log("getFirmwareVersion()")
-    	WRITE_COMMAND(device.id,[COMMAND_GET_FIRMWARE_VERSION])
-    	.then(response => {		    		
-    	})
-    	.catch(error => console.log("error",error))		
-	}
-
 
     handleUnpairedFail(expected_status){ //  device state 1
 		switch(expected_status){
@@ -866,317 +862,11 @@ class SetupCentral extends Component{
 	  }).join('')
 	}
 
-	handleCharacteristicNotification(data){
-		//console.log("handleCharacteristicNotification",this.props.allow_notifications,data.value)
-		console.log("handleCharacteristicNotification",data)
-		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
-			var value = data.value[0]
-			var device = this.device;
-			//console.log("handleCharacteristicNotification on device ()",value);
-			
-			
-			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26]
 
-			if(commands.indexOf(data.value[0]) !== -1)
-				data.value.shift()
-
-			switch(value){
-				case 0x01 : //app firmware version
-					console.log("getting app firmware_version");
-					
-					WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
-			    	.then(response => {
-
-		    			this.saveOnCloudLog(data.value,"APPFIRMWARE")
-		    			if(data.value.length > 1)
-							this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(data.value[0].toString() +"." + data.value[1].toString())  })
-					
-					})
-			    	.catch(error => console.log("error getting App firmware version",error))    	
-
-
-					break
-				case 0x07: //Bootloader info
-					console.log("getting app bootloaderinfo");
-					
-					this.saveOnCloudLog(data.value,"BOOTLOADERINFO")
-					this.startOperationsAfterConnect(this.device)
-					
-					this.turnOffNotifications()
-
-					
-					break
-				case 0x08 : //radio settings
-					
-					console.log("getting radio settings",data.value);
-					
-					this.saveOnCloudLog(data.value,"RADIOSETTINGS")
-
-					let spreading_factor = spreadingFactor.get(data.value[0]) 
-					let band_width = bandWidth.get(data.value[1])
-					let power = powerOptions.get(data.value[2])
-					let hopping_table = data.value[6]
-					
-					let retry_count = data.value[3]
-					let heartbeat_period = heartbeatPeriod.get(data.value[4]) 
-					let acknowledments =  data.value[5] ? "Enabled" : "Disabled"
-					
-
-			    	WRITE_COMMAND(device.id,[COMMAND_GET_VOLTAGE])
-			    	.then(response => {
-						this.props.dispatch(
-							{
-								type: "UPDATE_RADIO_SETTINGS",
-								power : power,
-								retry_count : retry_count,
-								heartbeat_period: heartbeat_period,
-								acknowledments : acknowledments,
-							}
-						)
-
-					}).catch(error => console.log("error",error))
-					break
-				case 0x09 : // radio firmware version
-					console.log("getting radio firmware_version");
-					WRITE_COMMAND(device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
-					.then(response => {
-						
-						this.saveOnCloudLog(data.value,"RADIOFIRMWARE")
-						if(data.value.length > 1)
-							this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(data.value[0].toString() +"." + data.value[1].toString())  })
-					})
-					.catch(error => console.log("error getting Radio firmware version",error))
-					
-					break					
-
-
-				case 0x10: //Register Board name 1
-					console.log("getting Register Board name 1");
-					
-					let register_board_1 = stringFromUTF8Array(data.value) 
-					console.log("register_board_1",register_board_1);
-
-					this.props.dispatch({type: "SET_REGISTER_BOARD_1",register_board_1: register_board_1})
-
-
-					WRITE_COMMAND(device.id,[COMMAND_GET_REGISTERED_BOARD_2])
-					.then(response => {
-						
-					}).catch(error => console.log("error",error))			
-
-					break
-
-				case 0x11: // Register Board name 2
-					console.log("getting Register Board name 2");
-					WRITE_COMMAND(device.id,[COMMAND_GET_APP_PIC_VERSION])
-			    	.then(response => {
-						
-						//console.log("Register Board name 2",data.value)
-
-						let register_board_2 = stringFromUTF8Array(data.value) 
-
-						this.props.dispatch({type: "SET_REGISTER_BOARD_2",register_board_2: register_board_2})
-					}).catch(error => console.log("error",error))								
-					break
-
-				case 0x12 : //bluetooth firmware version
-					console.log("getting bluetooth firmware version");
-					
-					WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_SETTINGS])
-					.then(response => {
-						
-						this.saveOnCloudLog(data.value,"BLUETOOTHFIRMWARE")
-						this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(data.value[0].toString() + "." + data.value[1].toString()) })
-					}).catch(error => console.log("error",error))
-					
-					break
-
-				case 0x14: //Voltage
-					console.log("getting Voltage");
-
-					
-					WRITE_COMMAND(device.id,[COMMAND_GET_REGISTERED_BOARD_1])
-					.then(response => {
-						
-						this.saveOnCloudLog(data.value,"POWERLEVELS")
-						let v1 = ((data.value[0] & 0xff) << 8) | (data.value[1] & 0xff);  
-						let v2 = ((data.value[2] & 0xff) << 8) | (data.value[3] & 0xff);
-						let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
-						let battery_voltage = CALCULATE_VOLTAGE(v2).toFixed(2) 
-						this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
-						this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: true})
-
-					}).catch(error => console.log("error",error))
-					break
-				case 0x16: // pair result
-					console.log("getting pair result");
-					
-					if(data.value[0] == 2){
-						Alert.alert(
-							"Pairing Complete",
-							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
-						)
-					}else{
-						Alert.alert(
-							"Error","Pairing on the other device failed. Please connect to the other device to finish the pairing process."
-						)
-					}
-					
-					this.turnOffNotifications()
-
-					break
-				case 0x17: // un-pair result
-					console.log("getting unpair result");
-					if(this.props.force){ //this comes from the file options method resetStacktoForce
-						Alert.alert(
-			    			"Success", "Un-Pair successfully sent"    		
-		    			)		
-		    			break
-					}
-
-					if(data.value[0] == 2){
-						Alert.alert(
-			    			"Success", "Un-Pair successfully sent"    		
-		    			)		
-
-					}else{
-						Alert.alert(
-							"Error","Un-pair on the other unit failed. Please connect to the other unit to complete the un-pair process."
-						)
-					}
-					this.turnOffNotifications()
-					break
-
-				case 0x1E: // all versions
-					
-					console.log("getting all versions");
-
-					this.saveOnCloudLog(data.value,"FIRMWAREVERSIONS")
-					this.getBootloaderInfo()
-					break
-				case 0x1B: //get debug mode status
-					console.log("get debug mode status");
-					
-					if(data.value[0]){
-						this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: true})
-					}else{
-						this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: false})
-					}
-
-					this.getAllVersion()
-
-					break
-				case 0x1C: // last packet
-					console.log("get last packet")
-					this.turnOffNotifications()
-					this.saveOnCloudLog(data.value,"LASTPACKET") 
-					var miliseconds = BYTES_TO_INT(data.value)
-					//console.log(miliseconds)
-
-					if(miliseconds){
-						if(miliseconds > 1000){
-							var seconds =  miliseconds / 1000	
-							
-							if(seconds > 60){
-								var minutes = seconds / 60
-								
-								if(minutes > 60){
-									var hours = minutes / 60
-									
-									if(hours > 24){
-										var days = hours / 24
-										Alert.alert("Last Connection","The last connection was made about " + Math.round(days) + " day(s) ago.")	
-									}else{
-										Alert.alert("Last Connection","The last connection was made about " + Math.round(hours) + " hour(s) ago.")		
-									}
-								}else{
-									Alert.alert("Last Connection","The last connection was made about " + Math.round(minutes) + " minute(s) ago.")	
-								}
-							}else{
-								Alert.alert("Last Connection","The last connection was made about " + Math.round(seconds) + " second(s) ago.")	
-							}
-						}else{
-							Alert.alert("Last Connection","The last connection was made about just now")	
-						}
-					}else{
-						Alert.alert("Last Connection","No connection has been made since power up.")	
-					}
-				break;
-				case 0x1A: //reset causes
-					console.log("getting reset causee");
-					this.turnOffNotifications()
-
-					this.saveOnCloudLog(data.value,"RESETCAUSES")
-					this.handleResetCauseNotification(data.value)
-
-				break;					
-
-				case 0x20: //get hopping table
-					console.log("getting hopping table",data.value);
-					
-					var selectedDeviceHoppingTable = data.value[0]
-					selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
-					this.saveOnCloudLog(data.value,"HOPPINGTABLE")
-
-					this.selectHoppingTable(selectedDeviceHoppingTable,data.value[0])
-					this.getDebugModeStatus()
-					
-					break
-				case 0x25: // App pic Version
-					
-					console.log("getting App pic Version");
-					
-			    	WRITE_COMMAND(device.id,[COMMAND_GET_RADIO_PIC_VERSION])
-			    	.then(response => {
-						if(data.value.length > 3){					
-							
-							this.app_hex_board_version = this.getCorrectHexVersion(data)
-							let app_board_version = this.getCorrectStringVerison(this.app_hex_board_version)
-							this.props.dispatch({type: "SET_APP_BOARD",app_board_version: app_board_version})
-
-						}else{
-							Alert.alert("Error","Something is wrong with the app pic version values.")
-						}
-						
-
-			    	}).catch(error => console.log("error",error))			    				
-					break
-				case 0x26: // Radio Pic Version
-						console.log("getting Radio Pic Version");
-						WRITE_COMMAND(device.id,[COMMAND_GET_HOPPING_TABLE])
-			    		.then(response => {
-							if(data.value.length > 3){
-								
-								this.radio_hex_board_version = this.getCorrectHexVersion(data)
-								let radio_board_version = this.getCorrectStringVerison(this.radio_hex_board_version)
-								this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: radio_board_version})
-
-							}else{
-								Alert.alert("Error","Something is wrong with the radio pic version values.")
-							}
-			    		})
-			    		.catch(error => console.log("error",error))		
-					break					
-
-				default:
-					//console.log("No options found to: " + value)
-				return
-			}					
-		}
-	}
 
 	saveOnCloudLog(value,log_type){
 		var body = LOG_CREATOR(value,this.manufactured_device_id,this.device.id,log_type)
 		POST_LOG(body)
-	}
-
-	getDebugModeStatus(){
-		console.log("getDebugModeStatus()");
-
-		WRITE_COMMAND(this.device.id,[0x29]) // response with 0x1B
-		.then(response => {
-		})
-		.catch(error => console.log("Error on getDebugModeStatus()",error));
 	}
 
 
@@ -1208,8 +898,8 @@ class SetupCentral extends Component{
 		this.props.dispatch({type: "ALLOW_NOTIFICATIONS",allow_notifications:false})
 	}
 
-	getCorrectHexVersion(data){
-		var current_version = [data.value[0],data.value[1],data.value[2],data.value[3]]
+	getCorrectHexVersion(values){
+		var current_version = [values[0],values[1],values[2],values[3]]
 		current_version = BYTES_TO_HEX(current_version).toString().toUpperCase()
 		return current_version
 	}
@@ -1769,9 +1459,479 @@ class SetupCentral extends Component{
 		})
 	}
 	
-	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/	
+	/* --------------------------------------------------------------------------------------------------- End Go To Seccion ---------------------------------------------------------------*/	
 
 
+
+	/* --------------------------------------------------------------------------------------------------- update commands Seccion ---------------------------------------------------------------*/	
+
+	updateAppVersion(values){
+
+		this.saveOnCloudLog(values,"APPFIRMWARE")
+		if(values.length > 1)
+			this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(values[0].toString() +"." + values[1].toString())  })
+
+	}
+
+	updateRadioVersion(values){
+		this.saveOnCloudLog(values,"RADIOFIRMWARE")
+		if(values.length > 1)
+			this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(values[0].toString() +"." + values[1].toString())  })		
+	}
+
+	updateBluetoothVersion(values){
+		this.saveOnCloudLog(values,"BLUETOOTHFIRMWARE")
+		this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : parseFloat(values[0].toString() + "." + values[1].toString()) })		
+	}
+
+
+	updateRadioSettings(values){
+		this.saveOnCloudLog(values,"RADIOSETTINGS")
+
+		let spreading_factor = spreadingFactor.get(values[0]) 
+		let band_width = bandWidth.get(values[1])
+		let power = powerOptions.get(values[2])
+		let hopping_table = values[6]
+		
+		let retry_count = values[3]
+		let heartbeat_period = heartbeatPeriod.get(values[4]) 
+		let acknowledments =  values[5] ? "Enabled" : "Disabled"
+		
+
+		this.props.dispatch(
+			{
+				type: "UPDATE_RADIO_SETTINGS",
+				power : power,
+				retry_count : retry_count,
+				heartbeat_period: heartbeat_period,
+				acknowledments : acknowledments,
+			}
+		)		
+	}
+
+	updateVoltage(values){
+		console.log("updateVoltage()")
+		this.saveOnCloudLog(values,"POWERLEVELS")
+		let v1 = ((values[0] & 0xff) << 8) | (values[1] & 0xff);  
+		let v2 = ((values[2] & 0xff) << 8) | (values[3] & 0xff);
+		let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
+		let battery_voltage = CALCULATE_VOLTAGE(v2).toFixed(2) 
+		this.props.dispatch({type : "UPDATE_POWER_VALUES",battery_voltage: battery_voltage, power_voltage : power_voltage})
+		this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: true})		
+	}
+
+	updateRegisterBoard1(values){
+		console.log("updateRegisterBoard1()")
+		let register_board_1 = stringFromUTF8Array(values) 
+		console.log("register_board_1",register_board_1);
+
+		this.props.dispatch({type: "SET_REGISTER_BOARD_1",register_board_1: register_board_1})		
+	}
+
+	updateRegisterBoard2(values){
+		console.log("updateRegisterBoard2()")
+		let register_board_2 = stringFromUTF8Array(values) 
+		this.props.dispatch({type: "SET_REGISTER_BOARD_2",register_board_2: register_board_2})		
+	}
+
+	updateAppPicVersion(values){
+		console.log("updateAppPicVersion()")
+		if(values.length > 3){					
+			
+			this.app_hex_board_version = this.getCorrectHexVersion(values)
+			let app_board_version = this.getCorrectStringVerison(this.app_hex_board_version)
+			this.props.dispatch({type: "SET_APP_BOARD",app_board_version: app_board_version})
+
+		}else{
+			Alert.alert("Error","Something is wrong with the app pic version values.")
+		}		
+	}
+
+	updateRadioPicVersion(values){
+		console.log("updateRadioPicVersion()")
+		if(values.length > 3){
+			
+			this.radio_hex_board_version = this.getCorrectHexVersion(values)
+			let radio_board_version = this.getCorrectStringVerison(this.radio_hex_board_version)
+			this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: radio_board_version})
+
+		}else{
+			Alert.alert("Error","Something is wrong with the radio pic version values.")
+		}		
+	}
+
+	updateHoppingTable(values){
+		console.log("updateHoppingTable()")
+		var selectedDeviceHoppingTable = values[0]
+		selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
+		
+		this.saveOnCloudLog(values,"HOPPINGTABLE")
+
+		this.selectHoppingTable(selectedDeviceHoppingTable,values[0])
+
+	}
+
+	updateDebugModeStatus(values){
+		console.log("updateDebugModeStatus()")
+		if(values[0]){
+			this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: true})
+		}else{
+			this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: false})
+		}		
+	}
+
+	clearGeneralInterval(){
+		console.log("clearGeneralInterval()",general_interval)
+		if(general_interval != 0){
+			clearInterval(general_interval)
+			general_interval = 0
+		}else{
+			console.log("general_interval previosly cleaned")
+		}
+	}
+
+	createGeneralInterval(callback){
+		console.log("createGeneralInterval()",general_interval)
+		if(general_interval == 0){
+			general_interval = setInterval(callback,500)
+		}else{
+			console.log("general_interval previosly created")
+		}
+	}
+
+	/* --------------------------------------------------------------------------------------------------- END update commands Seccion ---------------------------------------------------------------*/	
+
+
+	/* --------------------------------------------------------------------------------------------------- get commands Seccion ---------------------------------------------------------------*/	
+
+		getAllInfo(device){
+			console.log("getAllInfo()")
+			this.getFirmwareVersion()
+		}
+
+		getFirmwareVersion(){
+			console.log("getFirmwareVersion()")
+			this.createGeneralInterval(() => {
+		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_FIRMWARE_VERSION])
+		    	.then(response => {		    		
+		    	})
+		    	.catch(error => console.log("error",error))						
+			})
+		}
+
+		getRadioFirmwareVersion(){
+			console.log("getRadioFirmwareVersion()")
+			this.createGeneralInterval(() => {			
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
+		    	.then(response => {
+
+				})
+		    	.catch(error => console.log("error getting App firmware version",error)) 			
+			})
+		}
+
+		getBluetoothFirmwareVersion(){
+			console.log("getBluetoothFirmwareVersion()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
+				.then(response => {
+				})
+				.catch(error => console.log("error getting Radio firmware version",error))				
+			})
+		}
+
+		getRadioSettings(){
+			console.log("getRadioSettings()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_SETTINGS])
+				.then(response => {
+					
+				}).catch(error => console.log("error",error))				
+			})
+		}
+
+		getVoltage(){
+			console.log("getVoltage()")
+			this.createGeneralInterval(() => {			
+		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_VOLTAGE])
+		    	.then(response => {
+
+				}).catch(error => console.log("error",error))			
+			})
+		}
+
+		getRegisteredBoard1(){
+			console.log("getRegisteredBoard1()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_1])
+				.then(response => {
+					
+				}).catch(error => console.log("error",error))							
+			})
+		}
+
+		getRegisteredBoard2(){
+			console.log("getRegisteredBoard2()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_2])
+				.then(response => {
+				}).catch(error => console.log("error",error))							
+			})
+		}
+
+		getAppPicVersion(){
+			console.log("getAppPicVersion()")
+			this.createGeneralInterval(() => {			
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_APP_PIC_VERSION])
+		    	.then(response => {
+				}).catch(error => console.log("error",error))			
+			})
+		}
+
+		getRadioPicVersion(){
+			console.log("getRadioPicVersion()")
+			this.createGeneralInterval(() => {
+		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_PIC_VERSION])
+		    	.then(response => {
+		    	}).catch(error => console.log("error",error))				
+			})
+		}
+
+		getHoppingTable(){
+			console.log("getHoppingTable()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_HOPPING_TABLE])
+	    		.then(response => {
+	    		})
+	    		.catch(error => console.log("error",error))							
+			})
+		}
+
+
+		getDebugModeStatus(){
+			console.log("getDebugModeStatus()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_DEBUG_MODE_STATUS]) // response with 0x1B
+				.then(response => {
+				})
+				.catch(error => console.log("Error on getDebugModeStatus()",error));				
+			})
+		}
+
+
+		getAllVersion(){
+			console.log("getAllVersion()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_ALL_VERSIONS]) // should get a 0x1E	
+			})
+		}
+
+		getBootloaderInfo(){
+			console.log("getBootloaderInfo()")
+			this.createGeneralInterval(() => {
+				WRITE_COMMAND(this.device.id,[COMMAND_GET_BOOTLOADER_INFO]) 	
+			})
+		}		
+
+
+	/* --------------------------------------------------------------------------------------------------- End commands Seccion ---------------------------------------------------------------*/	
+
+	handleCharacteristicNotification(data){
+		//console.log("handleCharacteristicNotification",this.props.allow_notifications,values)
+		console.log("handleCharacteristicNotification",data)
+		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
+			var values = data.value;
+			var value = values[0]
+			var device = this.device;
+			//console.log("handleCharacteristicNotification on device ()",value);
+			
+			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26]
+
+			if(commands.indexOf(values[0]) !== -1)
+				values.shift()
+
+
+			switch(value){
+				
+				/* --------------------------------------------------------------  --------------------------------------------------------------  --------------------------------------------------------------*/				
+				case 0x01 : //app firmware version
+						this.clearGeneralInterval()
+						this.updateAppVersion(values)
+						this.getRadioFirmwareVersion()
+					break
+
+				case 0x09 : // radio firmware version
+						this.clearGeneralInterval()
+						this.updateRadioVersion(values)
+						this.getBluetoothFirmwareVersion()
+					break					
+
+				case 0x12 : //bluetooth firmware version
+						this.clearGeneralInterval()
+						this.updateBluetoothVersion(values)
+						this.getRadioSettings()
+					break
+
+				case 0x08 : //radio settings
+						this.clearGeneralInterval()
+						this.updateRadioSettings(values)
+						this.getVoltage()
+
+					break
+					
+					case 0x14: //Voltage
+						this.clearGeneralInterval()
+						this.updateVoltage(values)
+						this.getRegisteredBoard1()
+
+					break					
+
+				case 0x10: //Register Board name 1
+						this.clearGeneralInterval()
+						this.updateRegisterBoard1(values)
+						this.getRegisteredBoard2()
+
+					break
+
+				case 0x11: // Register Board name 2
+						this.clearGeneralInterval()
+						this.updateRegisterBoard2(values)
+						this.getAppPicVersion()
+					break
+
+
+				case 0x25: // App pic Version
+						this.clearGeneralInterval()
+						this.updateAppPicVersion(values)
+						this.getRadioPicVersion()
+					break
+				case 0x26: // Radio Pic Version
+						this.clearGeneralInterval()
+						this.updateRadioPicVersion(values)
+						this.getHoppingTable()
+					break					
+
+
+				case 0x20: //get hopping table
+						this.clearGeneralInterval()
+						this.updateHoppingTable(values)
+						this.getDebugModeStatus()
+					break					
+
+				case 0x1B: //get debug mode status
+						this.clearGeneralInterval()
+						this.updateDebugModeStatus(values)
+						this.getAllVersion()
+					break
+
+				case 0x1E: // all versions
+					this.clearGeneralInterval()
+					this.saveOnCloudLog(values,"FIRMWAREVERSIONS")
+					this.getBootloaderInfo()
+					break
+
+
+				case 0x07: //Bootloader info
+					this.clearGeneralInterval()
+					this.saveOnCloudLog(values,"BOOTLOADERINFO")
+					this.startOperationsAfterConnect(this.device)
+					break
+
+				/* --------------------------------------------------------------  --------------------------------------------------------------  --------------------------------------------------------------*/
+
+				case 0x16: // pair result
+					console.log("getting pair result");
+					
+					if(values[0] == 2){
+						Alert.alert(
+							"Pairing Complete",
+							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
+						)
+					}else{
+						Alert.alert(
+							"Error","Pairing on the other device failed. Please connect to the other device to finish the pairing process."
+						)
+					}
+					
+					this.turnOffNotifications()
+
+					break
+				case 0x17: // un-pair result
+					console.log("getting unpair result");
+					if(this.props.force){ //this comes from the file options method resetStacktoForce
+						Alert.alert(
+			    			"Success", "Un-Pair successfully sent"    		
+		    			)		
+		    			break
+					}
+
+					if(values[0] == 2){
+						Alert.alert(
+			    			"Success", "Un-Pair successfully sent"    		
+		    			)		
+
+					}else{
+						Alert.alert(
+							"Error","Un-pair on the other unit failed. Please connect to the other unit to complete the un-pair process."
+						)
+					}
+					this.turnOffNotifications()
+					break
+
+
+				case 0x1C: // last packet
+					console.log("get last packet")
+					this.turnOffNotifications()
+					this.saveOnCloudLog(values,"LASTPACKET") 
+					var miliseconds = BYTES_TO_INT(values)
+					//console.log(miliseconds)
+
+					if(miliseconds){
+						if(miliseconds > 1000){
+							var seconds =  miliseconds / 1000	
+							
+							if(seconds > 60){
+								var minutes = seconds / 60
+								
+								if(minutes > 60){
+									var hours = minutes / 60
+									
+									if(hours > 24){
+										var days = hours / 24
+										Alert.alert("Last Connection","The last connection was made about " + Math.round(days) + " day(s) ago.")	
+									}else{
+										Alert.alert("Last Connection","The last connection was made about " + Math.round(hours) + " hour(s) ago.")		
+									}
+								}else{
+									Alert.alert("Last Connection","The last connection was made about " + Math.round(minutes) + " minute(s) ago.")	
+								}
+							}else{
+								Alert.alert("Last Connection","The last connection was made about " + Math.round(seconds) + " second(s) ago.")	
+							}
+						}else{
+							Alert.alert("Last Connection","The last connection was made about just now")	
+						}
+					}else{
+						Alert.alert("Last Connection","No connection has been made since power up.")	
+					}
+				break;
+				case 0x1A: //reset causes
+					console.log("getting reset causee");
+					this.turnOffNotifications()
+
+					this.saveOnCloudLog(values,"RESETCAUSES")
+					this.handleResetCauseNotification(values)
+
+				break;					
+
+
+
+				default:
+					//console.log("No options found to: " + value)
+				return
+			}					
+		}
+	}
 
 	closeModal(){
 		this.props.dispatch({type: "HIDE_MODAL"})
@@ -1783,16 +1943,7 @@ class SetupCentral extends Component{
 
 	startOperationsAfterConnect(device){
 		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase());
-		this.props.dispatch({type: "CONNECTED_CENTRAL_DEVICE"})
 		this.searchPairedUnit(this.device)
-	}
-
-	getBootloaderInfo(){
-		WRITE_COMMAND(this.device.id,[COMMAND_GET_BOOTLOADER_INFO]) // should get a 0x07 
-	}
-
-	getAllVersion(){
-		WRITE_COMMAND(this.device.id,[COMMAND_GET_ALL_VERSIONS]) // should get a 0x1E
 	}
 
 	searchPairedUnit(device){
@@ -1998,8 +2149,6 @@ class SetupCentral extends Component{
 				
 				this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : data.name})
 
-				this.checkPairOrUnPairResult()
-
 			})
 			.catch(error => console.log("error on fetchDeviceName 1",error))
 		})
@@ -2021,6 +2170,10 @@ class SetupCentral extends Component{
 				this.writeUnpairResult(this.device)
 			}
 		}
+
+	    this.clearGeneralInterval()
+		this.getAllInfo(this.device)		
+
 	}
 
 	render(){
@@ -2059,7 +2212,6 @@ class SetupCentral extends Component{
 							power_voltage = {props.power_voltage}
 							readStatusCharacteristic={(device) => this.getStatus(device)}
 							tryToConnect={(device) => this.tryToConnect(device)}
-							manualDisconnect={() => this.manualDisconnect()}
 							manualConnect={(device) => this.manualConnect(device)}
 							switchUnit={() => this.switchUnit()}
 						/>

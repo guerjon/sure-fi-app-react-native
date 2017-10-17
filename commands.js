@@ -7,6 +7,7 @@ export const COMMAND_GET_VOLTAGE = 0X1E
 export const COMMAND_MAKE_DEPLOY = 0x1F
 export const COMMAND_FORCE_UNPAIR = [0x20,0x01]
 
+export const COMMAND_GET_DEBUG_MODE_STATUS = 0x29
 
 export const COMMAND_START_FIRWMARE_UPDATE = 0x03
 export const COMMAND_START_ROW = 0x04
