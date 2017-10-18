@@ -111,9 +111,9 @@ class PairBridge extends Component{
     	
         if(this.central_device.manufactured_data.hardware_type == "01"){
             var central_id = this.central_device.manufactured_data.device_id
-            var remote_id = remote_device_id
+            var remote_id = remote_device_id.toUpperCase()
         }else{
-            var central_id = remote_device_id
+            var central_id = remote_device_id.toUpperCase()
             var remote_id = this.central_device.manufactured_data.device_id
         }
 
@@ -264,7 +264,7 @@ class PairBridge extends Component{
                                 remote_device: device
                             });
                             this.props.navigator.dismissLightBox();
-                            this.showAlertConfirmation(device.manufactured_data.device_id)
+                            this.showAlertConfirmation(device_id)
                             
                         }else{
                            Alert.alert(
@@ -304,7 +304,7 @@ class PairBridge extends Component{
                                 remote_device: device
                             });
                             this.props.navigator.dismissLightBox();
-                            this.showAlertConfirmation()
+                            this.showAlertConfirmation(device_id)
                             
                         }else{
                             Alert.alert(

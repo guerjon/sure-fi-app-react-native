@@ -68,7 +68,7 @@ class Options extends Component{
 
 		Alert.alert(
 			"Continue Un-Pairing",
-			"Are you sure you with to Un-Pair with the following Sure-Fi device? \n ID: " + device.manufactured_data.tx.toUpperCase(),
+			"Are you sure you wish to Un-Pair with the following Sure-Fi device? \n ID: " + device.manufactured_data.tx.toUpperCase(),
 			[
 				{text : "Cancel", onPress:() => console.log("Cancel unpairing")},
 				{text : "UNPAIR", onPress:() => this.unPair()}
@@ -102,10 +102,8 @@ class Options extends Component{
 				this.device.manufactured_data.tx = "000000"
 				this.device.manufactured_data.device_state = "0001"
 				this.device.writeUnpairResult = true
-		    	this.props.dispatch({
-		            type: "CENTRAL_DEVICE_MATCHED",
-		            central_device: this.device,
-		        });
+
+		    	this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.device});
 		    	this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: true})
 		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
 

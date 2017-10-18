@@ -80,11 +80,47 @@ class Bridges extends Component{
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})
         this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
         this.createScan()
-        this.startScanning()
+        //this.startScanning()
     }
 
     componentWillUnmount() {
         this.deleteScan()
+    }
+
+    componentDidMount() {
+        this.checkMultiplePermissions() 
+    }    
+
+    checkMultiplePermissions(){
+        console.log("checkMultiplePermissions()")
+        let permissions = PermissionsAndroid.PERMISSIONS
+        var { dispatch } = this.props;
+        
+
+        PermissionsAndroid.check('android.permission.READ_EXTERNAL_STORAGE')
+        .then(response => {
+            if(response){
+                PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
+                .then(response => {
+                    if(response){
+                        PermissionsAndroid.check('android.permission.CAMERA')
+                        .then(response => {
+                            if(response){ 
+                                this.continueToBluetoothState()
+                            }else{
+                                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
+                            }
+                        })
+                    }else{
+                        this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
+                    }
+                })
+                .catch(error => console.log("Error",error))
+            }else{
+                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
+            }
+        })
+        .catch(error => console.log("Error",error))        
     }
 
     deleteScan(){
@@ -118,10 +154,6 @@ class Bridges extends Component{
     stopWithoutDestroy(){
         this.manager.stopDeviceScan()
     }
-
-    componentDidMount() {
-        this.checkMultiplePermissions() 
-    }
     
     toggleShowDeviceList(){
         var {dispatch} = this.props
@@ -130,38 +162,6 @@ class Bridges extends Component{
         }else{
             dispatch({type:"SHOW_DEVICES_LIST"})
         }
-    }
-
-    checkMultiplePermissions(){
-        console.log("checkMultiplePermissions()")
-        let permissions = PermissionsAndroid.PERMISSIONS
-        var { dispatch } = this.props;
-        
-
-        PermissionsAndroid.check('android.permission.READ_EXTERNAL_STORAGE')
-        .then(response => {
-            if(response){
-                PermissionsAndroid.check('android.permission.ACCESS_COARSE_LOCATION')
-                .then(response => {
-                    if(response){
-                        PermissionsAndroid.check('android.permission.CAMERA')
-                        .then(response => {
-                            if(response){ 
-                                this.continueToBluetoothState()
-                            }else{
-                                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
-                            }
-                        })
-                    }else{
-                        this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
-                    }
-                })
-                .catch(error => console.log("Error",error))
-            }else{
-                this.props.dispatch({type: "SHOW_PERMISSIONS_MODAL"})
-            }
-        })
-        .catch(error => console.log("Error",error))        
     }
 
     continueToBluetoothState(){

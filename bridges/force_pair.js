@@ -105,7 +105,7 @@ class ForcePair extends Component{
 
 		if(device.manufactured_data.hardware_type == "01"){
 			var first_title = "Sure-Fi Bridge Central"
-			var second_title = "Central Unit UnPaired"
+			var second_title = "Central Unit Un-Paired"
 
 			var id_central = device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") 
 
@@ -115,7 +115,7 @@ class ForcePair extends Component{
 		}
 		else {
 			var first_title = "Sure-Fi Bridge Remote"
-			var second_title = "Remote Unit Unpaired"
+			var second_title = "Remote Unit Un-paired"
 
 			var remote_device = remote_device_id
 

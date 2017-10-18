@@ -64,7 +64,8 @@ import {
 	WRITE_HASH,
 	DISCONNECT,
 	POST_LOG,
-	LOG_CREATOR
+	LOG_CREATOR,
+	READ_TX
 } from '../action_creators'
 import Notification from '../helpers/notification'
 import {
@@ -151,7 +152,8 @@ class SetupCentral extends Component{
 		this.devices_found = []
 		this.is_in = false
 		this.changing_time = false
-		this.allow_go_to_operation_values = false
+		this.allow_go_to_operation_values = true
+		this.something = 0
 	}
 
 	componentWillMount() {
@@ -213,8 +215,6 @@ class SetupCentral extends Component{
 		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
 		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)		
 	}
-
-
 
 	componentWillUnmount() {
 		this.props.restartAll()
@@ -292,7 +292,7 @@ class SetupCentral extends Component{
 
 			IS_CONNECTED(device.id)
 			.then(response => {
-				console.log("responseeeee",response);
+				
 				if(!response){console.log("entra?");
 					SlowBleManager.connect(device.id)
 					.then(response => {})
@@ -389,62 +389,28 @@ class SetupCentral extends Component{
 
 	}
 
-	normalConnected(){
-		console.log("normalConnected()")
-
-		var device = this.device
-		var id = this.device.id
-		var data = GET_SECURITY_STRING(this.manufactured_device_id,this.device.manufactured_data.tx)
-		
-		IS_CONNECTED(id)
-		.then(response => {
-
-				BleManagerModule.retrieveServices(id,() => {
-		            BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
-		            	
-		            	this.eraseInterval()
-		            	this.setConnectionEstablished(device)
-
-		            }).catch(error => {
-		            	console.log("Error",error)
-		            });
-				})				
-			
-		}).catch(error => {
-			console.log("Error on normalConnected()",error)
-		})
-	}
-
-	deployConnected(){
-		console.log("deployConnected()")
-		let device = this.device
-		var id = device.id
-		var data = device.manufactured_data.security_string
-
-		IS_CONNECTED(id)
-		.then(response => {
-			if(!response){
-				BleManagerModule.retrieveServices(id,() => {
-		            BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
-		            	this.eraseInterval()
-		            	this.setConnectionEstablished()
-		            	
-		            }).catch(error => {
-		            	console.log("Error",error)
-		            })
-				})
-			}
-		})
-		.catch(error => {
-			console.log("Error",error)
-		})
-	}
-
     handleConnectedDevice(){
+    	console.log("handleConnectedDevice()")
+    	var device = this.device
+		READ_TX(device.id)
+		.then(response => {
+			console.log("response on readTxCharacteristic",response)
+			var tx = BYTES_TO_HEX(response)
+		
+			device.manufactured_data.tx = tx.toUpperCase()
 
-    	var state = this.device.manufactured_data.device_state.slice(-2)
-    	console.log("handleConnectedDevice()",state)
+			this.props.dispatch({
+                type: "CENTRAL_DEVICE_MATCHED",
+                central_device: device
+            });
+            this.chooseTypeConnected()
+		})
+		.catch(error => console.log("Error on readTxCharacteristic",error))
+    }
 
+	chooseTypeConnected(){
+		var state = this.device.manufactured_data.device_state.slice(-2)
+		console.log("chooseTypeConnected()",state)
     	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: parseInt(state)})
 
     	if(this.props.pair_disconnect || this.props.unpair_disconnect){
@@ -454,17 +420,49 @@ class SetupCentral extends Component{
     	}else if(state != "04"){
 
     		this.changing_time = false
-
     		this.normalConnected()
 
     	}else{	
 
     		this.deployConnected()
 
-    	}
-    }
+    	}		
+	}
 
-    setConnectionEstablished(){
+
+	normalConnected(){
+		console.log("normalConnected()")
+
+		var device = this.props.device
+		var id = this.props.device.id
+		var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
+		
+	    BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
+        	
+        	this.eraseInterval()
+        	this.setConnectionEstablished(device)
+
+        }).catch(error => {
+        	console.log("Error",error)
+        });
+		
+	}
+
+	deployConnected(){
+		console.log("deployConnected()")
+		let device = this.props.device
+		var id = device.id
+		var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
+		
+        BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
+        	this.eraseInterval()
+        	this.setConnectionEstablished()
+        }).catch(error => {
+        	console.log("Error",error)
+        })
+	}
+
+	setConnectionEstablished(){
     	console.log("setConnectionEstablished()")
 		
 		if(this.props.pair_disconnect || this.props.unpair_disconnect){
@@ -529,13 +527,8 @@ class SetupCentral extends Component{
 				console.log("status_on_bridge 2",this.status_on_bridge);
 
 				device.manufactured_data.device_state = this.setCorrectStatusToDevice(response[0],device);
-
-	    		this.props.dispatch({
-                    type: "CENTRAL_DEVICE_MATCHED",
-                    central_device: device
-                });
-
 				this.getCloudStatus(device)
+	    		
 
 			}
 		})
@@ -620,8 +613,6 @@ class SetupCentral extends Component{
     	}
 	}
 
-
-
 	writePairResult(device){
 		console.log("writePairResult()",device.id)
 		WRITE_COMMAND(device.id,[0x21])
@@ -679,7 +670,7 @@ class SetupCentral extends Component{
 	}
 
 	getCloudStatus(device){
-		console.log("getCloudStatus()")
+		//console.log("getCloudStatus()")
 		//console.log("this.device.manufactured_data",this.device.manufactured_data.device_state)
 		let hardware_serial = device.manufactured_data.device_id.toUpperCase()
 		let data = {
@@ -711,40 +702,40 @@ class SetupCentral extends Component{
 		}).catch(error => console.log("error",error))
 	}
 	
-
-
 	choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device){
-			console.log("getStatus()",current_status_on_cloud,expected_status,current_status_on_bridge)
-			current_status_on_cloud = parseInt(current_status_on_cloud,10)
-			expected_status = parseInt(expected_status,10)
-			current_status_on_bridge = parseInt(current_status_on_bridge,10)
-			if(current_status_on_cloud != "" && expected_status){
-				if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
-	    			switch(current_status_on_bridge){
-	    				case 1: 
-	    					this.handleUnpairedFail(expected_status) // the device is currently unpair
-	    				break
-	    				case 2:
-	    					this.handlePairingFail(expected_status) 
-	    				break
-	    				case 3:
-	    					this.handlePairedFail(expected_status) 
-	    				break
-	    				case 4:
-	    					this.handleDeployedFail(expected_status)
-	    				break
-	    				default:
-	    					Alert.alert("Error","The internal state on the device its wrong.")
-	    				break
-	    			}    		
-	    		}else{
-	    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
-	    		}
-
-			}else{
+			//console.log("getStatus()",current_status_on_cloud,expected_status,current_status_on_bridge)
+		current_status_on_cloud = parseInt(current_status_on_cloud,10)
+		expected_status = parseInt(expected_status,10)
+		current_status_on_bridge = parseInt(current_status_on_bridge,10)
+		if(current_status_on_cloud != "" && expected_status){
+			if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
+    			switch(current_status_on_bridge){
+    				case 1: 
+    					this.handleUnpairedFail(expected_status) // the device is currently unpair
+    				break
+    				case 2:
+    					this.handlePairingFail(expected_status) 
+    				break
+    				case 3:
+    					this.handlePairedFail(expected_status) 
+    				break
+    				case 4:
+    					this.handleDeployedFail(expected_status)
+    				break
+    				default:
+    					Alert.alert("Error","The internal state on the device its wrong.")
+    				break
+    			}    		
+    		}else{
     			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
     		}
-			this.checkPairOrUnPairResult()			
+
+		}else{
+			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
+		}
+
+    	this.clearGeneralInterval()
+		this.getAllInfo(this.device)		
     }
 
     handleUnpairedFail(expected_status){ //  device state 1
@@ -862,13 +853,10 @@ class SetupCentral extends Component{
 	  }).join('')
 	}
 
-
-
 	saveOnCloudLog(value,log_type){
 		var body = LOG_CREATOR(value,this.manufactured_device_id,this.device.id,log_type)
 		POST_LOG(body)
 	}
-
 
 	setDebugModeStatus(){
 		if(this.props.debug_mode_status){ // debug mode is enabled
@@ -1012,7 +1000,6 @@ class SetupCentral extends Component{
 
 
 	getLastPackageTime(){
-		this.turnOnNotifications()
 		WRITE_COMMAND(this.device.id,[0x2A])
 		.then(response => {
 		})
@@ -1020,7 +1007,6 @@ class SetupCentral extends Component{
 	}
 
 	getResetCauses(){
-		this.turnOnNotifications()
 		console.log("getResetCauses()");
 		WRITE_COMMAND(this.device.id,[0x26])
 		.then(response => {
@@ -1103,7 +1089,6 @@ class SetupCentral extends Component{
         this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:normal_hopping_table})
         this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor:selectedDeviceSF})
         this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width:selectedDeviceBandwidth})
-
 	}
 
 	renderInfo(){
@@ -1183,27 +1168,33 @@ class SetupCentral extends Component{
 		return null
 	}
 
-	getOtherCommands(user_type){
-	/*
+	writeRandomCommand(){
+		this.allow_random_commands = true
+		
+		var commands = [
+			COMMAND_GET_FIRMWARE_VERSION,
+			COMMAND_GET_RADIO_FIRMWARE_VERSION,
+			COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION,
+			COMMAND_GET_RADIO_SETTINGS,
+			COMMAND_GET_VOLTAGE,
+			COMMAND_GET_REGISTERED_BOARD_1,
+			COMMAND_GET_REGISTERED_BOARD_2,
+			COMMAND_GET_APP_PIC_VERSION,
+			COMMAND_GET_RADIO_PIC_VERSION,
+			COMMAND_GET_HOPPING_TABLE,
+			COMMAND_GET_DEBUG_MODE_STATUS,
+			COMMAND_GET_ALL_VERSIONS,
+			COMMAND_GET_BOOTLOADER_INFO
+		]
 
-		return (
-				<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => params.callback()}>
-					<View style={{pang:10,flexDirection:"row"}}>
-						<View style={{flex:0.7}}>
-							<Text style={{fontSize:14}}>
-								{params.name}
-							</Text>
-						</View>
-						<View style={{flex:1}}>
-							<Text style={{fontSize:12}}>
-								{params.value}
-							</Text>
-						</View>				
-					</View>
-				</TouchableHighlight>
-			)
-			
-	*/
+		var item = commands[8];
+
+		WRITE_COMMAND(this.device.id,[item])
+		this.something = this.something + 1
+
+	}
+
+	getOtherCommands(user_type){
 
 		if(user_type){
 		//if(true){
@@ -1223,6 +1214,7 @@ class SetupCentral extends Component{
 				</View>
 			)
 		}
+		//<WhiteRowLink name="Test button" callback={() => this.writeRandomCommand()}/>
 	}
 
 	renderOptions(){
@@ -1581,7 +1573,7 @@ class SetupCentral extends Component{
 	}
 
 	clearGeneralInterval(){
-		console.log("clearGeneralInterval()",general_interval)
+		//console.log("clearGeneralInterval()",general_interval)
 		if(general_interval != 0){
 			clearInterval(general_interval)
 			general_interval = 0
@@ -1591,11 +1583,15 @@ class SetupCentral extends Component{
 	}
 
 	createGeneralInterval(callback){
-		console.log("createGeneralInterval()",general_interval)
-		if(general_interval == 0){
-			general_interval = setInterval(callback,500)
+		//console.log("createGeneralInterval()",general_interval)
+		if(this.allow_random_commands){
 		}else{
-			console.log("general_interval previosly created")
+			callback()
+			/*if(general_interval == 0){
+				general_interval = setInterval(callback,100)
+			}else{
+				console.log("general_interval previosly created")
+			}*/			
 		}
 	}
 
@@ -1604,141 +1600,141 @@ class SetupCentral extends Component{
 
 	/* --------------------------------------------------------------------------------------------------- get commands Seccion ---------------------------------------------------------------*/	
 
-		getAllInfo(device){
-			console.log("getAllInfo()")
-			this.getFirmwareVersion()
-		}
+	getAllInfo(device){
+		console.log("getAllInfo()")
+		this.getFirmwareVersion()
+	}
 
-		getFirmwareVersion(){
-			console.log("getFirmwareVersion()")
-			this.createGeneralInterval(() => {
-		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_FIRMWARE_VERSION])
-		    	.then(response => {		    		
-		    	})
-		    	.catch(error => console.log("error",error))						
+	getFirmwareVersion(){
+		console.log("getFirmwareVersion()")
+		this.createGeneralInterval(() => {
+	    	WRITE_COMMAND(this.device.id,[COMMAND_GET_FIRMWARE_VERSION])
+	    	.then(response => {		    		
+	    	})
+	    	.catch(error => console.log("error",error))						
+		})
+	}
+
+	getRadioFirmwareVersion(){
+		console.log("getRadioFirmwareVersion()")
+		this.createGeneralInterval(() => {			
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
+	    	.then(response => {
+
 			})
-		}
+	    	.catch(error => console.log("error getting App firmware version",error)) 			
+		})
+	}
 
-		getRadioFirmwareVersion(){
-			console.log("getRadioFirmwareVersion()")
-			this.createGeneralInterval(() => {			
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_FIRMWARE_VERSION])
-		    	.then(response => {
-
-				})
-		    	.catch(error => console.log("error getting App firmware version",error)) 			
+	getBluetoothFirmwareVersion(){
+		console.log("getBluetoothFirmwareVersion()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
+			.then(response => {
 			})
-		}
+			.catch(error => console.log("error getting Radio firmware version",error))				
+		})
+	}
 
-		getBluetoothFirmwareVersion(){
-			console.log("getBluetoothFirmwareVersion()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_BLUETOOTH_FIRMWARE_VERSION])
-				.then(response => {
-				})
-				.catch(error => console.log("error getting Radio firmware version",error))				
+	getRadioSettings(){
+		console.log("getRadioSettings()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_SETTINGS])
+			.then(response => {
+				
+			}).catch(error => console.log("error",error))				
+		})
+	}
+
+	getVoltage(){
+		console.log("getVoltage()")
+		this.createGeneralInterval(() => {			
+	    	WRITE_COMMAND(this.device.id,[COMMAND_GET_VOLTAGE])
+	    	.then(response => {
+
+			}).catch(error => console.log("error",error))			
+		})
+	}
+
+	getRegisteredBoard1(){
+		console.log("getRegisteredBoard1()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_1])
+			.then(response => {
+				
+			}).catch(error => console.log("error",error))							
+		})
+	}
+
+	getRegisteredBoard2(){
+		console.log("getRegisteredBoard2()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_2])
+			.then(response => {
+			}).catch(error => console.log("error",error))							
+		})
+	}
+
+	getAppPicVersion(){
+		console.log("getAppPicVersion()")
+		this.createGeneralInterval(() => {			
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_APP_PIC_VERSION])
+	    	.then(response => {
+			}).catch(error => console.log("error",error))			
+		})
+	}
+
+	getRadioPicVersion(){
+		console.log("getRadioPicVersion()")
+		this.createGeneralInterval(() => {
+	    	WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_PIC_VERSION])
+	    	.then(response => {
+	    	}).catch(error => console.log("error",error))				
+		})
+	}
+
+	getHoppingTable(){
+		console.log("getHoppingTable()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_HOPPING_TABLE])
+    		.then(response => {
+    		})
+    		.catch(error => console.log("error",error))							
+		})
+	}
+
+
+	getDebugModeStatus(){
+		console.log("getDebugModeStatus()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_DEBUG_MODE_STATUS]) // response with 0x1B
+			.then(response => {
 			})
-		}
-
-		getRadioSettings(){
-			console.log("getRadioSettings()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_SETTINGS])
-				.then(response => {
-					
-				}).catch(error => console.log("error",error))				
-			})
-		}
-
-		getVoltage(){
-			console.log("getVoltage()")
-			this.createGeneralInterval(() => {			
-		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_VOLTAGE])
-		    	.then(response => {
-
-				}).catch(error => console.log("error",error))			
-			})
-		}
-
-		getRegisteredBoard1(){
-			console.log("getRegisteredBoard1()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_1])
-				.then(response => {
-					
-				}).catch(error => console.log("error",error))							
-			})
-		}
-
-		getRegisteredBoard2(){
-			console.log("getRegisteredBoard2()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_REGISTERED_BOARD_2])
-				.then(response => {
-				}).catch(error => console.log("error",error))							
-			})
-		}
-
-		getAppPicVersion(){
-			console.log("getAppPicVersion()")
-			this.createGeneralInterval(() => {			
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_APP_PIC_VERSION])
-		    	.then(response => {
-				}).catch(error => console.log("error",error))			
-			})
-		}
-
-		getRadioPicVersion(){
-			console.log("getRadioPicVersion()")
-			this.createGeneralInterval(() => {
-		    	WRITE_COMMAND(this.device.id,[COMMAND_GET_RADIO_PIC_VERSION])
-		    	.then(response => {
-		    	}).catch(error => console.log("error",error))				
-			})
-		}
-
-		getHoppingTable(){
-			console.log("getHoppingTable()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_HOPPING_TABLE])
-	    		.then(response => {
-	    		})
-	    		.catch(error => console.log("error",error))							
-			})
-		}
+			.catch(error => console.log("Error on getDebugModeStatus()",error));				
+		})
+	}
 
 
-		getDebugModeStatus(){
-			console.log("getDebugModeStatus()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_DEBUG_MODE_STATUS]) // response with 0x1B
-				.then(response => {
-				})
-				.catch(error => console.log("Error on getDebugModeStatus()",error));				
-			})
-		}
+	getAllVersion(){
+		console.log("getAllVersion()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_ALL_VERSIONS]) // should get a 0x1E	
+		})
+	}
 
-
-		getAllVersion(){
-			console.log("getAllVersion()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_ALL_VERSIONS]) // should get a 0x1E	
-			})
-		}
-
-		getBootloaderInfo(){
-			console.log("getBootloaderInfo()")
-			this.createGeneralInterval(() => {
-				WRITE_COMMAND(this.device.id,[COMMAND_GET_BOOTLOADER_INFO]) 	
-			})
-		}		
+	getBootloaderInfo(){
+		console.log("getBootloaderInfo()")
+		this.createGeneralInterval(() => {
+			WRITE_COMMAND(this.device.id,[COMMAND_GET_BOOTLOADER_INFO]) 	
+		})
+	}		
 
 
 	/* --------------------------------------------------------------------------------------------------- End commands Seccion ---------------------------------------------------------------*/	
 
 	handleCharacteristicNotification(data){
 		//console.log("handleCharacteristicNotification",this.props.allow_notifications,values)
-		console.log("handleCharacteristicNotification",data)
+		//console.log("handleCharacteristicNotification()")
 		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
 			var values = data.value;
 			var value = values[0]
@@ -1853,7 +1849,7 @@ class SetupCentral extends Component{
 						)
 					}
 					
-					this.turnOffNotifications()
+					
 
 					break
 				case 0x17: // un-pair result
@@ -1875,13 +1871,11 @@ class SetupCentral extends Component{
 							"Error","Un-pair on the other unit failed. Please connect to the other unit to complete the un-pair process."
 						)
 					}
-					this.turnOffNotifications()
 					break
 
 
 				case 0x1C: // last packet
 					console.log("get last packet")
-					this.turnOffNotifications()
 					this.saveOnCloudLog(values,"LASTPACKET") 
 					var miliseconds = BYTES_TO_INT(values)
 					//console.log(miliseconds)
@@ -1917,14 +1911,11 @@ class SetupCentral extends Component{
 				break;
 				case 0x1A: //reset causes
 					console.log("getting reset causee");
-					this.turnOffNotifications()
 
 					this.saveOnCloudLog(values,"RESETCAUSES")
 					this.handleResetCauseNotification(values)
 
 				break;					
-
-
 
 				default:
 					//console.log("No options found to: " + value)
@@ -1942,8 +1933,10 @@ class SetupCentral extends Component{
 	}
 
 	startOperationsAfterConnect(device){
-		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase());
-		this.searchPairedUnit(this.device)
+		if(this.props.debug_mode_status)
+			this.props.dispatch({type: "CONNECTED_CENTRAL_DEVICE"})
+
+		this.checkPairOrUnPairResult()
 	}
 
 	searchPairedUnit(device){
@@ -2156,9 +2149,9 @@ class SetupCentral extends Component{
 	}
 
 	checkPairOrUnPairResult(){
-		if(this.props.write_pair_result || this.props.write_unpair_result){
+		console.log("checkPairOrUnPairResult()",this.props.write_pair_result,this.props.write_unpair_result)
 
-			this.turnOnNotifications()
+		if(this.props.write_pair_result || this.props.write_unpair_result){
 			
 			if(this.props.write_pair_result){
 
@@ -2169,10 +2162,12 @@ class SetupCentral extends Component{
 				this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
 				this.writeUnpairResult(this.device)
 			}
+
 		}
 
-	    this.clearGeneralInterval()
-		this.getAllInfo(this.device)		
+		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase());
+		this.searchPairedUnit(this.device)
+
 
 	}
 
@@ -2204,7 +2199,6 @@ class SetupCentral extends Component{
 			<Background>
 				<ScrollView>
 					<View>
-						
 						<StatusBox
 							device = {this.device} 
 							device_status = {props.central_device_status}
