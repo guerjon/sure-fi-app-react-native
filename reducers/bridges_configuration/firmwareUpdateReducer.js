@@ -12,7 +12,8 @@ const initialState = {
   current_update : "no_started",
   show_firmware_update_list : false,
   selected_version : 0,
-  selected_files : {}
+  selected_files : {},
+  radio_text: "Updating Radio"
 }
 
 export default function firmwareUpdateReducer (state = initialState, action) {
@@ -60,7 +61,6 @@ export default function firmwareUpdateReducer (state = initialState, action) {
           bluetooth_firmware_files : action.bluetooth_firmware_files
       }
     case "SHOW_ADVANCED_VIEW":
-      console.log("bi ha de entrar")
       return {
         ...state,
         view_kind : "advanced"
@@ -116,6 +116,12 @@ export default function firmwareUpdateReducer (state = initialState, action) {
         ...state,
         selected_files : action.selected_files
       }
+    case "SET_RADIO_TEXT":
+      return {
+        ...state,
+        radio_text: action.radio_text
+      }
+
     default:
       return state
   }

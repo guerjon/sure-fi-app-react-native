@@ -389,59 +389,10 @@ export const CALCULATE_VOLTAGE = x => {
 	return voltage
 }
 
+export const INCREMENT_PROGRAM_NUMBER = programNumber => {
 
-export const FIND_PROGRAMING_NUMBER = data =>{
-	var data = data.value
-	
-	var bootloader_info = BYTES_TO_HEX(data)
-	bootloader_info = bootloader_info.substr(2,bootloader_info.length).toUpperCase()
-	
-	var lowerReadCrc            = bootloader_info.substr(0,4)
-	var lowerCalculatedCrc      = bootloader_info.substr(4,4)
-	var lowerVersionNumberMajor = bootloader_info.substr(8,2)
-	var lowerVersionNumberMinor = bootloader_info.substr(10,2)
-	var lowerProgramNumber      = bootloader_info.substr(12,4)
-	var upperReadCrc            = bootloader_info.substr(16,4)
-	var upperCalculatedCrc      = bootloader_info.substr(20,4)
-	var upperVersionNumberMajor = bootloader_info.substr(24,2)
-	var upperVersionNumberMinor = bootloader_info.substr(26,2)
-	var upperProgramNumber      = bootloader_info.substr(28,4)
-	var bootingUpperMemory      = bootloader_info.substr(32,2)
-
-	if(lowerProgramNumber == "FFFF") {
-	    lowerProgramNumber = "0000"
-	}
-
-	if( upperProgramNumber == "FFFF" ){
-	    upperProgramNumber = "0000"
-	}
-
-	if( lowerReadCrc == lowerCalculatedCrc) {
-	    lowerImageOK = true
-	    lowerProgramNumber = INCREMENT_PROGRAM_NUMBER(lowerProgramNumber)
-	}
-
-	if (upperReadCrc == upperCalculatedCrc){
-	    upperImageOK = true
-	    upperProgramNumber = INCREMENT_PROGRAM_NUMBER(upperProgramNumber)
-	}
-
-	if( bootingUpperMemory == "00") {
-		return lowerProgramNumber
-	}
-
-	else if  (bootingUpperMemory == "01") {
-		return upperProgramNumber
-	}
-
-	else {
-		console.log("CRC ERROR","Error Updating Firmware. CRC Error on Bridge Device")
-	    return 0
-	}	
-}
-
-const INCREMENT_PROGRAM_NUMBER = programNumber => {
 	programNumber = parseInt(programNumber, 10) + 1
+	console.log("programNumber",programNumber)
 	var byte_program_number = LONG_TO_BYTE_ARRAY(programNumber)
 	return byte_program_number
 }

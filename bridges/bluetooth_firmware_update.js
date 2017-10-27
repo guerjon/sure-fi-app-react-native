@@ -8,7 +8,8 @@ import {
   	NativeEventEmitter,
   	Alert,
   	ActivityIndicator,
-  	Dimensions
+  	Dimensions,
+  	TouchableHighlight
 } from 'react-native'
 import {styles,first_color,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
@@ -62,6 +63,7 @@ class BluetoothFirmwareUpdate extends Component{
 	}
 
 	componentWillUnmount() {
+		clearInterval(this.scanning)
 		this.discoverPeripheral.remove()
 		this.completedEvent.remove()
 		this.uGraph.remove()
@@ -92,6 +94,7 @@ class BluetoothFirmwareUpdate extends Component{
 				}	
 				
 				this.filePath = res.path()
+
 				WRITE_COMMAND(this.device.id,[0x1A])
 				this.searchDevices()
 
@@ -114,7 +117,9 @@ class BluetoothFirmwareUpdate extends Component{
 	}
 
 	dfuCompletedEvent(data){
-		Alert.alert("Update Complete","The bluetooth update has been completed");
+		Alert.alert("Update Complete","The firmware update has been completed");
+		
+
 		setTimeout(() => this.fastTryToConnect(this.device),2000)
 		this.props.closeAndConnect()
 	}
@@ -122,7 +127,7 @@ class BluetoothFirmwareUpdate extends Component{
 	fastTryToConnect(){
 		console.log("fastTryToConnect()")
 	    
-		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+		this.props.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:true})
 		this.props.dispatch({type: "BT_UPDATE_STATUS",radio_update_status : "updated"})
 
 		IS_CONNECTED(this.device.id)
@@ -162,7 +167,7 @@ class BluetoothFirmwareUpdate extends Component{
 						</View>
 						<View style={{padding:10}}>
 							<Text style={{textAlign:"center"}}>
-								{progress.toFixed(2) * 100 } %
+								{Math.trunc(progress * 100)} %
 							</Text>
 						</View>
 						<View>
@@ -172,9 +177,7 @@ class BluetoothFirmwareUpdate extends Component{
 				</View>
 			)
 		}else{
-			var content = (
-				<ActivityIndicator />
-			)
+			return null
 		}
 		return(
 			<View style={{padding:50}}>
@@ -184,7 +187,7 @@ class BluetoothFirmwareUpdate extends Component{
 	}
 
 	handleDiscoverPeripheral(device){
-		console.log("handleDiscoverPeripheral()")
+		console.log("handleDiscoverPeripheral()",device)
 		var devices = this.devices;
 		
 		if(device.name){
@@ -200,7 +203,7 @@ class BluetoothFirmwareUpdate extends Component{
 							this.scanning_status = "stopped"; //just should be in one time
 							clearInterval(this.scanning)
 	          				this.props.dispatch({type: "START_UPDATE"})
-	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),5000)							
+	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),2000)							
 						}
 					}
 	        	}
@@ -222,25 +225,47 @@ class BluetoothFirmwareUpdate extends Component{
 		}
 	}
 
+	getAdvanceView(){
+		console.log("getAdvanceView()")
+		//console.log("this.props.firmware_files",this.props.firmware_files)
+		var bi = this.props.bootloader_info
+
+		return (
+			<View style={{alignItems:"center"}}>
+				<View style={{height:100,width:width-20,marginVertical:5,marginBottom:20,alignItems:"center",borderWidth:1,borderRadius:10}}>
+					<View style={{padding:10,backgroundColor:"white",borderRadius:10}}>
+						<View style={{flexDirection:"row",justifyContent:"space-between"}}>
+							<Text style={{color:"black",fontSize:18,marginBottom:10}}>
+								Bootloader App Data
+							</Text>
+						</View>
+						<Text>
+							Upper CRC: {bi.upperReadCrc} | {bi.upperCalcCrc} Version: {bi.upperVersionMajor}.{bi.upperVersionMinor} Prgm:{bi.upperProgramNumber}
+						</Text>
+						<Text>
+							Lower CRC: {bi.lowerReadCrc}|{bi.lowerCalcCrc} Version: {bi.lowerVersionMajor}.{bi.lowerVersionMinor}  Prgm:{bi.lowerProgramNumber}
+						</Text>
+					</View>
+				</View>		
+				<View>
+					<SelectFirmwareCentral 
+						device ={this.device}
+						kind_firmware="application" 
+						fetchFirmwareUpdate={(file) => this.handleKindOfView(file)}
+						getStartRow={() => this.getStartRow()}
+						firmware_files={this.props.firmware_files}
+					/>
+				</View>
+			</View>
+		)
+	}	
+
 	render(){
 		return(
-			<View style={{flex:1}}>
+			<View>
 				<View style={{alignItems:"center"}}>
-					<View style={{alignItems:"center"}}>
-						<Text style={{fontSize:18,color:"black"}}>
-							Current Radio Firmware Version
-						</Text>
-						<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
-							{this.props.radio_version}
-						</Text>
-						<View style={{height:400}}>
-							<SelectFirmwareCentral 
-								device ={this.device}
-								fetchFirmwareUpdate={(file) =>  this.handleKindOfView(file)}
-								getStartRow={() => this.getStartRow()}
-								firmware_files={this.props.firmware_files}
-							/>
-						</View>
+					<View style={{backgroundColor:"white"}}>
+						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}				
 					</View>
 				</View>
 			</View>
@@ -252,6 +277,7 @@ const mapStateToProps = state => ({
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,
 	devices : state.pairReducer.devices,
     progress : state.firmwareUpdateReducer.progress,
+    bootloader_info : state.updateFirmwareCentralReducer.bootloader_info
 });
 
 export default connect(mapStateToProps)(BluetoothFirmwareUpdate);

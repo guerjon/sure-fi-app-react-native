@@ -125,7 +125,7 @@ class StatusBox extends Component{
 
     renderStatusDevice(){
     	var {device_status,remote_devices,remote_device_status,device} = this.props
-
+    	console.log("device_status",device_status)
     	switch(device_status){
     		case "normal_connecting":
     			return this.renderNormalConnecting()
@@ -134,7 +134,6 @@ class StatusBox extends Component{
 			case "disconnected":
 	            return this.renderDisconnectingBox();
 			case "connected":
-				if (this.props.options_loaded) 
  				return(
 					<View>
 						<View style={{backgroundColor:"white"}}>
@@ -153,11 +152,8 @@ class StatusBox extends Component{
 								</View>
 							</View>
 						</View>
-					</View>	            	
+					</View>
 	            )
- 				else
- 					return this.renderNormalConnecting()
-
 	        default:
 	        	return <Text>Error</Text>
     	}
@@ -178,11 +174,16 @@ class StatusBox extends Component{
 
     }
 	
-    updateName(){
-    	console.log("updateName()",this.props.device_name);
-    	var device_name = this.props.device_name.trim()
+    updateName(save_param){
+    	console.log("updateName()",this.props.device_name,save_param);
+    	
+		var device_name = this.props.device_name.trim()
 
     	if(device_name.length > 0 && device_name.length < 60){
+
+			this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: device_name,original_name:device_name})
+			this.props.dispatch({type: "FINISH_EDITING"})
+
 	    	let device = this.props.device
 	    	let device_id = device.manufactured_data.device_id.toUpperCase()
 	    	let ret_uuid = device.id
@@ -204,8 +205,6 @@ class StatusBox extends Component{
 	    		console.log("data",response);
 	    		if(data.status == "success"){
 
-	    			this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: device_name,original_name:device_name})
-					this.props.dispatch({type: "FINISH_EDITING"})
 
 	    		}else{
 	    			Alert.alert("Error on update","Something was wrong on update the name")
@@ -220,17 +219,12 @@ class StatusBox extends Component{
 			else{
 				Alert.alert("Error!","The name is too long.")
 			}
-    	}
+    	}    		
+    	
     }
 
 	startEditName(){
 		this.props.dispatch({type: "START_EDITING"})
-	}
-
-	finishEditName(){
-		console.log("this.original_name 2",this.props.original_name);
-		this.props.dispatch({type:"UPDATE_DEVICE_NAME",device_name: this.props.original_name})
-		this.props.dispatch({type: "FINISH_EDITING"})
 	}
 
 	getSwitchButton(){
@@ -278,33 +272,32 @@ class StatusBox extends Component{
 
 	}
 
+	checkFocusInput(){
+		console.log("checkFocusInput()")
+		if(this.input){
+			if(this.input.isFocused){
+				console.log("funciona")
+			}else{
+				console.log("funciona 2")
+			}
+		}
+	}
+
+
 	getEditing(){
 		return (
 			<View style={{}}>
-				<View style={{margin:10,flexDirection:"row",alignItems:"center"}}>
+				<View style={{margin:10,flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
 					<View style={{flex:0.5}}>
 						<TextInput
 							placeholder = "Write your new name"
-							style={{height: 40, width:width -80, borderColor: 'black', borderWidth: 0.7,borderRadius:5,backgroundColor:"white"}} 
+							style={{height: 40, width:width -20, borderColor: 'black', borderWidth: 0.7,borderRadius:5,backgroundColor:"white"}} 
 							underlineColorAndroid="transparent"
 							onChangeText = {text => this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : text })}
+							onEndEditing = {() => this.updateName()}
 							value = {this.props.device_name}
 						/>					
 					</View>
-					<View style={{flex:0.2}}>
-						<TouchableHighlight 
-							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-							onPress={() => this.finishEditName()}
-						>
-							<Icon name="times" size={25} color="red"/>
-						</TouchableHighlight>
-						<TouchableHighlight 
-							style={{flex:0.1,alignItems:"flex-end",justifyContent:"center",paddingVertical:10}}
-							onPress={() => this.updateName()}
-						>
-							<Icon name="upload" size={25} color="green"/>
-						</TouchableHighlight>
-					</View>	
 				</View>
 			</View>
 		)
@@ -379,7 +372,7 @@ class StatusBox extends Component{
             <ScrollView>
 				<View>
 					<View style={{backgroundColor:"white"}}>
-						<View onPress={()=> this.scanCentralDevices()} style={styles.touchableSection}>
+						<View onPress={()=> this.scanCentralDevices()}>
 							{this.getTextSection(this.props.is_editing)}
 						</View>
 					</View>					

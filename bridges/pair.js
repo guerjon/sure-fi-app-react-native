@@ -56,6 +56,7 @@ class PairBridge extends Component{
 		this.fast_manager = props.manager
 		this.central_device = props.device
 		this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+
 		this.devices = []
 	}
 
@@ -74,6 +75,9 @@ class PairBridge extends Component{
             switch(event.id){
                 case "insert_pin":
                 	this.goToInsertIDModal()
+                break
+                case "willDisappear":
+                    this.fast_manager.stopDeviceScan();
                 break
                 default:
                 break
@@ -140,10 +144,6 @@ class PairBridge extends Component{
 		this.props.navigator.pop()    	
     }
 
-    componentWillUnmount() {
-    	this.fast_manager.stopDeviceScan();
-    }
-
     scanDevices(){
         console.log("scanRemoteDevices()")
         var devices = this.devices
@@ -152,13 +152,10 @@ class PairBridge extends Component{
                 console.log("error on scan devices",error)
                 return
             }
-
-            console.log("device.id",device.id);
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
 
                 if (!FIND_ID(devices, device.id)) {   
                     var data = this.getManufacturedData(device)
-                    console.log("device.id",data.manufactured_data.device_id);
                     devices.push(data)
                     this.devices = devices
                 }                

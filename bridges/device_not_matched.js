@@ -63,6 +63,11 @@ class DeviceNotMatched extends Component {
     componentWillUnmount() {
         this.eraseInterval()
         clearInterval(interval)
+
+        this.props.dispatch({
+            type: "ALLOW_SCANNING",
+            allow_scanning: true
+        })
     }
 
     createInterval() {
@@ -85,6 +90,7 @@ class DeviceNotMatched extends Component {
     }
 
     checkForDevice() {
+        console.log("checkForDevice()")
         var device_id = this.props.device_id
         var devices = this.props.devices
 
@@ -114,14 +120,6 @@ class DeviceNotMatched extends Component {
                 break
         }
 
-    }
-
-    componentWillUnmount() {
-        console.log("componentWillUnmount()");
-        this.props.dispatch({
-            type: "ALLOW_SCANNING",
-            allow_scanning: true
-        })
     }
 
     componentWillMount() {
@@ -207,16 +205,10 @@ class DeviceNotMatched extends Component {
 		
         if(this.matched_devices){
             if(this.matched_devices.length > 0){
-
+                console.log("matched_devices",this.matched_devices)
                 var matched_device = this.matched_devices[0]
-                
-                this.props.dispatch({
-                    type: "CENTRAL_DEVICE_MATCHED",
-                    central_device: matched_device
-                });
-
                 this.props.navigator.pop()
-                this.props.goToDeviceControl(matched_device)            
+                this.props.goToDeviceControl(matched_device)          
             }else{
                 this.props.navigator.pop()    
             }

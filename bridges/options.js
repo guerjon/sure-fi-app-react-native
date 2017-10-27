@@ -71,52 +71,12 @@ class Options extends Component{
 			"Are you sure you wish to Un-Pair with the following Sure-Fi device? \n ID: " + device.manufactured_data.tx.toUpperCase(),
 			[
 				{text : "Cancel", onPress:() => console.log("Cancel unpairing")},
-				{text : "UNPAIR", onPress:() => this.unPair()}
+				{text : "UNPAIR", onPress:() => this.props.unPair()}
 			]
 		)
 	}
 
-    unPair() {
-    	console.log("unPair123",this.device.manufactured_data.device_id)
 
-	    if(!this.props.debug_mode_status){
-		    this.props.dispatch({
-		    	type: "SET_UNPAIR_DISCONNECT",
-		    	unpair_disconnect: true
-		    })
-		}
-
-		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
-
-		WRITE_UNPAIR(this.device.id).then(response => {
-			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
-			
-			var remote_state = "01|01|"+this.device.manufactured_data.tx+"|000000"
-
-			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,state)
-			.then(response => {
-				PUSH_CLOUD_STATUS(this.device.manufactured_data.tx,remote_state)
-				
-				
-
-				this.device.manufactured_data.tx = "000000"
-				this.device.manufactured_data.device_state = "0001"
-				this.device.writeUnpairResult = true
-
-		    	this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.device});
-		    	this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: true})
-		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
-
-
-                if(this.props.debug_mode_status){
-                	this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
-                	this.props.readStatusAfterUnpair(this.device)
-                }
-			})
-			.catch(error => console.log("error on unPair() 1",error))
-
-		}).catch(error => console.log("error on Unpair 2",error ))
-    }
 
     forceUnPair(){
     	console.log("forceUnPair()")
@@ -426,10 +386,13 @@ class Options extends Component{
 	getAdditionalOptions(){
 		
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
+		console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data);
+		
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 		var sales_dist = ["SALES","DIST"]		
 		var indicator = this.props.indicatorNumber
+
+		console.log("indicator",this.props.indicatorNumber)
 
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){

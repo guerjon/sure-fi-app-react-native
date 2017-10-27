@@ -15,7 +15,6 @@ const initialState = {
   central_device : {},
   scanning_status: "no_device_found",
   central_device_status : "disconnected" 
-  //central_device_status : "connected" 
 }
 
 export default function configurationScanCentralReducer (state = initialState, action) {

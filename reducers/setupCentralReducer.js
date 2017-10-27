@@ -1,9 +1,5 @@
 import { FETCHING_DATA, FETCHING_DATA_SUCCESS, FETCHING_DATA_FAILURE } from '../constants'
 const initialState = {
-	screen_status : "index",
-  show_continue_button : false,
-  central_photo_data : {},
-  central_unit_description : "",
   device_status : 0, //this status keeps the real status of the bridge [0 => undefined, 1 => unpaired,2 =>pairing, 3 => paired,4 => deployed ],
   app_version : 0,
   radio_version : 0,
@@ -19,7 +15,6 @@ const initialState = {
   device_name : "",
   remote_device_name : "",
   hopping_table : 0,
-  action_from_disconnect : "",
   write_pair_result : false,
   write_unpair_result: false,
   hardware_status : null,
@@ -37,44 +32,15 @@ const initialState = {
   show_status_box : true,
   original_name: "",
   show_disconnect_notification : true,
-  allow_notifications : true
+  allow_notifications : true,
+  connection_established : false, // allows to know when the device is connected and security clear on the bridge
+  manual_disconnect : false,
 }
 
 export default function setupCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_SETUP_CENTRAL_REDUCER":
       return initialState
-  	case "SHOW_CAMERA":
-  		return {
-  			...state,
-  			screen_status : "camera"
-  		}
-    case "SHOW_IMAGE":
-      return {
-        ...state,
-        screen_status : "image",
-        central_photo_data : action.central_photo_data
-      }
-    case "SHOW_INDEX" : 
-      return {
-        ...state,
-        screen_status : "index"
-      }
-    case "SHOW_CONTINUE_BUTTON":
-      return {
-        ...state,
-        show_continue_button : true
-      }
-    case "HIDE_CONTINUE_BUTTON":
-      return {
-        ...state,
-        show_continue_button : false
-      }
-    case "UPDATE_CENTRAL_UNIT_DESCRIPTION" :
-      return {
-        ...state,
-        central_unit_description : action.central_unit_description
-      }
     case "UPDATE_OPTIONS":
       return {
         ...state,
@@ -157,11 +123,6 @@ export default function setupCentralReducer (state = initialState, action) {
         ...state,
         remote_device_name : action.remote_device_name
       }
-    case "UPDATE_ACTION_FROM_DISCONNNECT":
-      return {
-        ...state,
-        action_from_disconnect : action.action_from_disconnect
-      }
     case "SET_WRITE_PAIR_RESULT":
       return {
         ...state,
@@ -232,6 +193,12 @@ export default function setupCentralReducer (state = initialState, action) {
         ...state,
         deploy_disconnect: action.deploy_disconnect
       }
+    case "SET_MANUAL_DISCONNECT":
+      return {
+        ...state,
+        manual_disconnect : action.manual_disconnect,
+        
+    }      
     case "SET_SWITCH_DISCONNECT":
       return {
         ...state,
@@ -251,6 +218,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         power: action.power
+      }
+    case "SET_CONNECTION_ESTABLISHED":
+      return{
+        ...state,
+        connection_established: action.connection_established
       }
     default:
       return state

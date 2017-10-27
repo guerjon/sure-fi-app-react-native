@@ -18,10 +18,11 @@ import {
 	GET_HEADERS,
 	SUREFI_CMD_SERVICE_UUID,
 	SUREFI_CMD_WRITE_UUID,
-	FIND_PROGRAMING_NUMBER,
 	DEC2HEX,
 	CRC16,
-	HEX_TO_BYTES
+	HEX_TO_BYTES,
+	BYTES_TO_HEX,
+	INCREMENT_PROGRAM_NUMBER
 } from '../constants'
 
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -59,7 +60,7 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	componentWillUnmount() {
-		//this.handlerUpdate.remove()
+		this.handlerUpdate.remove()
 	}
 
 	fetchFirmwareUpdate(path,version){
@@ -89,7 +90,7 @@ class AppFirmwareUpdate extends Component{
 				this.bytes_file = byteArrays;
 				
 				if(version){
-					console.log("this.device.manufactured_data.hardware_type",this.device.manufactured_data.hardware_type);
+					
 					if(this.device.manufactured_data.hardware_type == "01")
 						this.props.saveOnCloudLog(version,'FIRMWARE-CENTRAL-APPLICATION')
 					else
@@ -109,37 +110,21 @@ class AppFirmwareUpdate extends Component{
 		}	
 	} 
 
-	handleKindOfView(file){
-		console.log("handleKindOfView()");
-
-		if(this.view_kind == "normal"){
-			this.fetchFirmwareUpdate(file,this.props.version)
-		}else{
-			var path = file.firmware_path
-			var version = file.firmware_version
-			this.fetchFirmwareUpdate(path,version)
+	requestBootloaderInfo(just_request){
+		console.log("requestBootloaderInfo()",just_request)
+		if(just_request){
+			this.just_request = just_request
 		}
-	}
-
-	requestBootloaderInfo(){
-		//console.log("requestBootloaderInfo()")
-		this.write([8]) //should return a 7 on handleCharacteristicNotification
+		this.write([0x08]) //should return a 7 on handleCharacteristicNotification
 	}
 
 	handleCharacteristicNotification(data){
-		
+		//console.log("data",data)
 		var {dispatch} = this.props
 		var response = data.value[0]
 
 		switch(response){
-			case 0x01:
-				//console.log("BleRsp_FirmwareVersion")
-				return
-			case 0x02:
-				//console.log("BleRsp_QosConfig")
-				return
 			case 0x03:
-				//console.log("BleRsp_UpdateStartSuccess")
 				this.startRow()
 				return								
 			case 0x04: 
@@ -158,74 +143,166 @@ class AppFirmwareUpdate extends Component{
 					this.writeFirstPiece()
 				return
 			case 0x06: //Update Finish success
-				if(this.props.viewKind == "normal")
-					this.props.startNextUpdate("app")
+				if(this.props.viewKind == "normal"){
+					this.props.startNextUpdate("app") // app is the current firmware update
+				}
 				else{
 					this.props.closeModal()
 					Alert.alert("Success","The update was compled successfully")
 				}
 				return
 			case 0x07:
-				//console.log("BleRsp_BootloaderInfo")
-				this.programNumber = FIND_PROGRAMING_NUMBER(data)
-				this.writeStartUpdate(this.programNumber)
+				console.log("BleRsp_BootloaderInfo")
+				data.value.shift()
+
+				this.checkBootloaderInfo(data.value)
+				
+				if(this.just_request)
+					this.writeStartUpdate()
 				return	
+
 			case 0xE0:
-				console.log("BleRsp_SecurityError")
+				Alert.alert("Error","BleRsp_SecurityError")
 				return
 			case 0xE1:
-				console.log("BleRsp_StartUpdateError")
+				Alert.alert("Error","BleRsp_StartUpdateError")
 				return
 			case 0xE2:
-				console.log("BleRsp_AlreadyStartedError")
+				Alert.alert("Error","BleRsp_AlreadyStartedError")
 				return
 			case 0xE3:
-				console.log("BleRsp_NotStartedError")
+				Alert.alert("Error","BleRsp_NotStartedError")
 				return
 			case 0xE4:
 				console.log("BleRsp_InvalidNumBytesError")
-				if(this.should_try_again){
-					this.should_try_again = false
-					this.processRow(this.new_current_row)
-				}
-				/*Alert.alert("Error","Error on firmware update")
-				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})*/
-				//this.errorProcessRows()
+				this.errorHandleRow()
 				return
 			case 0xE5:
-				console.log("BleRsp_PageFailure")
-				Alert.alert("Error","Error on firmware update")
-				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
+				console.log("")
+				Alert.alert("Error","BleRsp_PageFailure")
 				return
 			case 0xE6:
-				console.log("BleRsp_ImageCrcFailureError")
+				Alert.alert("Error","BleRsp_ImageCrcFailureError")
 				return
 			case 0xE9:
-				Alert.alert("Error","Error on firmware update")
-				this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
-				this.props.closeModal()					
+				Alert.alert("Error","UnsupportedCMD")
 				break
-
 			default:
-				console.log("No" + response + " option found")
+				console.log("No " + response + " option found")
 			return
 		}
 	}
 
-	writeFirstPiece(){
-		var sum = 0
-		var command = [5]
-		
-		while(this.current_row.length > 0){
-			let page = this.current_row.splice(0,19)
-			
-			data = command.concat(page)
-			this.writeWithoutResponse(data)
-		}
+	handleKindOfView(file){
+		console.log("handleKindOfView()");
 
-		this.write([6])
+		if(this.view_kind == "normal"){
+			this.fetchFirmwareUpdate(file,this.props.version)
+		}else{
+			var path = file.firmware_path
+			var version = file.firmware_version
+			this.fetchFirmwareUpdate(path,version)
+		}
 	}
 
+	getBootLoaderData(data){
+
+		var bootloader_info =
+		{
+			"lowerReadCrc" : BYTES_TO_HEX(data.slice(0,2)).toUpperCase(),
+			"lowerCalcCrc" : BYTES_TO_HEX(data.slice(2,4)).toUpperCase(),
+			"lowerVersionMajor" : BYTES_TO_HEX(data.slice(4,5)).toUpperCase(),
+			"lowerVersionMinor" : BYTES_TO_HEX(data.slice(5,6)).toUpperCase(),
+			"lowerVersionBuild" : BYTES_TO_HEX(data.slice(6,7)).toUpperCase(),
+			"lowerProgramNumber" : BYTES_TO_HEX(data.slice(7,8)).toUpperCase(),
+			"upperReadCrc" : BYTES_TO_HEX(data.slice(8,10)).toUpperCase(),
+			"upperCalcCrc" : BYTES_TO_HEX(data.slice(10,12)).toUpperCase(),
+			"upperVersionMajor" : BYTES_TO_HEX(data.slice(12,13) ).toUpperCase(),
+			"upperVersionMinor" : BYTES_TO_HEX(data.slice(13,14)).toUpperCase(),
+			"upperVersionBuild" : BYTES_TO_HEX(data.slice(14,15)).toUpperCase(),
+			"upperProgramNumber" : BYTES_TO_HEX(data.slice(15,16)).toUpperCase(),
+			"bootingUpperMemory" : BYTES_TO_HEX(data.slice(16)).toUpperCase(),
+		}
+		
+		return bootloader_info
+	}
+
+	updateBootLoaderInfo(bootloader_info){
+		console.log("updateBootLoaderInfo()")
+		this.props.dispatch({type:"SET_BOOTLOADER_INFO",bootloader_info:bootloader_info})
+	}
+
+	checkBootloaderInfo(bootloader_info){
+		
+		var bootloader_data = this.getBootLoaderData(bootloader_info)
+		console.log("checkBootloaderInfo()",bootloader_data)
+
+		if(bootloader_data.lowerReadCrc == "0000" && bootloader_data.upperReadCrc == "0000"){
+			console.log("1")
+			this.write([0x1C])
+		}else{		
+			console.log("2")
+			this.updateBootLoaderInfo(bootloader_data)
+			this.programNumber = this.calculateProgramingNumber(bootloader_data)
+			this.requestBootloaderInfo(true)
+		}
+	}
+
+	calculateProgramingNumber(bootloader_info){
+		console.log("calculateProgramingNumber()",bootloader_info)
+		var {
+			lowerProgramNumber,
+			upperProgramNumber,
+			lowerReadCrc,
+			lowerCalcCrc,
+			upperReadCrc,
+			upperCalcCrc,
+			bootingUpperMemory
+		} = bootloader_info
+
+		console.log("lowerProgramNumber",lowerProgramNumber)
+		if(lowerProgramNumber == "FF") {
+			console.log("1")
+		    lowerProgramNumber = "00"
+		}
+		console.log("upperProgramNumber",upperProgramNumber)
+		if( upperProgramNumber == "FF" ){
+			console.log("2")
+		    upperProgramNumber = "00"
+		}
+
+		console.log("lowerReadCrc",lowerReadCrc)
+		console.log("lowerCalculatedCrc",lowerCalcCrc)
+
+		if( lowerReadCrc == lowerCalcCrc) {
+			console.log("3")
+		    lowerProgramNumber = INCREMENT_PROGRAM_NUMBER(lowerProgramNumber)
+		}
+
+		console.log("upperReadCrc",upperReadCrc)
+		console.log("upperCalcCrc",upperCalcCrc)
+
+		if (upperReadCrc == upperCalcCrc){
+			console.log("4")
+		    upperProgramNumber = INCREMENT_PROGRAM_NUMBER(upperProgramNumber)
+		}
+		console.log("bootingUpperMemory",bootingUpperMemory)
+		if( bootingUpperMemory == "00") {
+			console.log("5 ---", lowerProgramNumber)
+
+			return lowerProgramNumber
+		}else if  (bootingUpperMemory == "01") {
+
+			console.log("6 ---", upperProgramNumber)
+
+			return upperProgramNumber
+		}
+
+		else {
+			console.log("CRC ERROR","Error Updating Firmware. CRC Error on Bridge Device")
+		    return 0
+		}	
+	}
 
 	write(data){
 		let device = this.device;
@@ -249,7 +326,7 @@ class AppFirmwareUpdate extends Component{
 		dispatch({type: "CHANGE_PROGRESS", new_progress: restante})
 	}
 
-	writeStartUpdate(programming_number){
+	writeStartUpdate(){
 		this.props.dispatch({type: "START_UPDATE"})
 		this.write([3]) // should expect a 3 on handleCharacteristic Notification
 	}
@@ -283,10 +360,10 @@ class AppFirmwareUpdate extends Component{
 		var second_number = row_number[1]
 
 		if(first_number == 0 && second_number == 0){
+			console.log("entro aqui en app -------",this.programNumber)
 			row[3] = this.programNumber[0]
 			row[2] = this.programNumber[1]
 		}
-
 
 		var hex_lenght = DEC2HEX(row.length)
 		var byte_lenght = HEX_TO_BYTES(DEC2HEX(row.length))
@@ -333,6 +410,7 @@ class AppFirmwareUpdate extends Component{
 	}	
 
 	processRows(){	
+		console.log("processRows()")
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
@@ -348,10 +426,11 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	processRow(row){
+		console.log("processRow()")
 		this.current_row = row.row
 		this.write(
 			[
-				4,
+				0x04,
 				row.number.first,
 				row.number.second,
 				row.crc.first,
@@ -362,8 +441,30 @@ class AppFirmwareUpdate extends Component{
 		) // should excect a 5
 	}
 
+	writeFirstPiece(){
+		console.log("writeFirstPiece()")
+		var sum = 0
+		var command = [5]
+		var current_row = this.current_row.slice(0)
+		while(current_row.length > 0){
+			let page = current_row.splice(0,19)
+			
+			data = command.concat(page)
+			this.writeWithoutResponse(data)
+		}
+
+		setTimeout(() => this.write([0x06]),2000) // you should wait a 0x0B if all is ok
+	}
+
+
+	errorHandleRow(){
+		console.log("errorHandleRow()")
+		console.log("this.new_current_row",this.new_current_row)
+		this.processRow(this.new_current_row)
+	}	
+
 	getStartRow(){
-		var {progress,app_version} = this.props
+		var {progress,app_version} = this.props 
 
 		if(progress > 0){
 
@@ -377,7 +478,7 @@ class AppFirmwareUpdate extends Component{
 						</View>
 						<View style={{padding:10}}>
 							<Text style={{textAlign:"center"}}>
-								{progress.toFixed(2) * 100 } %
+								{Math.trunc(progress * 100)} %
 							</Text>
 						</View>
 					</View>
@@ -389,9 +490,7 @@ class AppFirmwareUpdate extends Component{
 				</View>
 			)
 		}else{
-			var content = (
-				<ActivityIndicator />
-			)
+			return null
 		}
 		return(
 			<View style={{padding:50}}>
@@ -401,19 +500,29 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	getAdvanceView(){
+		console.log("getAdvanceView()")
 		//console.log("this.props.firmware_files",this.props.firmware_files)
+		var bi = this.props.bootloader_info
+
 		return (
 			<View style={{alignItems:"center"}}>
-				<View style={{height:100,width:width-20,marginVertical:5,marginBottom:20,alignItems:"center"}}>
+				<View style={{height:100,width:width-20,marginVertical:5,marginBottom:20,alignItems:"center",borderWidth:1,borderRadius:10}}>
 					<View style={{padding:10,backgroundColor:"white",borderRadius:10}}>
-						<Text style={{color:"black",fontSize:18,marginBottom:10}}>
-							Bootloader App Data
+						<View style={{flexDirection:"row",justifyContent:"space-between"}}>
+							<Text style={{color:"black",fontSize:18,marginBottom:10}}>
+								Bootloader App Data
+							</Text>
+							<TouchableHighlight onPress={() => this.requestBootloaderInfo(true)} style={{borderColor:option_blue, borderWidth:2,alignItems:"center",justifyContent:"center",borderRadius:10}}> 
+								<Text style={{color:option_blue,fontSize:10,paddingVertical:5,paddingHorizontal:5}}>
+									Refresh
+								</Text>
+							</TouchableHighlight >
+						</View>
+						<Text>
+							Upper CRC: {bi.upperReadCrc} | {bi.upperCalcCrc} Version: {bi.upperVersionMajor}.{bi.upperVersionMinor} Prgm:{bi.upperProgramNumber}
 						</Text>
 						<Text>
-							Upper CRC: 0000|0000 Version: 00.00 Prgm:0000
-						</Text>
-						<Text>
-							Lower CRC: 0000|0000 Version: 00.00 Prgm:0000
+							Lower CRC: {bi.lowerReadCrc}|{bi.lowerCalcCrc} Version: {bi.lowerVersionMajor}.{bi.lowerVersionMinor}  Prgm:{bi.lowerProgramNumber}
 						</Text>
 					</View>
 				</View>		
@@ -434,7 +543,7 @@ class AppFirmwareUpdate extends Component{
 		return(
 			<View>
 				<View style={{alignItems:"center"}}>
-					<View style={{height:400}}>
+					<View style={{backgroundColor:"white"}}>
 						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}				
 					</View>
 				</View>
@@ -448,6 +557,7 @@ const mapStateToProps = state => ({
     progress: state.firmwareUpdateReducer.progress,
     app_version : state.setupCentralReducer.app_version,
     active_tab : state.updateFirmwareCentralReducer.active_tab,
+    bootloader_info : state.updateFirmwareCentralReducer.bootloader_info
 });
 
 

@@ -241,7 +241,7 @@ class ScanCentralUnits extends Component {
         var clear_button = this.getClearButton()
         var confirm_buttons = this.getConfirmButtons()
         let scan_result = this.props.scanResult ? this.props.scanResult : this.scan_result_id
-        console.log("scanning_status",scanning_status);
+        
         switch (scanning_status) {
             case "no_device_found":
                 var message = <Text>Plese scan the QR Code of your Sure-Fi Device</Text>

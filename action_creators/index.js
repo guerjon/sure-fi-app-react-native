@@ -178,12 +178,10 @@ export const READ_STATUS = id => {
 }
 
 export const READ_TX = id => {
-	return new Promise((fulfill,reject) => {
-		BleManagerModule.retrieveServices(id,() => {
-			BleManager.read(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID).then(response => {
-				fulfill(response)
-	    	}).catch(error => reject(error))		   
-		})
+	return new Promise((fulfill,reject) => {	
+		BleManager.read(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID).then(response => {
+			fulfill(response)
+    	}).catch(error => reject(error))
 	})	
 }
 

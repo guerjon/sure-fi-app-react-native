@@ -55,6 +55,7 @@ class RadioFirmwareUpdate extends Component{
 	}	
 
 	componentWillMount() {
+		console.log("componentWillMount() radio_firmware_update")
 		this.handlerUpdate = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicRadioNotification );
 	}
 
@@ -77,6 +78,7 @@ class RadioFirmwareUpdate extends Component{
 		if(path){
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
+				console.log("res",res)
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -102,7 +104,7 @@ class RadioFirmwareUpdate extends Component{
 						this.props.saveOnCloudLog(version,'FIRMWARE-REMOTE-RADIO')
 					}
 				}	
-				this.requestBootloaderInfo()
+				this.writeRadioStartFirmwareUpdate()
 				
 		  	})
 		 	.catch((errorMessage, statusCode) => {
@@ -162,10 +164,10 @@ class RadioFirmwareUpdate extends Component{
 				this.writeRadioPiece()
 				return
 			case 0x0D: 
-				this.interval = setInterval(() => this.writeAllStateCommand(),1000)
+				this.interval = setInterval(() => this.writeAllStateCommand(),2000)
 				return
 			case 0x0B: 
-				//console.log("BleRsp_BootloaderInfo")
+				console.log("BleRsp_BootloaderInfo")
 				this.processRadioRows()
 				return
 			case 0x1F:
@@ -173,6 +175,7 @@ class RadioFirmwareUpdate extends Component{
 					if(!data.value[1] && !data.value[2] && !data.value[3] && !data.value[4]){
 						clearInterval(this.interval)
 						if(this.props.viewKind == "normal"){
+							
 							this.props.startNextUpdate("radio")
 						}else{
 							this.props.closeModal()
@@ -202,15 +205,18 @@ class RadioFirmwareUpdate extends Component{
 				console.log("BleRsp_NotStartedError")
 				return
 			case 228: // 0xE4
+				this.errorHandleRow()
+				/*
 				if(!this.error_handle){				
 					console.log("BleRsp_InvalidNumBytesError")
 					this.error_handle = true
-					this.errorHandleRow()
+					this.errorHandleRow()	
 				}else{
 					Alert.alert("Error","Something was wrong with the firmware update.")
 					this.props.dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
 					this.props.closeModal()
 				}
+				*/
 				return
 			case 229:
 				console.log("BleRsp_PageFailure")
@@ -224,7 +230,7 @@ class RadioFirmwareUpdate extends Component{
 				if(data.value[1] == 0x1D){
 					clearInterval(this.interval)
 					this.interval = setInterval(() => WRITE_COMMAND(this.device.id,[0x2E]),1000) 
-
+					this.props.dispatch({type:"SET_RADIO_TEXT",radio_text:"Flashing Firmware."})
 				}else{				
 					
 					Alert.alert("Error","Error on firmware update")
@@ -243,8 +249,8 @@ class RadioFirmwareUpdate extends Component{
 		this.write([0x1D])
 	}
 
-	requestBootloaderInfo(){
-		console.log("requestBootloaderInfo()")
+	writeRadioStartFirmwareUpdate(){
+		console.log("writeRadioStartFirmwareUpdate()")
 		this.write([0x0D]) //should return a 0xA on handleCharacteristicNotification
 		this.props.dispatch({type: "START_UPDATE"})
 	}
@@ -253,7 +259,7 @@ class RadioFirmwareUpdate extends Component{
 		console.log("startRadioRow()")
 		var {dispatch} = this.props
 		
-		if(this.bytes_file){
+		if(this.bytes_file){ //byte files are rows of 2048 bytes
 			let rows = this.bytes_file 
 
 			new_rows = []
@@ -278,6 +284,7 @@ class RadioFirmwareUpdate extends Component{
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
+				console.log("this.new_current_row (first_row)",this.new_current_row)
 				this.processRadioRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
 				
@@ -290,38 +297,43 @@ class RadioFirmwareUpdate extends Component{
 		}
 	}
 
-
+	/*
+		Esta madre escribe el comando con la informacion de la row que vamos a enviar
+	*/
 	processRadioRow(row){ // init the radio row
 		console.log("processRadioRow()");
 		this.current_row = row.row
-		this.write(
-			[
-				0x0E, //you should expect a 0x05 if all its ok
-				row.number.first,
-				row.number.second,
-				row.crc.first,
-				row.crc.second,
-				row.row_length.first,
-				row.row_length.second
-			]
-		)
+		var data = [
+			0x0E, //you should expect a 0x05 if all its ok
+			row.number.first,
+			row.number.second,
+			row.crc.first,
+			row.crc.second,
+			row.row_length.first,
+			row.row_length.second
+		]
+		console.log("data",data)
+		this.write(data)
 	}
 
 	writeRadioPiece(){
 		console.log("writeRadioPiece()");
 		var sum = 0
 		var command = [0x0F]
-		while(this.current_row.length > 0){
-			let page = this.current_row.splice(0,19)
+		var current_row = this.current_row.slice(0)
+
+		while(current_row.length > 0){
+			let page = current_row.splice(0,19)
 			data = command.concat(page)
 			
 			this.writeWithoutResponse(data) // no response to this command
 		}
-		console.log("wrf??? -------");
-		this.write([0x10])  // you should wait a 11 if all is ok 	
+
+		setTimeout(() => this.write([0x10]),1000) // you should wait a 0x0B if all is ok
 	}
 
 	errorHandleRow(){
+		console.log("this.new_current_row",this.new_current_row)
 		this.processRadioRow(this.new_current_row)
 	}
 
@@ -354,19 +366,19 @@ class RadioFirmwareUpdate extends Component{
 				},
 				row: row
 			}
+
 		this.sumRow()
+
 		return json
 	}	
 
 	write(data){
 		let device = this.device;
-		BleManagerModule.retrieveServices(device.id,() => {
-			BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
-		})
+		BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
+		
 	}
 
 	writeWithoutResponse(data){
-		console.log("writeWithoutResponse()");
 		let device = this.device;
 		BleManagerModule.specialWriteWithoutResponse(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20,16)
 	}
@@ -428,7 +440,7 @@ class RadioFirmwareUpdate extends Component{
 					<View style={{justifyContent:"space-between"}}>
 						<View>
 							<Text style={{fontSize:16,padding:10,textAlign:"center"}}>
-								Updating Radio
+								{this.props.radio_text}
 							</Text>
 						</View>
 						<View style={{padding:10}}>
@@ -444,7 +456,9 @@ class RadioFirmwareUpdate extends Component{
 			)
 		}else{
 			var content = (
-				<ActivityIndicator />
+				<View style={{backgroundColor:"white",width:width,height:200,alignItems:"center"}}>
+					<ActivityIndicator />
+				</View>
 			)
 		}
 		return(
@@ -455,21 +469,26 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	getAdvanceView(){
+		
+		var bi = this.props.bootloader_info
+
 		return (
 			<View style={{alignItems:"center"}}>
 				<Text style={{fontSize:18,color:"black",fontWeight:"900"}}>
 					{this.props.app_version}
 				</Text>				
 				<View style={{height:100,width:width,marginVertical:5}}>
-					<View style={{padding:10,backgroundColor:"white",marginHorizontal:15,borderRadius:10}}>
-						<Text style={{color:"black",fontSize:18,marginBottom:10}}>
-							Bootloader App Data
+					<View style={{padding:10,backgroundColor:"white",marginHorizontal:15,borderRadius:10,borderWidth:1,borderRadius:10}}>
+						<View style={{flexDirection:"row",justifyContent:"space-between"}}>
+							<Text style={{color:"black",fontSize:18,marginBottom:10}}>
+								Bootloader App Data
+							</Text>
+						</View>
+						<Text>
+							Upper CRC: {bi.upperReadCrc} | {bi.upperCalcCrc} Version: {bi.upperVersionMajor}.{bi.upperVersionMinor} Prgm:{bi.upperProgramNumber}
 						</Text>
 						<Text>
-							Upper CRC: 0000|0000 Version: 00.00 Prgm:0000
-						</Text>
-						<Text>
-							Lower CRC: 0000|0000 Version: 00.00 Prgm:0000
+							Lower CRC: {bi.lowerReadCrc}|{bi.lowerCalcCrc} Version: {bi.lowerVersionMajor}.{bi.lowerVersionMinor}  Prgm:{bi.lowerProgramNumber}
 						</Text>
 					</View>
 
@@ -490,10 +509,10 @@ class RadioFirmwareUpdate extends Component{
 
 	render(){
 		return(
-			<View style={{flex:1}}>
+			<View>
 				<View style={{alignItems:"center"}}>
-					<View style={{height:400}}>
-						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}
+					<View style={{backgroundColor:"white"}}>
+						{this.props.viewKind == "normal" ? this.getStartRow() : this.getAdvanceView()}				
 					</View>
 				</View>
 			</View>
@@ -505,7 +524,9 @@ class RadioFirmwareUpdate extends Component{
 const mapStateToProps = state => ({
 	firmware_update_state: state.firmwareUpdateReducer.firmware_update_state,
     progress: state.firmwareUpdateReducer.progress,
+    radio_text : state.firmwareUpdateReducer.radio_text,
 	radio_version : state.setupCentralReducer.radio_version,
+	bootloader_info : state.updateFirmwareCentralReducer.bootloader_info
 });
 
 export default connect(mapStateToProps)(RadioFirmwareUpdate);

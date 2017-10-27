@@ -207,9 +207,7 @@ var Base64 = {
 }
 
 
-
 class UpdateFirmwareCentral extends Component {
-
 
     static navigatorStyle = {
         navBarBackgroundColor : first_color,
@@ -232,7 +230,7 @@ class UpdateFirmwareCentral extends Component {
         if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
             switch(event.id){
                 case "advanced":
-                    this.showAdvanceView()
+                    this.changeView()
                 break
                 default:
                 break
@@ -243,31 +241,33 @@ class UpdateFirmwareCentral extends Component {
     componentWillMount() {
         let props = this.props
         let dispatch = this.props.dispatch
-
+    
+        this.restartReducers()
+        
         dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
         dispatch({type:"HIDE_FIRMWARE_UPDATE_LIST"})
-        this.fetchFirmwareFiles()
+        
+    }
+
+    restartReducers(){
+
+    }
+
+    componentDidMount() {
+        if(this.device){
+            console.log("this.device",this.device)
+            this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0}) 
+            this.fetchFirmwareFiles()
+        }
     }
 
     componentWillUnmount() {
         this.props.activateHandleCharacteristic()
+        this.props.activateHandleDisconnectedPeripheral()
     }    
 
-    changeView(){
-        let view_kind = this.props.view_kind
-        if(view_kind == "normal")
-            this.showAdvanceView()
-        if(view_kind == "advanced")
-            this.showNormalView()
-    }
 
-    showAdvanceView(){
-        this.props.dispatch({type: "SHOW_ADVANCED_VIEW"})
-    }
 
-    showNormalView(){
-        this.props.dispatch({type: "SHOW_NORMAL_VIEW"})
-    }
 
     fetchFirmwareFiles(){
         console.log("fetchFirmwareFiles()")
@@ -300,20 +300,17 @@ class UpdateFirmwareCentral extends Component {
             body : JSON.stringify(application_body)
         })
         .then(response_1 => {
-            console.log("response_1",response_1);
             fetch(FIRMWARE_CENTRAL_ROUTE,{
                 headers: HEADERS_FOR_POST,
                 method: 'POST',
                 body : JSON.stringify(radio_body)
 
             }).then(response_2 => {
-                console.log("response_2",response_2);
                 fetch(FIRMWARE_CENTRAL_ROUTE,{
                     headers: HEADERS_FOR_POST,
                     method: 'POST',
                     body: JSON.stringify(bluetooth_body)
                 }).then(response_3 => {
-                    console.log("response_3",response_3);
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
@@ -330,13 +327,38 @@ class UpdateFirmwareCentral extends Component {
                     dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
-                    dispatch({type: "CHANGE_TAB",active_tab: "app"})
+                    
+                    //dispatch({type: "CHANGE_TAB",active_tab: "app"})
                 })
             })
         })
         .catch((error) => {
           console.warn(error);
         });
+    }
+
+    changeView(){
+        let view_kind = this.props.view_kind
+        if(view_kind == "normal"){
+
+            console.log("this.props.active_tab",this.props.active_tab)
+            if(this.props.active_tab == "charging")
+                this.props.dispatch({type: "CHANGE_TAB",active_tab:"app"})
+
+            this.showAdvanceView()
+        }
+        if(view_kind == "advanced"){
+           this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0}) 
+            this.showNormalView()
+        }
+    }
+
+    showAdvanceView(){
+        this.props.dispatch({type: "SHOW_ADVANCED_VIEW"})
+    }
+
+    showNormalView(){
+        this.props.dispatch({type: "SHOW_NORMAL_VIEW"})
     }
 
     checkRequireUpdates(app_version,radio_version,bt_version){
@@ -388,25 +410,25 @@ class UpdateFirmwareCentral extends Component {
     }
 
     closeModal(){
-       this.props.navigator.dismissModal() 
+       this.props.navigator.pop() 
     }
 
     closeAndConnect(){
         console.log("closeAndConnect()")
         this.props.fastTryToConnect(this.device)
-        this.props.navigator.dismissModal() 
+        this.closeModal()
     }
 
     appUpdateSuccess(){
-        Alert.alert("Success","The app firmware is updated.")
+        Alert.alert("Success","The firmware is updated.")
     }
 
     radioUpdateSuccess(){
-        Alert.alert("Success","The radio firmware is updated.")
+        Alert.alert("Success","The firmware is updated.")
     }
 
     btUpdateSuccess(){
-        Alert.alert("Success","The bluetooth firmware is updated.")
+        Alert.alert("Success","The firmware is updated.")
     }
 
     saveOnCloudLog(version,type){
@@ -429,7 +451,11 @@ class UpdateFirmwareCentral extends Component {
         // [TODO] change the time on the startNextUpdate
         switch(tab){
             case "charging":
-                return <ActivityIndicator/>
+                return(
+                    <View style={{backgroundColor:"white",width:width,height:200,alignItems:"center"}}>
+                        <ActivityIndicator />
+                    </View>
+                )    
             case "app":
             return (
                 <AppFirmwareUpdate 
@@ -460,10 +486,16 @@ class UpdateFirmwareCentral extends Component {
                     startNextUpdate = {() => this.btUpdateSuccess()}
                     saveOnCloudLog = {(version,type) => this.saveOnCloudLog(version,type)}
                     version = {this.props.selected_version}
+                    closeAndConnect = {() => this.closeAndConnect()}
                 />
             )
             default:
-                <ActivityIndicator/>
+                return(
+                    <View style={{backgroundColor:"white",width:width,height:200,alignItems:"center"}}>
+                        <ActivityIndicator />
+                    </View>
+                )    
+                
         }
     }
 
@@ -486,24 +518,22 @@ class UpdateFirmwareCentral extends Component {
     }
 
     startFirmwareUpdate(){
-        console.log("startFirmwareUpdate()");
-        let props = this.props
-        let dispatch = props.dispatch
+        console.log("startFirmwareUpdate()",this.require_update);
+        let dispatch = this.props.dispatch
 
         if(this.require_update){
             dispatch({type: "HIDE_FIRMWARE_UPDATE_LIST"})
-            
-            if(props.radio_update_status == "update_required"){
-
+            if(this.props.radio_update_status == "update_required"){
                 dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status:"updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "radio"}) // this mount the component <RadioFirmwareUpdate> and this component start the update automatically
                 
-            }else if(props.app_update_status == "update_required"){
-                dispatch({type: "APP_UPDATE_STATUS",app_update_status:"updating"})
+            }else if(this.props.app_update_status == "update_required"){
                 
+                dispatch({type: "APP_UPDATE_STATUS",app_update_status:"updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "app"}) // this mount the component <AppFirmwareUpdate> and this component start the update automatically
                 
-            }else if (props.bt_update_status == "update_required"){
+            }else if (this.props.bt_update_status == "update_required"){
+                
                 dispatch({type: "BT_UPDATE_STATUS",bt_update_status:"updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update : "bt"}) // this mount the component <BluetoothFirmwareUpdate> and this component start the update automatically  
             }   
@@ -530,14 +560,15 @@ class UpdateFirmwareCentral extends Component {
 
         if(current == "radio"){
             dispatch({type: "RADIO_UPDATE_STATUS",radio_update_status : "updated"})
+            
+            if(props.app_update_status == "update_required"){    
+                this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0.01})
 
-            if(props.app_update_status == "update_required"){
-                
                 dispatch({type: "APP_UPDATE_STATUS",app_update_status : "updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE", current_update:"app"})
 
             }else if(props.bt_update_status == "update_required"){
-
+                this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0.01})
                 dispatch({type: "BT_UPDATE_STATUS",bt_update_status : "updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE", current_update: "bt"})
                 
@@ -550,11 +581,14 @@ class UpdateFirmwareCentral extends Component {
         if(current == "app"){
             dispatch({type: "APP_UPDATE_STATUS",app_update_status : "updated"})
             if(props.bt_update_status == "update_required"){
+                this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0.01})
                 dispatch({type: "BT_UPDATE_STATUS",bt_update_status : "updating"})
                 dispatch({type: "UPDATE_CURRENT_UPDATE",current_update: "bt"})
             }
         }
     }
+
+
 
     showOrHideList(){
         if(this.props.show_firmware_update_list)
@@ -568,7 +602,7 @@ class UpdateFirmwareCentral extends Component {
         let radio_files = this.radio_files
         let bt_files = this.bt_files
         
-        if(this.props.show_firmware_update_list ){
+        if(this.props.show_firmware_update_list){
             if(application_files.length == radio_files.length && radio_files.length == bt_files.length){
                 var items = []
                 for (var i = 0; i < application_files.length; i++) {
@@ -578,8 +612,12 @@ class UpdateFirmwareCentral extends Component {
                 items.push({application_files: application_files[0],radio_files: radio_files[0],bt_files:bt_files[0]})
             }          
 
-            return ( 
-                <FlatList data={items} renderItem={({item}) => this.renderItem(item)} keyExtractor={(item,index) => index}/>
+            return (
+                <View style={{}}> 
+                    <ScrollView style={{height:200}}>
+                        <FlatList data={items} renderItem={({item}) => this.renderItem(item)} keyExtractor={(item,index) => index}/>
+                    </ScrollView>
+                </View>
             )
 
         }else{
@@ -653,7 +691,7 @@ class UpdateFirmwareCentral extends Component {
 
             case "app":
 
-                content = (
+                return(
                     <AppFirmwareUpdate 
                         device={device}  
                         closeModal={() => this.closeModal()}
@@ -664,11 +702,10 @@ class UpdateFirmwareCentral extends Component {
                         saveOnCloudLog = {(version,type) => this.saveOnCloudLog(version,type)}
                     />
                 )
-                break
                 case "radio":
                 let radio_firmware_file = this.props.selected_files.radio_files
                 
-                content = (
+                return (
                     <RadioFirmwareUpdate
                         device={device}  
                         closeModal={() => this.closeModal()}
@@ -682,7 +719,7 @@ class UpdateFirmwareCentral extends Component {
                 break
             case "bt":
                 let bt_firmware_file = this.props.selected_files.bt_files
-                content = (
+                return (
                     <BluetoothFirmwareUpdate 
                         device={device}  
                         closeAndConnect={() => this.closeAndConnect()}
@@ -695,37 +732,38 @@ class UpdateFirmwareCentral extends Component {
                 )
                 break
             default:
-                content = null
+                return null
         }
-
-        return content
     }
 
     renderStartUpdateBtn(){
-        console.log("renderStartUpdateBtn()");
+        console.log("this.largest_version",this.props.progress)
         if(this.largest_version){
             
             if(this.require_update){
-                return (
-                    <View style={{alignItems:"center"}}>
-                        <TouchableHighlight 
-                            onPress={() => this.startFirmwareUpdate()} 
-                            style={{
-                                width:width-20,
-                                backgroundColor:"#009900",
-                                borderRadius:10,
-                                alignItems:"center",
-                                padding:10,
-                                marginHorizontal: 10,
-                                marginVertical:20
-                            }}>
-                            <Text style={{color:"white",fontSize:16,fontWeight:"900"}}>
-                                Start Firmware Update
-                            </Text>
-                        </TouchableHighlight>
-                        
-                    </View>
-                )
+                if(this.props.progress == 0)
+                    return (
+                        <View style={{alignItems:"center"}}>
+                            <TouchableHighlight 
+                                onPress={() => this.startFirmwareUpdate()} 
+                                style={{
+                                    width:width-20,
+                                    backgroundColor:"#009900",
+                                    borderRadius:10,
+                                    alignItems:"center",
+                                    padding:10,
+                                    marginHorizontal: 10,
+                                    marginVertical:20
+                                }}>
+                                <Text style={{color:"white",fontSize:16,fontWeight:"900"}}>
+                                    Start Firmware Update
+                                </Text>
+                            </TouchableHighlight>
+                            
+                        </View>
+                    )
+                else 
+                    return null
             }else{
                 return (
                     <View 
@@ -747,22 +785,18 @@ class UpdateFirmwareCentral extends Component {
             }
         }
 
-        return <ActivityIndicator style={{margin:30}}/>
+        return(
+            <View style={{backgroundColor:"white",width:width,height:200,alignItems:"center"}}>
+                <ActivityIndicator />
+            </View>
+        )    
+        
     }
 
     renderNormalView(){
-        
-        /*
-                    <View style={{marginHorizontal:20,padding:5}}>
-                        <Text>
-                            Update Firmware to Version: {PRETY_VERSION(this.props.selected_version)}
-                        </Text>
-                    </View>
-
-        */
-
+        console.log("renderNormalView()")
         var flag = null
-        if(this.props.admin)
+        if(this.props.admin && (this.props.progress  == 0) )
             var flag = (
                 <View style={{alignItems:"flex-end"}}>
                     <TouchableHighlight style={{backgroundColor:"#009900",marginHorizontal:10}} onPress={() => this.forceUpdate()}>
@@ -773,11 +807,10 @@ class UpdateFirmwareCentral extends Component {
                 </View>
             )
 
-
         let props = this.props
         return (
             <View>
-                <View style={{backgroundColor:"white",marginTop:40}}>
+                <View style={{backgroundColor:"white"}}>
                     <View style={{alignItems:"center"}}>
                         <View style={{backgroundColor:"gray",width:width,padding:5}}>
                             <View style={{marginLeft:10}}>
@@ -786,8 +819,8 @@ class UpdateFirmwareCentral extends Component {
                                 </Text>
                             </View>
                         </View>
-                        <Text style={{fontWeight:"900",fontSize:25,color:"black",padding:5}}>
-                            Up To Date - {PRETY_VERSION(props.largest_version)}
+                        <Text style={{fontWeight:"900",fontSize:22,color:"black",padding:5}}>
+                            Please Continue Firmware Update
                         </Text>
                     </View>
                     <View style={{flexDirection:"row",justifyContent:"center"}}>
@@ -822,11 +855,15 @@ class UpdateFirmwareCentral extends Component {
                                 Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
                             </Text>
                         </View>
-                        <TouchableHighlight style={{alignItems:"flex-end",borderWidth:2,borderColor:"white",borderRadius:5}} onPress={() => this.showOrHideList()}>
-                            <Text style={{color:"white",textAlign:"center",padding:4,fontSize:10}}>
-                                Change
-                            </Text>
-                        </TouchableHighlight>
+                        {this.props.progress == 0 &&
+                            (
+                                <TouchableHighlight style={{alignItems:"flex-end",borderWidth:2,borderColor:"white",borderRadius:5}} onPress={() => this.showOrHideList()}>
+                                    <Text style={{color:"white",textAlign:"center",padding:4,fontSize:10}}>
+                                        Change
+                                    </Text>
+                                </TouchableHighlight>
+                            )
+                        }
                     </View>
                     <View style={{marginHorizontal:20,padding:5,flexDirection:"row", justifyContent: 'space-between'}}>  
                         <View>
@@ -854,7 +891,6 @@ class UpdateFirmwareCentral extends Component {
                             </Text>
                         </View>
                     </View>
-                    
                     {flag}
                     <View>
                         {this.renderStartUpdateBtn()}
@@ -889,7 +925,7 @@ class UpdateFirmwareCentral extends Component {
                             APP 
                         </Text>
                         <Text style={app_text_style}>
-                            V.{props.app_version}
+                            {PRETY_VERSION(props.app_version)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -899,7 +935,7 @@ class UpdateFirmwareCentral extends Component {
                             RADIO 
                         </Text>
                         <Text style={radio_text_style}>
-                            V.{props.radio_version}
+                            {PRETY_VERSION(props.radio_version)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -909,7 +945,7 @@ class UpdateFirmwareCentral extends Component {
                             BLUETOOTH 
                         </Text>
                         <Text style={bluetooth_text_style}>
-                            V.{this.props.bluetooth_version}
+                            {PRETY_VERSION(this.props.bluetooth_version)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -922,7 +958,7 @@ class UpdateFirmwareCentral extends Component {
     }
 
     render() {
-
+        console.log("this.props.view_kind",this.props.view_kind)
         if(this.props.view_kind == "normal")
             var content = this.renderNormalView()
         else

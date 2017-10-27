@@ -65,7 +65,8 @@ import {
 	DISCONNECT,
 	POST_LOG,
 	LOG_CREATOR,
-	READ_TX
+	READ_TX,
+	WRITE_UNPAIR
 } from '../action_creators'
 import Notification from '../helpers/notification'
 import {
@@ -130,10 +131,16 @@ class SetupCentral extends Component{
 
 	constructor(props) {
 		super(props);
+		
 		this.device = props.device
-		this.manufactured_device_id = this.device.manufactured_data.device_id.toUpperCase()
-/*
-		console.log("id",this.device.id);
+	
+		
+		this.manufactured_device_id = props.device.manufactured_data
+
+		console.log("props wtf-------------------------------	",props.device.manufactured_data)
+	
+
+/*		console.log("id",this.device.id);
 		console.log("name",this.device.name);
 		console.log("address",this.device.manufactured_data.address);
 		console.log("device_id",this.manufactured_device_id);
@@ -154,26 +161,11 @@ class SetupCentral extends Component{
 		this.changing_time = false
 		this.allow_go_to_operation_values = true
 		this.something = 0
+
 	}
 
 	componentWillMount() {
 		console.log("componentWillMount()")
-		
-		this.startSlowBleManager()
-		this.activateListeners()
-		
-		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
-		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
-		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
-		
-		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())
-
-	}
-
-	componentDidMount() {
-		console.log("componentDidMount()");
-
-		this.checkDeviceState(this.device) //enter point for all the connections
 	}
 
 	checkDeviceState(device){
@@ -182,28 +174,76 @@ class SetupCentral extends Component{
 		console.log("checkDeviceState()",state)
 
 		if(state != "04"){
-			this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+			this.renderNormalConnecting()
 			this.fastTryToConnect(device)
 		}else{
-			this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
+			this.renderConnectingStatus()
 			this.deployConnection(device)
 		}
 	}
 
 	onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        
-        if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
-            switch(event.id){
-                case "pin_number":
-                    this.showPINModal()
-                break
-                default:
-                break
-            }
-        } 
+        console.log("event-------",event)
+    
+        switch(event.id){
+            case "pin_number":
+                this.showPINModal()
+            break
+            case "backPress":
+
+            	this.props.dispatch({type:"SET_GETTING_COMMANDS",getting_commands:false})
+            	this.handleDisconnected.remove()
+
+				this.fast_manager.stopDeviceScan()
+				
+				this.handleConnected.remove()
+				this.disactivateHandleCharacteristic()
+				this.changing_time = true
+
+
+				this.props.navigator.pop()
+            break
+            default:
+            break
+        }
     }
 
+    componentWillMount() {
+		this.startSlowBleManager()
+		this.activateListeners()
+		
+		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
+		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
+		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
+		
+		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())  
+		this.checkDeviceState(this.device) //enter point for all the connections    
+    }
 
+    componentWillUnmount() {
+		this.eraseSecondInterval()
+		this.eraseInterval()
+		this.destroyFastManager()
+
+		SlowBleManager.disconnect(this.device.id)
+		.then(response => {	
+
+			this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
+
+		}).catch(error => console.log("error",error))      
+    }
+
+    destroyFastManager(){
+		console.log("destroyFastManager()")
+        if(this.fast_manager != null){
+            this.fast_manager.stopDeviceScan()
+            this.fast_manager.destroy()
+            this.fast_manager = null;                        
+        }else{
+            console.log("Delete scan can't delete the scan because it is null.")
+        }
+    }
+   
 	startSlowBleManager(){
 		console.log("startSlowBleManager()");
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
@@ -216,24 +256,6 @@ class SetupCentral extends Component{
 		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)		
 	}
 
-	componentWillUnmount() {
-		this.props.restartAll()
-
-		this.changing_time = true
-		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: true})
-		this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
-		this.handleDisconnected.remove()
-
-		this.disactivateHandleCharacteristic()
-		this.eraseSecondInterval()
-		this.eraseInterval()
-		this.handleConnected.remove()
-		this.disconnect()
-		
-
-		//PUSH_CLOUD_STATUS(this.manufactured_device_id"04|04|FFCFFC|FCCFCC").then(response => console.log(response)).catch(error => console.log(error))
-	}
-
 	disconnect(){
 		console.log("disconnect()")
 		
@@ -242,7 +264,6 @@ class SetupCentral extends Component{
 		IS_CONNECTED(this.device.id)
 		.then(response => {
 			if(response){
-				this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"manual"})
 				SlowBleManager.disconnect(this.device.id)
 				.then(response => {
 				}).catch(error => console.log("error",error))
@@ -250,6 +271,47 @@ class SetupCentral extends Component{
 		})
 	}
 
+    unPair() {
+    	console.log("unPair123",this.device.manufactured_data.device_id)
+
+	    if(!this.props.debug_mode_status){
+		    this.props.dispatch({
+		    	type: "SET_UNPAIR_DISCONNECT",
+		    	unpair_disconnect: true
+		    })
+		}
+
+		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
+
+		WRITE_UNPAIR(this.device.id).then(response => {
+			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
+			
+			var remote_state = "01|01|"+this.device.manufactured_data.tx+"|000000"
+
+			PUSH_CLOUD_STATUS(this.device.manufactured_data.device_id,state)
+			.then(response => {
+				PUSH_CLOUD_STATUS(this.device.manufactured_data.tx,remote_state)
+				
+				
+
+				this.device.manufactured_data.tx = "000000"
+				this.device.manufactured_data.device_state = "0001"
+				this.device.writeUnpairResult = true
+
+		    	this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.device});
+		    	this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: true})
+		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
+
+
+                if(this.props.debug_mode_status){
+                	this.renderNormalConnecting()
+                	this.readStatusAfterUnpair(this.device)
+                }
+			})
+			.catch(error => console.log("error on unPair() 1",error))
+
+		}).catch(error => console.log("error on Unpair 2",error ))
+    }
 
 	showPINModal(){
 		this.props.navigator.showLightBox({
@@ -281,14 +343,24 @@ class SetupCentral extends Component{
 		this.handleCharacteristic.remove()
 	}
 
+	activateHandleDisconnectedPeripheral(){
+		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
+	}
+
+	removeHandleDisconnectedPeripheral(){
+		this.handleDisconnected.remove()
+	}
+
 	fastTryToConnect(device){
 		console.log("fastTryToConnect()")
 	    
+	    var device = device ? device : this.device
+
 		if(this.props.device.manufactured_data.device_state.slice(-2) == "04"){
-			this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
+			this.renderConnectingStatus()
 			this.deployConnection(device)
 		}else{
-			this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+			this.renderNormalConnecting()
 
 			IS_CONNECTED(device.id)
 			.then(response => {
@@ -327,7 +399,7 @@ class SetupCentral extends Component{
 	createConnectionInterval(device){
 		console.log("createConnectionInterval()")
 		if(interval == 0){
-			interval = setInterval(() => this.connect(device),3000)
+			interval = setInterval(() => this.connect(device),1000)
 			console.log("interval created")			
 		}else{
 			console.log("the interval can't be created it was created previosly")
@@ -367,7 +439,7 @@ class SetupCentral extends Component{
 	}
 
 	eraseSecondInterval(){
-		console.log("ereseSecondInterval()");
+		console.log("eraseSecondInterval()");
 		if(second_interval){
 			clearInterval(second_interval)
 			second_interval = 0
@@ -391,44 +463,31 @@ class SetupCentral extends Component{
 
     handleConnectedDevice(){
     	console.log("handleConnectedDevice()")
-    	var device = this.device
-		READ_TX(device.id)
-		.then(response => {
-			console.log("response on readTxCharacteristic",response)
-			var tx = BYTES_TO_HEX(response)
-		
-			device.manufactured_data.tx = tx.toUpperCase()
-
-			this.props.dispatch({
-                type: "CENTRAL_DEVICE_MATCHED",
-                central_device: device
-            });
-            this.chooseTypeConnected()
-		})
-		.catch(error => console.log("Error on readTxCharacteristic",error))
+    	this.retrieveServices()
     }
 
-	chooseTypeConnected(){
-		var state = this.device.manufactured_data.device_state.slice(-2)
-		console.log("chooseTypeConnected()",state)
-    	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: parseInt(state)})
+    retrieveServices(){
+    	var state = this.device.manufactured_data.device_state.slice(-2)
+    	console.log("retrieveServices()",state)
 
-    	if(this.props.pair_disconnect || this.props.unpair_disconnect){
-    		
-    		this.normalConnected()
-
-    	}else if(state != "04"){
-
-    		this.changing_time = false
-    		this.normalConnected()
-
-    	}else{	
-
-    		this.deployConnected()
-
-    	}		
-	}
-
+    	BleManagerModule.retrieveServices(this.device.id,() => {
+	    	if(this.props.pair_disconnect || this.props.unpair_disconnect){
+				setTimeout(() => {
+					this.normalConnected()	
+				},200)	    		
+	    	}else if(state != "04"){
+	    		setTimeout(() => {
+		    		this.changing_time = false
+		    		this.normalConnected()	    			
+	    		})
+	    	}else{	
+	    		setTimeout(() => {
+	    			this.deployConnected()	
+	    		},200)
+	    		
+	    	}		    		
+    	})
+    }
 
 	normalConnected(){
 		console.log("normalConnected()")
@@ -436,38 +495,47 @@ class SetupCentral extends Component{
 		var device = this.props.device
 		var id = this.props.device.id
 		var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
-		
-	    BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
-        	
-        	this.eraseInterval()
-        	this.setConnectionEstablished(device)
-
-        }).catch(error => {
-        	console.log("Error",error)
-        });
+		if(this.props.setConnectionEstablished){
+	        	this.eraseInterval()
+	        	this.setConnectionEstablished(device)
+		}else{
+		    BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
+	        	this.setConnectionEstablished(device)
+	        }).catch(error => {
+	        	console.log("Error",error)
+	        });			
+		}
 		
 	}
 
 	deployConnected(){
 		console.log("deployConnected()")
-		let device = this.props.device
+		let device = this.device
 		var id = device.id
 		var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
-		
-        BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
-        	this.eraseInterval()
-        	this.setConnectionEstablished()
-        }).catch(error => {
-        	console.log("Error",error)
-        })
+		if(this.props.setConnectionEstablished){
+	        	this.setConnectionEstablished(device)
+		}else{
+		    BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
+	        	this.setConnectionEstablished()
+	        }).catch(error => {
+	        	console.log("Error",error)
+	        })			
+		}
 	}
+
+    setIndicatorNumber(indicator){
+    	console.log("setIndicatorNumber()",indicator)
+    	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: indicator})	
+    }
 
 	setConnectionEstablished(){
     	console.log("setConnectionEstablished()")
-		
-		if(this.props.pair_disconnect || this.props.unpair_disconnect){
-    		
+    	
+    	this.props.dispatch({type:"SET_CONNECTION_ESTABLISHED",connection_established:true})
+    	this.eraseInterval()
 
+		if(this.props.pair_disconnect || this.props.unpair_disconnect){
     		if(this.props.pair_disconnect){
     			this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: false})	
     			this.searchPairedUnit(this.device)
@@ -477,11 +545,12 @@ class SetupCentral extends Component{
     			this.eraseSecondInterval()
     		}
     	}
+    	var state = this.device.manufactured_data.device_state.slice(-2)
+
+    	this.setIndicatorNumber(state)
 
     	this.props.dispatch({type: "SHOW_DISCONNECT_NOTIFICATION",show_disconnect_notification: true})
     	this.props.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:false})
-    	
-    	this.props.dispatch({type: "CONNECTED_CENTRAL_DEVICE"})
 
 
     	this.changing_time = false
@@ -535,6 +604,76 @@ class SetupCentral extends Component{
 		.catch(error => console.log("Error readStatusOnDevice",error))
 	}
 
+	getCloudStatus(device){
+		//console.log("getCloudStatus()")
+		//console.log("this.device.manufactured_data",this.device.manufactured_data.device_state)
+		let hardware_serial = device.manufactured_data.device_id.toUpperCase()
+		let data = {
+			method : "POST",
+			headers :{
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',             
+        	},
+			body : JSON.stringify({
+				hardware_serial : hardware_serial
+			})
+		}
+		var status = this.device.manufactured_data.device_state.slice(-2)
+		
+		//this.getStatus(device,this.c_status,this.c_expected_status)
+		fetch(GET_STATUS_CLOUD_ROUTE,data)
+		.then(response => {
+			//console.log("response on cloud",response);
+			let status = JSON.parse(response._bodyInit).data.status
+			console.log("getCloudStatusResponse",status)
+			this.props.dispatch({type: "SET_HARDWARE_STATUS",hardware_status:status}) //this will be necesary on another component
+
+			let current_status_on_cloud = status.split("|")[0] //last know status on the device
+			let expected_status = status.split("|")[1] // current expected status the sure_fi should have this state
+			let current_status_on_bridge = this.status_on_bridge
+
+			this.choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device)
+
+		}).catch(error => console.log("error",error))
+	}
+
+	choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device){
+			//console.log("getStatus()",current_status_on_cloud,expected_status,current_status_on_bridge)
+		current_status_on_cloud = parseInt(current_status_on_cloud,10)
+		expected_status = parseInt(expected_status,10)
+		current_status_on_bridge = parseInt(current_status_on_bridge,10)
+
+		if(current_status_on_cloud != "" && expected_status){
+			if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
+	    			switch(current_status_on_bridge){
+	    				case 1: 
+	    					this.handleUnpairedFail(expected_status) // the device is currently unpair
+	    				break
+	    				case 2:
+	    					this.handlePairingFail(expected_status) 
+	    				break
+	    				case 3:
+	    					this.handlePairedFail(expected_status) 
+	    				break
+	    				case 4:
+	    					this.handleDeployedFail(expected_status)
+	    				break
+	    				default:
+	    					Alert.alert("Error","The internal state on the device its wrong.")
+	    				break
+	    			}    							
+    		}else{
+    			this.setIndicatorNumber(current_status_on_bridge)
+    		}
+
+		}else{
+			this.setIndicatorNumber(current_status_on_bridge)
+		}
+
+    	this.clearGeneralInterval()
+		this.getAllInfo(this.device)		
+    }
+
     handleDisconnectedPeripheral(info){		
     	console.log("handleDisconnectedPeripheral",info)
     	console.log("handleDisconnectedPeripheral()",
@@ -544,17 +683,18 @@ class SetupCentral extends Component{
     		this.props.deploy_disconnect,
     		this.props.switch_disconnect
     	)
-    	
+    	this.props.dispatch({type:"SET_CONNECTION_ESTABLISHED",connection_established:false})
+
     	if(this.props.pair_disconnect){
     		console.log("entra aqui - 1");
-    		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+    		this.renderNormalConnecting()
 
     		setTimeout(() => this.simpleConnect(this.device),3000)
     		
 
     	}else if(this.props.unpair_disconnect){
     		console.log("entra aqui - 2");
-    		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+    		this.renderNormalConnecting()
 			
 			this.eraseSecondInterval()
 			this.props.dispatch({type: "HIDE_SWITCH_BUTTON"})
@@ -568,7 +708,7 @@ class SetupCentral extends Component{
     			
      			if(!response){
      				this.props.navigator.pop()
-					Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
+					Alert.alert("Alert","Bluetooth Device Disconnect.")
 					this.props.dispatch({
 						type : "DISCONNECT_CENTRAL_DEVICE"
 					})
@@ -581,8 +721,7 @@ class SetupCentral extends Component{
     	}
     	else if(this.props.switch_disconnect){
     		console.log("entra aqui - 5");
-
-    		this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
+    		this.renderConnectingStatus()
     		
     		if(this.props.debug_mode_status)
     			this.simpleConnect(this.device)
@@ -603,7 +742,7 @@ class SetupCentral extends Component{
     		})
 
     		if(this.props.show_disconnect_notification)
-    			Alert.alert("Bluetooth Error","Bluetooth Device Disconnect.")
+    			Alert.alert("Alert","Bluetooth Device Disconnect.")
 
 			this.props.dispatch({
 				type : "DISCONNECT_CENTRAL_DEVICE"
@@ -644,7 +783,6 @@ class SetupCentral extends Component{
 			default:
 				return device.manufactured_data.device_status
 		}
-
 	}
 
 	readStatusAfterUnpair(device){
@@ -665,79 +803,9 @@ class SetupCentral extends Component{
 			}
 
 		})
-		.catch(error => console.log("error on readStatusAfterUnpair()",error))
-			
-	}
-
-	getCloudStatus(device){
-		//console.log("getCloudStatus()")
-		//console.log("this.device.manufactured_data",this.device.manufactured_data.device_state)
-		let hardware_serial = device.manufactured_data.device_id.toUpperCase()
-		let data = {
-			method : "POST",
-			headers :{
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',             
-        	},
-			body : JSON.stringify({
-				hardware_serial : hardware_serial
-			})
-		}
-		var status = this.device.manufactured_data.device_state.slice(-2)
-		
-		//this.getStatus(device,this.c_status,this.c_expected_status)
-		fetch(GET_STATUS_CLOUD_ROUTE,data)
-		.then(response => {
-			//console.log("response on cloud",response);
-			let status = JSON.parse(response._bodyInit).data.status
-			console.log("getCloudStatusResponse",status)
-			this.props.dispatch({type: "SET_HARDWARE_STATUS",hardware_status:status}) //this will be necesary on another component
-
-			let current_status_on_cloud = status.split("|")[0] //last know status on the device
-			let expected_status = status.split("|")[1] // current expected status the sure_fi should have this state
-			let current_status_on_bridge = this.status_on_bridge
-
-			this.choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device)
-
-		}).catch(error => console.log("error",error))
+		.catch(error => console.log("error on readStatusAfterUnpair()",error))		
 	}
 	
-	choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device){
-			//console.log("getStatus()",current_status_on_cloud,expected_status,current_status_on_bridge)
-		current_status_on_cloud = parseInt(current_status_on_cloud,10)
-		expected_status = parseInt(expected_status,10)
-		current_status_on_bridge = parseInt(current_status_on_bridge,10)
-		if(current_status_on_cloud != "" && expected_status){
-			if(current_status_on_bridge != expected_status){ //something was wrong :( lets choose what is the next step
-    			switch(current_status_on_bridge){
-    				case 1: 
-    					this.handleUnpairedFail(expected_status) // the device is currently unpair
-    				break
-    				case 2:
-    					this.handlePairingFail(expected_status) 
-    				break
-    				case 3:
-    					this.handlePairedFail(expected_status) 
-    				break
-    				case 4:
-    					this.handleDeployedFail(expected_status)
-    				break
-    				default:
-    					Alert.alert("Error","The internal state on the device its wrong.")
-    				break
-    			}    		
-    		}else{
-    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
-    		}
-
-		}else{
-			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: current_status_on_bridge})
-		}
-
-    	this.clearGeneralInterval()
-		this.getAllInfo(this.device)		
-    }
-
     handleUnpairedFail(expected_status){ //  device state 1
 		switch(expected_status){
 			case 2: // this case should never happend because we never push 2 to the cloud like expected_status
@@ -751,7 +819,7 @@ class SetupCentral extends Component{
 				this.setForceDeployOption()
 			break
 			default: //this shouldnt never happend
-				this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0XEE})
+				this.setIndicatorNumber(0XEE)
 			break
 		}
     }
@@ -769,7 +837,7 @@ class SetupCentral extends Component{
     			this.setForceDeployOption()
     		break
     		default: //this shouldnt never happend
-    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0XEE})
+    			this.setIndicatorNumber(0XEE)
     		break
     	}
     }
@@ -779,15 +847,12 @@ class SetupCentral extends Component{
     		case 1:
     			this.setForceUnPairOption()
     		break
-    		case 2: // this should never Happend
-    			//Alert.alert("Error","The expected status its 2 and the current status on the bridge its 3" )
-    			this.setForceUnPairOption()
-    		break
+    	
     		case 4:
     			this.setForceDeployOption()
     		break
     		default: //this shouldnt never happend
-    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0XEE}) 
+    			this.setIndicatorNumber(0XEE)
     		break
     	}    	
     }
@@ -797,31 +862,27 @@ class SetupCentral extends Component{
     		case 1:
     			this.setForceUnPairOption()
     		break
-    		case 2: //this shouldn never happend
-    			this.setForceUnPairOption()
-    			//Alert.alert("Error","The expected status its 2 and the current status on the bridge its 3" )
-    		break
-    		case 3: //this shouldn never happend because you can't undeploy 
-    			this.setForceUnPairOption()
-    			
+    		
+    		case 3: //this shouldn never happend because you can't undeploy
+    			this.setIndicatorNumber(4)
     			//Alert.alert("Error","The expected status its 3 and the current status on the bridge its 4" )
     		break
     		default: //this shouldnt never happend
-    			this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0XEE}) 
+    			this.setIndicatorNumber(0XEE)
     		break
     	}
     }
 
     setForcePairOption(){
-    	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number : 0xE0})
+    	this.setIndicatorNumber(0xE0)
     }
 
     setForceDeployOption(){
-    	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0xE1})
+    	this.setIndicatorNumber(0xE1)
     }
 
     setForceUnPairOption(){
-    	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 0xE2})
+    	this.setIndicatorNumber(0xE2)
     }
 
     pushStatusToCloud(device,current_status,current_status_on_cloud,expected_status_on_cloud){
@@ -854,7 +915,7 @@ class SetupCentral extends Component{
 	}
 
 	saveOnCloudLog(value,log_type){
-		var body = LOG_CREATOR(value,this.manufactured_device_id,this.device.id,log_type)
+		var body = LOG_CREATOR(value,this.device.manufactured_data.device_id,this.device.id,log_type)
 		POST_LOG(body)
 	}
 
@@ -938,7 +999,6 @@ class SetupCentral extends Component{
 		IS_CONNECTED(this.device.id)
 		.then(response => {
 			if(response){
-				this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"disconnectOnBack"})
 				SlowBleManager.disconnect(this.device.id)
 				.then(response => {
 				}).catch(error => console.log("error",error))
@@ -970,7 +1030,6 @@ class SetupCentral extends Component{
 		.then(response => {
 			console.log("response",response);
 			if(response){
-				//this.props.dispatch({type:"UPDATE_ACTION_FROM_DISCONNNECT",action_from_disconnect:"manual"})
 				SlowBleManager.disconnect(device_id)
 				.then(response => {
 				}).catch(error => console.log("error",error))
@@ -1218,6 +1277,8 @@ class SetupCentral extends Component{
 	}
 
 	renderOptions(){
+		
+		console.log("this.props.indicator_number",this.props.indicator_number)
 
 		return <Options 
 			device={this.props.device}
@@ -1240,7 +1301,7 @@ class SetupCentral extends Component{
 			readStatusOnDevice = {(device) => this.readStatusOnDevice(device)}
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
-
+			unPair = {() => this.unPair()}
 		/>
 	}
 
@@ -1304,12 +1365,14 @@ class SetupCentral extends Component{
 
 	goToFirmwareUpdate(){
 		this.handleCharacteristic.remove()
+		this.handleDisconnected.remove()
 
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
-		
-		
+
+		this.eraseSecondInterval()
+
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){
 			this.props.navigator.push({
@@ -1322,9 +1385,10 @@ class SetupCentral extends Component{
 		            },
 		        ],
 		        passProps: {
-		        	fastTryToConnect: () => this.fastTryToConnect(),
+		        	fastTryToConnect: (device) => this.fastTryToConnect(device),
 		        	saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
 		        	activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
+		        	activateHandleDisconnectedPeripheral : () => this.activateHandleDisconnectedPeripheral(),
 		        	animated: false,
 		        	admin : true
 		        	//device : this.device
@@ -1334,12 +1398,12 @@ class SetupCentral extends Component{
 			this.props.navigator.push({
 				screen: "FirmwareUpdate",
 				title : "Firmware Update",
-				fastTryToConnect : () => this.fastTryToConnect(),
 				animated: false,
 				passProps: {
-					fastTryToConnect: () => this.fastTryToConnect(),
+					fastTryToConnect: (device) => this.fastTryToConnect(device),
 					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
 					activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
+					activateHandleDisconnectedPeripheral : () => this.activateHandleDisconnectedPeripheral(),
 					//device : this.device
 				}
 			})			
@@ -1598,11 +1662,36 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- END update commands Seccion ---------------------------------------------------------------*/	
 
 
+	renderNormalConnecting(){
+		console.log("renderNormalConnecting()")
+		this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+	}
+
+	renderConnectingStatus(){
+		console.log("renderConnectingStatus()")
+		this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
+
+	}
+
+	renderConnectedStatus(){
+		console.log("renderConnectedStatus()")
+		this.props.dispatch({type:"CONNECTED_CENTRAL_DEVICE"})
+	}
+
 	/* --------------------------------------------------------------------------------------------------- get commands Seccion ---------------------------------------------------------------*/	
 
 	getAllInfo(device){
 		console.log("getAllInfo()")
-		this.getFirmwareVersion()
+		
+		if(!this.props.getting_commands){
+			
+			setTimeout(() => this.renderConnectedStatus(),5000)
+
+			this.props.dispatch({type: "SET_GETTING_COMMANDS",getting_commands:true})
+			this.getFirmwareVersion()	
+		}else{
+			console.log("write commands was stoped by this.props.getting_commands")
+		}
 	}
 
 	getFirmwareVersion(){
@@ -1751,84 +1840,86 @@ class SetupCentral extends Component{
 				
 				/* --------------------------------------------------------------  --------------------------------------------------------------  --------------------------------------------------------------*/				
 				case 0x01 : //app firmware version
-						this.clearGeneralInterval()
+						//this.clearGeneralInterval()
+						console.log("get 0x01 app firmware_version")
 						this.updateAppVersion(values)
 						this.getRadioFirmwareVersion()
 					break
 
 				case 0x09 : // radio firmware version
-						this.clearGeneralInterval()
+						console.log("get 0x09 radio firmware_version")
 						this.updateRadioVersion(values)
 						this.getBluetoothFirmwareVersion()
 					break					
 
 				case 0x12 : //bluetooth firmware version
-						this.clearGeneralInterval()
+						console.log("get 0x12 bluetooth firmware_version")
 						this.updateBluetoothVersion(values)
 						this.getRadioSettings()
 					break
 
 				case 0x08 : //radio settings
-						this.clearGeneralInterval()
+						console.log("get 0x08 radio settings")
 						this.updateRadioSettings(values)
 						this.getVoltage()
 
 					break
 					
 					case 0x14: //Voltage
-						this.clearGeneralInterval()
+						console.log("get 0x14 voltage")
 						this.updateVoltage(values)
 						this.getRegisteredBoard1()
 
 					break					
 
 				case 0x10: //Register Board name 1
-						this.clearGeneralInterval()
+						console.log("get 0x10 register board name 1")
 						this.updateRegisterBoard1(values)
 						this.getRegisteredBoard2()
 
 					break
 
 				case 0x11: // Register Board name 2
-						this.clearGeneralInterval()
+						console.log("get 0x11 register board name 2")
 						this.updateRegisterBoard2(values)
 						this.getAppPicVersion()
 					break
 
 
 				case 0x25: // App pic Version
-						this.clearGeneralInterval()
+						console.log("get 0x25 app pic version")
 						this.updateAppPicVersion(values)
 						this.getRadioPicVersion()
 					break
 				case 0x26: // Radio Pic Version
-						this.clearGeneralInterval()
+						console.log("get 0x26 radio pic version")
 						this.updateRadioPicVersion(values)
 						this.getHoppingTable()
 					break					
 
 
 				case 0x20: //get hopping table
-						this.clearGeneralInterval()
+						console.log("get 0x20 hopping_table")
 						this.updateHoppingTable(values)
 						this.getDebugModeStatus()
 					break					
 
 				case 0x1B: //get debug mode status
-						this.clearGeneralInterval()
-						this.updateDebugModeStatus(values)
+						//this.clearGeneralInterval()
+						console.log("get 0x1B debug mode status")
 						this.getAllVersion()
 					break
 
 				case 0x1E: // all versions
-					this.clearGeneralInterval()
+					console.log("get 0x1E all versions")
 					this.saveOnCloudLog(values,"FIRMWAREVERSIONS")
 					this.getBootloaderInfo()
 					break
 
 
 				case 0x07: //Bootloader info
-					this.clearGeneralInterval()
+					//this.clearGeneralInterval()
+					console.log("get 0x07 bootloader info")
 					this.saveOnCloudLog(values,"BOOTLOADERINFO")
 					this.startOperationsAfterConnect(this.device)
 					break
@@ -1933,9 +2024,11 @@ class SetupCentral extends Component{
 	}
 
 	startOperationsAfterConnect(device){
-		if(this.props.debug_mode_status)
-			this.props.dispatch({type: "CONNECTED_CENTRAL_DEVICE"})
+		if(this.props.getting_commands)
+			this.props.dispatch({type: "SET_GETTING_COMMANDS",getting_commands:false})
 
+		this.renderConnectedStatus()
+		
 		this.checkPairOrUnPairResult()
 	}
 
@@ -1967,7 +2060,8 @@ class SetupCentral extends Component{
 
 	stopScanByFiveSeconds(device){
 		//console.log("stopScanByFiveSeconds()")
-		this.fast_manager.stopDeviceScan();
+		if(this.fast_manager)
+			this.fast_manager.stopDeviceScan();
 		
 		
 		for (var i = 0; i < this.devices_found.length; i++) {
@@ -1987,22 +2081,23 @@ class SetupCentral extends Component{
 
 	startDeviceScan(device){
 		//console.log("startDeviceScan()");
-		this.fast_manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,found_device) => {
-            //console.log("device",device)
-            if(error){
-                //console.log("error",error)
-                Alert.alert("Error",)
-                return
-            }
+		if(this.fast_manager)
+			this.fast_manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,found_device) => {
+	            //console.log("device",device)
+	            if(error){
+	                //console.log("error",error)
+	                Alert.alert("Error",)
+	                return
+	            }
 
-            if (found_device.name == "Sure-Fi Brid" || found_device.name == "SF Bridge") {
-            	var data = this.getManufacturedData(found_device)
-            	
-                if(data.manufactured_data.device_id == device.manufactured_data.tx){
-                	this.devices_found.push(data)                	
-                }
-            }
-        })		
+	            if (found_device.name == "Sure-Fi Brid" || found_device.name == "SF Bridge") {
+	            	var data = this.getManufacturedData(found_device)
+	            	
+	                if(data.manufactured_data.device_id == device.manufactured_data.tx){
+	                	this.devices_found.push(data)                	
+	                }
+	            }
+	        })		
 	}
 
     getManufacturedData(device) {
@@ -2174,7 +2269,7 @@ class SetupCentral extends Component{
 	render(){
 		//console.log("datos aca",this.props.central_device_status,this.props.indicator_number,this.props.power_voltage)
 		var props = this.props
-		if(!IS_EMPTY(this.device) &&  props.central_device_status == "connected" && props.indicator_number && props.power_voltage){
+		if(!IS_EMPTY(this.device) &&  props.central_device_status == "connected"){
 			var content = (
 				<View>
 					<View>
@@ -2210,6 +2305,7 @@ class SetupCentral extends Component{
 							switchUnit={() => this.switchUnit()}
 						/>
 					</View>
+
 					<View>
 						{content}
 					</View>
@@ -2220,13 +2316,6 @@ class SetupCentral extends Component{
 }
 
 const mapStateToProps = state => ({
-	screen_status : state.setupCentralReducer.screen_status,
-	show_continue_button : state.setupCentralReducer.show_continue_button,
-	central_photo_data : state.setupCentralReducer.central_photo_data,
-	central_unit_description : state.setupCentralReducer.central_unit_description,
-	device: state.scanCentralReducer.central_device,
-	central_device_status: state.configurationScanCentralReducer.central_device_status,
-	checkDeviceState: state.scanCentralReducer.central_checkDeviceState,
 	app_version : state.setupCentralReducer.app_version,
 	radio_version : state.setupCentralReducer.radio_version,
 	bluetooth_version : state.setupCentralReducer.bluetooth_version,
@@ -2238,31 +2327,36 @@ const mapStateToProps = state => ({
   	power_voltage : state.setupCentralReducer.power_voltage,
   	device_status : state.setupCentralReducer.device_status,
   	show_modal : state.setupCentralReducer.show_modal,
-  	action_from_disconnect : state.setupCentralReducer.action_from_disconnect,
-  	manager : state.scanCentralReducer.manager,
-  	just_deploy : state.scanCentralReducer.just_deploy,
-  	manual_disconnect : state.scanCentralReducer.manual_disconnect,
-  	should_connect : state.scanCentralReducer.should_connect,
-  	interval : state.scanCentralReducer.interval,
-  	indicator_number : state.scanCentralReducer.indicator_number,
-  	user_status : state.mainScreenReducer.user_status,
+
   	debug_mode_status : state.setupCentralReducer.debug_mode_status,
   	app_board_version : state.setupCentralReducer.app_board_version,
   	radio_board_version : state.setupCentralReducer.radio_board_version,
   	register_board_1 : state.setupCentralReducer.register_board_1,
   	register_board_2 : state.setupCentralReducer.register_board_2,
   	show_switch_button : state.setupCentralReducer.show_switch_button,
-  	user_data : state.loginReducer.user_data,
+  	
   	pair_disconnect: state.setupCentralReducer.pair_disconnect,
   	unpair_disconnect : state.setupCentralReducer.unpair_disconnect,
   	deploy_disconnect : state.setupCentralReducer.deploy_disconnect,
+  	manual_disconnect : state.setupCentralReducer.manual_disconnect,
   	switch_disconnect : state.setupCentralReducer.switch_disconnect,
   	show_status_box : state.setupCentralReducer.show_status_box,
   	show_disconnect_notification : state.setupCentralReducer.show_disconnect_notification,
   	allow_notifications: state.setupCentralReducer.allow_notifications,
   	write_pair_result : state.setupCentralReducer.write_pair_result,
   	write_unpair_result: state.setupCentralReducer.write_unpair_result,
+  	connection_established : state.setupCentralReducer.connection_established,
 
+  	manager : state.scanCentralReducer.manager,
+  	just_deploy : state.scanCentralReducer.just_deploy,
+  	should_connect : state.scanCentralReducer.should_connect,
+  	interval : state.scanCentralReducer.interval,
+  	indicator_number : state.scanCentralReducer.indicator_number,
+  	device: state.scanCentralReducer.central_device,
+	checkDeviceState: state.scanCentralReducer.central_checkDeviceState,
+	central_device_status: state.configurationScanCentralReducer.central_device_status,
+  	user_status : state.mainScreenReducer.user_status,  	
+  	user_data : state.loginReducer.user_data,
 });
 
 

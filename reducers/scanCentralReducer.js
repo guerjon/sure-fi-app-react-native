@@ -20,13 +20,14 @@ const initialState = {
   show_serial_input : false,
   manager : {},
   justDeploy : false,
-  manual_disconnect : false,
   should_connect : true,
   interval : 0,
   indicator_number : null,
   fast_manager : null,
   allow_scanning : true,
-  show_camera : true
+  show_camera : true,
+  getting_commands: false,
+  show_device_not_matched : false
 }
 
 
@@ -45,7 +46,8 @@ export default function scanCentralReducer (state = initialState, action) {
         manager : {},
         justDeploy : false,
         manual_disconnect : false,
-        interval : 0 
+        interval : 0 ,
+        show_device_not_matched: false
       }
     case "RESET_CAMERA":
       return {
@@ -146,12 +148,7 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         just_deploy : action.just_deploy
       }
-    case "SET_MANUAL_DISCONNECT":
-      return {
-        ...state,
-        manual_disconnect : action.manual_disconnect,
-        
-      }
+
     case "SET_SHOULD_CONNECT":
       return {
         ...state,
@@ -176,6 +173,16 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         allow_scanning: action.allow_scanning
+      }
+    case "SET_GETTING_COMMANDS":
+      return{
+        ...state,
+        getting_commands : action.getting_commands
+      }
+    case "SHOW_DEVICE_NOT_MATCHED":
+      return {
+        ...state,
+        show_device_not_matched : action.show_device_not_matched
       }
     default:
       return state
