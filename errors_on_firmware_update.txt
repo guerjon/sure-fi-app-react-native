@@ -1,0 +1,388 @@
+
+****************************************************************** 1.2 to 1.1 **************************************************************
+
+
+10-25 15:00:04.169 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:00:04.330 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 11 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:04.331 29277-29466/com.surefi I/ReactNativeJS: BleRsp_BootloaderInfo
+10-25 15:00:04.331 29277-29466/com.surefi I/ReactNativeJS: processRadioRows()
+10-25 15:00:04.334 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:00:04.335 29277-29467/com.surefi D/logs: Message2(1): 11
+10-25 15:00:04.340 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:00:04.471 29277-29797/com.surefi D/SUCCESS: write  complete
+10-25 15:00:08.832 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 38, 6, 177, 96, 83, 4 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:08.834 29277-29466/com.surefi I/ReactNativeJS: No 38 option found
+10-25 15:00:08.982 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 13 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:11.007 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+
+10-25 15:00:11.008 29277-29467/com.surefi D/logs: Message2(1): 1D
+10-25 15:00:11.013 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:00:11.146 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:00:11.155 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 233, 29 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:11.172 29277-29466/com.surefi I/ReactNativeJS: 'progress', 1
+10-25 15:00:12.172 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:00:12.198 29277-29290/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:00:12.229 29277-29467/com.surefi D/logs: Message(1): 2E
+10-25 15:00:12.232 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:00:12.355 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:00:12.358 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 31, 0, 0, 8, 32 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:12.360 29277-29466/com.surefi I/ReactNativeJS: '0x1F', { value: [ 31, 0, 0, 8, 32 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:13.184 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:00:13.202 29277-29308/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:00:13.266 29277-29467/com.surefi D/logs: Message(1): 2E
+10-25 15:00:13.272 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:00:13.397 29277-29289/com.surefi D/SUCCESS: write  complete
+10-25 15:00:13.412 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 31, 0, 0, 10, 157 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:13.415 29277-29466/com.surefi I/ReactNativeJS: '0x1F', { value: [ 31, 0, 0, 10, 157 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:00:14.200 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:00:14.222 29277-29797/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:00:14.310 29277-29467/com.surefi D/logs: Message(1): 2E
+10-25 15:00:14.314 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+
+
+
+
+
+
+
+
+
+
+
+
+
+on write: 0
+10-25 15:02:20.979 29277-29467/com.surefi D/logs: Message(10): 05000000000000005043
+10-25 15:02:20.994 29277-29780/com.surefi E/logs: No callback on write: 0
+10-25 15:02:22.291 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:02:22.310 29277-29289/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:02:22.344 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:02:22.344 29277-29467/com.surefi D/logs: Message2(1): 06
+10-25 15:02:22.348 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:02:22.470 29277-29797/com.surefi D/SUCCESS: write  complete
+10-25 15:02:22.609 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:02:22.694 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:02:22.713 29277-29780/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:02:22.738 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:02:22.738 29277-29467/com.surefi D/logs: Message2(1): 07
+10-25 15:02:22.739 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:02:22.845 29277-29290/com.surefi D/SUCCESS: write  complete
+10-25 15:02:26.032 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:02:26.126 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:02:26.225 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:02:26.822 29277-29466/com.surefi I/ReactNativeJS: 'saveOnCloudLog()', 1.1, 'FIRMWARE-REMOTE-BLUETOOTH'
+10-25 15:02:26.839 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:02:26.849 29277-29797/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:02:26.871 29277-29467/com.surefi D/logs: Message(1): 1A
+10-25 15:02:26.873 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:02:27.277 29277-29289/com.surefi E/logs: Error onCharacteristicWrite:133
+10-25 15:02:27.282 29277-29289/com.surefi D/BluetoothGatt: onClientConnectionState() - status=19 clientIf=5 device=F4:AF:68:14:7A:3E
+10-25 15:02:27.282 29277-29289/com.surefi D/logs: onConnectionStateChange from 19 to 0 on peripheral:F4:AF:68:14:7A:3E
+10-25 15:02:27.282 29277-29289/com.surefi D/BluetoothGatt: cancelOpen() - device: F4:AF:68:14:7A:3E
+10-25 15:02:27.289 29277-29289/com.surefi D/BluetoothGatt: close()
+10-25 15:02:27.289 29277-29289/com.surefi D/BluetoothGatt: unregisterApp() - mClientIf=5
+10-25 15:02:27.293 29277-29466/com.surefi I/ReactNativeJS: 'Error on WRITE_COMMAND', 'Error writing status: 133'
+10-25 15:02:27.853 29277-29467/com.surefi D/logs: scan
+10-25 15:02:27.870 29277-29467/com.surefi D/BluetoothAdapter: STATE_ON
+10-25 15:02:27.888 29277-29780/com.surefi D/BluetoothLeScanner: onClientRegistered() - status=0 clientIf=5 mClientIf=0
+10-25 15:02:27.981 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:02:27.987 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '',
+                                                             rssi: -80,
+                                                             name: 'SmartBlind_DFU',
+                                                             id: 'EE:F6:9F:79:2F:1D',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'DwlTbWFydEJsaW5kX0RGVQIBBhEHI9G86l94ABbe7xISABQAAAsW3QodL3mf9u6AYwAAAAAAAAAAAAAAAAA=' } }
+10-25 15:02:27.999 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:02:28.003 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '',
+                                                             rssi: -93,
+                                                             name: 'SmartBlind_DFU',
+                                                             id: 'C6:73:B5:B2:90:82',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'DwlTbWFydEJsaW5kX0RGVQIBBhEHI9G86l94ABbe7xISABQAAAsW3QqCkLK1c8aAYgAAAAAAAAAAAAAAAAA=' } }
+10-25 15:02:28.030 29277-29277/com.surefi I/logs: DiscoverPeripheral: DfuT
+10-25 15:02:28.034 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: 'CFFC',
+                                                             rssi: -43,
+                                                             name: 'DfuT',
+                                                             id: 'F4:AF:68:14:7A:3F',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGAwJZ/gX/Av/P/AUIRGZ1VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:02:28.050 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:02:28.053 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:02:28.056 29277-29277/com.surefi I/logs: DiscoverPeripheral: DfuT
+10-25 15:02:28.062 29277-29277/com.surefi I/logs: DiscoverPeripheral: null
+10-25 15:02:28.065 29277-29277/com.surefi I/logs: DiscoverPeripheral
+
+
+
+
+
+
+///**************************************************************** 1.01 to 1.0 **********************************************************************************************
+
+
+
+10-25 15:05:37.485 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:05:37.486 29277-29467/com.surefi D/logs: Message2(1): 10
+10-25 15:05:37.495 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:05:37.583 29277-29289/com.surefi D/SUCCESS: write  complete
+10-25 15:05:37.638 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 11 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:37.638 29277-29466/com.surefi I/ReactNativeJS: BleRsp_BootloaderInfo
+10-25 15:05:37.638 29277-29466/com.surefi I/ReactNativeJS: processRadioRows()
+10-25 15:05:37.641 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:05:37.642 29277-29467/com.surefi D/logs: Message2(1): 11
+10-25 15:05:37.646 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:05:37.730 29277-29308/com.surefi D/SUCCESS: write  complete
+10-25 15:05:42.029 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 38, 6, 177, 96, 83, 4 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:42.030 29277-29466/com.surefi I/ReactNativeJS: No 38 option found
+10-25 15:05:42.122 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 13 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:44.142 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:05:44.143 29277-29467/com.surefi D/logs: Message2(1): 1D
+10-25 15:05:44.149 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:05:44.213 29277-29797/com.surefi D/SUCCESS: write  complete
+10-25 15:05:44.223 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 233, 29 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:44.247 29277-29466/com.surefi I/ReactNativeJS: 'progress', 1
+10-25 15:05:45.255 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:05:45.275 29277-29780/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:05:45.326 29277-29467/com.surefi D/logs: Message(1): 2E
+10-25 15:05:45.331 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:05:45.438 29277-29290/com.surefi D/SUCCESS: write  complete
+10-25 15:05:45.441 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 31, 0, 0, 7, 210 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:45.444 29277-29466/com.surefi I/ReactNativeJS: '0x1F', { value: [ 31, 0, 0, 7, 210 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:05:46.267 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:05:46.286 29277-29289/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:05:46.309 29277-29467/com.surefi D/logs: Message(1): 2E
+10-25 15:05:46.312 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+
+
+
+
+
+
+
+
+
+
+10-25 15:07:44.113 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:07:44.125 29277-29797/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:07:44.136 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:07:44.137 29277-29467/com.surefi D/logs: Message2(1): 06
+10-25 15:07:44.139 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:07:44.235 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:07:44.461 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1
+10-25 15:07:44.664 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:07:44.672 29277-29289/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:07:44.690 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:07:44.690 29277-29467/com.surefi D/logs: Message2(1): 07
+10-25 15:07:44.692 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:07:44.771 29277-29308/com.surefi D/SUCCESS: write  complete
+10-25 15:07:47.885 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1
+10-25 15:07:48.075 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1
+10-25 15:07:48.185 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1
+10-25 15:07:48.654 29277-29466/com.surefi I/ReactNativeJS: 'saveOnCloudLog()', 1, 'FIRMWARE-REMOTE-BLUETOOTH'
+10-25 15:07:48.662 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:07:48.671 29277-29290/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:07:48.704 29277-29467/com.surefi D/logs: Message(1): 1A
+10-25 15:07:48.706 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:07:48.769 29277-29289/com.surefi D/SUCCESS: write  complete
+10-25 15:07:49.069 29277-29308/com.surefi D/BluetoothGatt: onClientConnectionState() - status=19 clientIf=5 device=F4:AF:68:14:7A:3E
+10-25 15:07:49.069 29277-29308/com.surefi D/logs: onConnectionStateChange from 19 to 0 on peripheral:F4:AF:68:14:7A:3E
+10-25 15:07:49.070 29277-29308/com.surefi D/BluetoothGatt: cancelOpen() - device: F4:AF:68:14:7A:3E
+10-25 15:07:49.075 29277-29308/com.surefi D/BluetoothGatt: close()
+10-25 15:07:49.075 29277-29308/com.surefi D/BluetoothGatt: unregisterApp() - mClientIf=5
+10-25 15:07:49.671 29277-29467/com.surefi D/logs: scan
+10-25 15:07:49.679 29277-29467/com.surefi D/BluetoothAdapter: STATE_ON
+10-25 15:07:49.695 29277-29290/com.surefi D/BluetoothLeScanner: onClientRegistered() - status=0 clientIf=5 mClientIf=0
+10-25 15:07:49.811 29277-29277/com.surefi I/logs: DiscoverPeripheral: Sure-Fi Brid
+10-25 15:07:49.817 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '02010204200004100004',
+                                                             rssi: -93,
+                                                             name: 'Sure-Fi Brid',
+                                                             id: 'F0:79:82:E8:ED:CB',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGDf///wIBAgQgAAQQAAQNCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:07:49.821 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:07:49.827 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '',
+                                                             rssi: -79,
+                                                             name: 'SmartBlind_DFU',
+                                                             id: 'C7:7F:92:CF:9F:42',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'DwlTbWFydEJsaW5kX0RGVQIBBhEHI9G86l94ABbe7xISABQAAAsW3QpCn8+Sf8eAYwAAAAAAAAAAAAAAAAA=' } }
+10-25 15:07:49.827 29277-29277/com.surefi I/logs: DiscoverPeripheral: Sure-Fi Brid
+10-25 15:07:49.833 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '01010204FCCFCCFFCFFC',
+                                                             rssi: -59,
+                                                             name: 'Sure-Fi Brid',
+                                                             id: 'EB:16:3A:07:E2:44',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGDf///wEBAgT8z8z/z/wNCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:07:49.838 29277-29277/com.surefi I/logs: DiscoverPeripheral: DfuT
+10-25 15:07:49.843 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: 'FDDD',
+                                                             rssi: -73,
+                                                             name: 'DfuT',
+                                                             id: 'F3:1D:2F:D0:86:C3',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGAwJZ/gX/Av/93QUIRGZ1VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:07:49.845 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:07:49.850 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '',
+
+
+
+
+
+
+
+**********************************************************************  1.0 to 1.1   **********************************************************************************
+
+
+10-25 15:10:58.044 29277-29467/com.surefi D/logs: Message(20): 0F45000CBF45000CBF45000CBF45000CBF45000C
+10-25 15:10:58.064 29277-29780/com.surefi E/logs: No callback on write: 0
+10-25 15:10:58.066 29277-29467/com.surefi D/logs: Message(20): 0FBF45000C9F457FED9F457FED9F45400C9F4545
+10-25 15:10:58.085 29277-29467/com.surefi D/logs: Message(2): 0F0C
+10-25 15:10:58.086 29277-29308/com.surefi E/logs: No callback on write: 0
+10-25 15:10:58.105 29277-29290/com.surefi E/logs: No callback on write: 0
+10-25 15:10:58.203 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:10:58.204 29277-29467/com.surefi D/logs: Message2(1): 10
+10-25 15:10:58.212 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:10:58.265 29277-29308/com.surefi D/SUCCESS: write  complete
+10-25 15:10:58.418 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 11 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:10:58.419 29277-29466/com.surefi I/ReactNativeJS: BleRsp_BootloaderInfo
+10-25 15:10:58.419 29277-29466/com.surefi I/ReactNativeJS: processRadioRows()
+10-25 15:10:58.422 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:10:58.422 29277-29467/com.surefi D/logs: Message2(1): 11
+10-25 15:10:58.424 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:10:58.509 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:11:01.008 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 13 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:11:03.024 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:11:03.024 29277-29467/com.surefi D/logs: Message2(1): 1D
+10-25 15:11:03.032 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:11:03.093 29277-29797/com.surefi D/SUCCESS: write  complete
+10-25 15:11:04.073 29277-29466/com.surefi I/ReactNativeJS: 'data', { value: [ 19, 35, 4, 1, 12, 255 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:11:04.078 29277-29466/com.surefi I/ReactNativeJS: { value: [ 19, 35, 4, 1, 12, 255 ],
+                                                             service: 'c8bf000a-0ec5-2536-2143-2d155783ce78',
+                                                             characteristic: 'c8bf000c-0ec5-2536-2143-2d155783ce78',
+                                                             peripheral: 'F4:AF:68:14:7A:3E' }
+10-25 15:11:05.036 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:11:05.036 29277-29467/com.surefi D/logs: Message2(1): 1D
+10-25 15:11:05.041 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:11:05.141 29277-29308/com.surefi D/SUCCESS: write  complete
+
+
+
+
+
+efi D/logs: Message(20): 05CC3F5A2708004003000000000800E003000000
+10-25 15:13:10.828 29277-29289/com.surefi E/logs: No callback on write: 0
+10-25 15:13:10.830 29277-29467/com.surefi D/logs: Message(10): 05000000000000005043
+10-25 15:13:10.849 29277-29308/com.surefi E/logs: No callback on write: 0
+10-25 15:13:11.956 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:13:12.032 29277-29290/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:13:12.078 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:13:12.079 29277-29467/com.surefi D/logs: Message2(1): 06
+10-25 15:13:12.083 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:13:12.166 29277-29780/com.surefi D/SUCCESS: write  complete
+10-25 15:13:12.323 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:13:12.412 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:13:12.429 29277-29797/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:13:12.465 29277-29467/com.surefi D/logs: Write to: F4:AF:68:14:7A:3E
+10-25 15:13:12.465 29277-29467/com.surefi D/logs: Message2(1): 07
+10-25 15:13:12.467 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:13:12.554 29277-29290/com.surefi D/SUCCESS: write  complete
+10-25 15:13:12.930 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:13:13.090 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:13:13.195 29277-29466/com.surefi I/ReactNativeJS: 'renderUpdateComponent()', 1.1
+10-25 15:13:13.671 29277-29466/com.surefi I/ReactNativeJS: 'saveOnCloudLog()', 1.1, 'FIRMWARE-REMOTE-BLUETOOTH'
+10-25 15:13:13.681 29277-29467/com.surefi D/BluetoothGatt: discoverServices() - device: F4:AF:68:14:7A:3E
+10-25 15:13:13.688 29277-29290/com.surefi D/BluetoothGatt: onSearchComplete() = Device=F4:AF:68:14:7A:3E Status=0
+10-25 15:13:13.718 29277-29467/com.surefi D/logs: Message(1): 1A
+10-25 15:13:13.719 29277-29467/com.surefi D/GATT_WRITE_CHARAC: success
+10-25 15:13:13.826 29277-29290/com.surefi D/SUCCESS: write  complete
+10-25 15:13:14.120 29277-29308/com.surefi D/BluetoothGatt: onClientConnectionState() - status=19 clientIf=5 device=F4:AF:68:14:7A:3E
+10-25 15:13:14.121 29277-29308/com.surefi D/logs: onConnectionStateChange from 19 to 0 on peripheral:F4:AF:68:14:7A:3E
+10-25 15:13:14.121 29277-29308/com.surefi D/BluetoothGatt: cancelOpen() - device: F4:AF:68:14:7A:3E
+10-25 15:13:14.124 29277-29308/com.surefi D/BluetoothGatt: close()
+10-25 15:13:14.124 29277-29308/com.surefi D/BluetoothGatt: unregisterApp() - mClientIf=5
+10-25 15:13:14.694 29277-29467/com.surefi D/logs: scan
+10-25 15:13:14.705 29277-29467/com.surefi D/BluetoothAdapter: STATE_ON
+10-25 15:13:14.720 29277-29797/com.surefi D/BluetoothLeScanner: onClientRegistered() - status=0 clientIf=5 mClientIf=0
+10-25 15:13:14.824 29277-29277/com.surefi I/logs: DiscoverPeripheral: DfuT
+10-25 15:13:14.831 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: 'FDDD',
+                                                             rssi: -80,
+                                                             name: 'DfuT',
+                                                             id: 'F3:1D:2F:D0:86:C3',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGAwJZ/gX/Av/93QUIRGZ1VAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:13:14.839 29277-29277/com.surefi I/logs: DiscoverPeripheral: Sure-Fi Brid
+10-25 15:13:14.843 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '01010204FCCFCCFFCFFC',
+                                                             rssi: -54,
+                                                             name: 'Sure-Fi Brid',
+                                                             id: 'EB:16:3A:07:E2:44',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer',
+                                                                data: 'AgEGDf///wEBAgT8z8z/z/wNCFN1cmUtRmkgQnJpZBEHeM6DVxUtQyE2JcUOCgC/mAAAAAAAAAAAAAAAAAA=' } }
+10-25 15:13:14.858 29277-29277/com.surefi I/logs: DiscoverPeripheral: SmartBlind_DFU
+10-25 15:13:14.862 29277-29466/com.surefi I/ReactNativeJS: 'handleDiscoverPeripheral()', { new_representation: '',
+                                                             rssi: -89,
+                                                             name: 'SmartBlind_DFU',
+                                                             id: 'C3:0A:77:99:50:B1',
+                                                             advertising: 
+                                                              { CDVType: 'ArrayBuffer'
+
+
+
