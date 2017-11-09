@@ -17,9 +17,10 @@ import {
 	byteArrayToLong,
 	BYTES_TO_HEX,
 	Hex2Bin,
-	stringFromUTF8Array
+	stringFromUTF8Array,
+	NOTIFICATION
 } from '../constants'
-import {WRITE_COMMAND} from '../action_creators'
+import {WRITE_COMMAND,LOG_INFO} from '../action_creators'
 import Background from '../helpers/background'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -126,6 +127,7 @@ class OperationValues extends Component{
 
 	handleCharacteristicNotification(data){
 			var device = this.device;
+			LOG_INFO(data.value,NOTIFICATION)
 			switch(data.value[0]){
 				case 0x19:
 					data.value.shift()

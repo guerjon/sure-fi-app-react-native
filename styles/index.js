@@ -49,7 +49,6 @@ export  const styles = StyleSheet.create({
   	coverflow: {
   		width: width,
   		height: width + 40,
-      
   	},
   	launchImage:{
   		width: 1000,
@@ -60,6 +59,7 @@ export  const styles = StyleSheet.create({
   		backgroundColor: first_color
   	},
     textViewContainer: {
+      height:width + 250,
       alignItems:"center",
       justifyContent:"center"
     },
@@ -256,6 +256,19 @@ export  const styles = StyleSheet.create({
     row_style: {
       backgroundColor:"white",
       paddingVertical:5,
+      flexDirection:"row",
+      alignItems:"center",
+      justifyContent:"center"
+    },
+    row_normal_style:{
+      backgroundColor:"white",
+      paddingVertical:5,
+      flexDirection:"row",
+      alignItems:"center",
+      
+    },
+    row_style_without_padding:{
+      backgroundColor:"white",
       flexDirection:"row",
       alignItems:"center",
       justifyContent:"center"

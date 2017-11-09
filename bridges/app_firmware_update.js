@@ -22,9 +22,11 @@ import {
 	CRC16,
 	HEX_TO_BYTES,
 	BYTES_TO_HEX,
-	INCREMENT_PROGRAM_NUMBER
+	INCREMENT_PROGRAM_NUMBER,
+	COMMAND,
+	NOTIFICATION
 } from '../constants'
-
+import {LOG_INFO} from '../action_creators'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
 import RNFetchBlob from 'react-native-fetch-blob'
@@ -121,6 +123,9 @@ class AppFirmwareUpdate extends Component{
 	handleCharacteristicNotification(data){
 		//console.log("data",data)
 		var {dispatch} = this.props
+		
+		LOG_INFO(data.value,NOTIFICATION)
+
 		var response = data.value[0]
 
 		switch(response){
@@ -306,7 +311,9 @@ class AppFirmwareUpdate extends Component{
 
 	write(data){
 		let device = this.device;
+
 		BleManagerModule.retrieveServices(device.id,() => {
+			LOG_INFO(data,COMMAND)
 			BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 		})
 	}

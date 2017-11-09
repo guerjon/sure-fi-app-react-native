@@ -35,6 +35,9 @@ const initialState = {
   allow_notifications : true,
   connection_established : false, // allows to know when the device is connected and security clear on the bridge
   manual_disconnect : false,
+  handleDisconnected : false,
+  handleConnected : false,
+  handleCharacteristic : false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -223,6 +226,21 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         connection_established: action.connection_established
+      }
+    case "SET_HANDLE_DISCONNECT":
+      return{
+        ...state,
+        handleDisconnected : action.handleDisconnected
+      }
+    case "SET_HANDLE_CONNECT":
+      return{
+        ...state,
+        handleConnected : action.handleConnected
+      }
+    case "SET_HANDLE_CHARACTERISTIC":
+      return{
+        ...state,
+        handleCharacteristic : action.handleCharacteristic
       }
     default:
       return state

@@ -26,6 +26,8 @@ import videosReducer from './videos'
 import operationValuesReducer from './operationValuesReducer'
 import relayReducer from './relayReducer'
 import chatReducer from './chatReducer'
+import bluetoothDebugLog from './bluetoothDebugLog'
+import rsSettingsReducer from './rsSettingsReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -52,7 +54,9 @@ const rootReducer = combineReducers({
     videosReducer,
     operationValuesReducer,
     relayReducer,
-    chatReducer
+    chatReducer,
+    bluetoothDebugLog,
+    rsSettingsReducer
 })
 
 export default rootReducer

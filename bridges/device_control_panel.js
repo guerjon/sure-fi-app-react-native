@@ -3,7 +3,7 @@ import React, {Component} from 'react'
 import SlowBleManager from 'react-native-ble-manager'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
-
+import ProgressBar from 'react-native-progress/Bar';
 import {
   	Text,
   	View,
@@ -44,6 +44,9 @@ import {
 	LOG_TYPES,
 	BASE64,
 	GET_DEVICE_NAME_ROUTE,
+	NOTIFICATION,
+	CONNECTED,
+	DISCONNECTED
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -66,7 +69,8 @@ import {
 	POST_LOG,
 	LOG_CREATOR,
 	READ_TX,
-	WRITE_UNPAIR
+	WRITE_UNPAIR,
+	LOG_INFO
 } from '../action_creators'
 import Notification from '../helpers/notification'
 import {
@@ -83,7 +87,9 @@ import {
 	COMMAND_GET_HOPPING_TABLE,
 	COMMAND_GET_BOOTLOADER_INFO,
 	COMMAND_GET_ALL_VERSIONS,
-	COMMAND_GET_DEBUG_MODE_STATUS
+	COMMAND_GET_DEBUG_MODE_STATUS,
+	COMMAND_GET_RUN_TIME,
+	COMMAND_RESET_RUN_TIME
 } from '../commands'
 import {
 	powerOptions,
@@ -134,13 +140,13 @@ class SetupCentral extends Component{
 		
 		this.device = props.device
 	
-		
+		console.log("props.device",props.device)
 		this.manufactured_device_id = props.device.manufactured_data
 
-		console.log("props wtf-------------------------------	",props.device.manufactured_data)
+		//console.log("props wtf-------------------------------	",props.device)
 	
 
-/*		console.log("id",this.device.id);
+		console.log("id",this.device.id);
 		console.log("name",this.device.name);
 		console.log("address",this.device.manufactured_data.address);
 		console.log("device_id",this.manufactured_device_id);
@@ -149,7 +155,7 @@ class SetupCentral extends Component{
 		console.log("tx",this.device.manufactured_data.tx);
 		console.log("hardware_type",this.device.manufactured_data.hardware_type);
 		console.log("security_string",this.device.manufactured_data.security_string);
-*/
+
 		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
@@ -162,10 +168,6 @@ class SetupCentral extends Component{
 		this.allow_go_to_operation_values = true
 		this.something = 0
 
-	}
-
-	componentWillMount() {
-		console.log("componentWillMount()")
 	}
 
 	checkDeviceState(device){
@@ -183,24 +185,30 @@ class SetupCentral extends Component{
 	}
 
 	onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        console.log("event-------",event)
-    
         switch(event.id){
             case "pin_number":
                 this.showPINModal()
             break
             case "backPress":
 
+            	this.props.dispatch({
+		    		type:"SET_DEPLOY_DISCONNECT",
+		    		deploy_disconnect:true
+		    	})	 
+		    	
+				SlowBleManager.disconnect(this.device.id)
+				.then(response => {	
+
+					this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
+
+				}).catch(error => console.log("error",error))
+
+            	this.removeListeners()
+
+
+            	
             	this.props.dispatch({type:"SET_GETTING_COMMANDS",getting_commands:false})
-            	this.handleDisconnected.remove()
-
-				this.fast_manager.stopDeviceScan()
-				
-				this.handleConnected.remove()
-				this.disactivateHandleCharacteristic()
 				this.changing_time = true
-
-
 				this.props.navigator.pop()
             break
             default:
@@ -210,27 +218,27 @@ class SetupCentral extends Component{
 
     componentWillMount() {
 		this.startSlowBleManager()
-		this.activateListeners()
+		
 		
 		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
 		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
 		
+		this.activateListeners()
 		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())  
 		this.checkDeviceState(this.device) //enter point for all the connections    
     }
 
+
     componentWillUnmount() {
 		this.eraseSecondInterval()
 		this.eraseInterval()
-		this.destroyFastManager()
+		this.fast_manager.stopDeviceScan()
+		
+		this.props.dispatch({type:"HIDE_DEVICES_LIST"})
+		this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
 
-		SlowBleManager.disconnect(this.device.id)
-		.then(response => {	
-
-			this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
-
-		}).catch(error => console.log("error",error))      
+		//this.destroyFastManager()
     }
 
     destroyFastManager(){
@@ -249,11 +257,21 @@ class SetupCentral extends Component{
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 	}
 
+
 	activateListeners(){
 		console.log("activateListeners()");
-		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
-		this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
-		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)		
+		this.activateHandleDisconnectedPeripheral()		
+		this.activateHandleConnectDevice()
+		this.activateHandleCharacteristic()
+	}
+
+	removeListeners(){
+		console.log("removeListenerss()")
+		
+		this.removeHandleCharacteristic()
+		this.removeHandleConnectDevice()
+		this.removeHandleDisconnectedPeripheral()
+
 	}
 
 	disconnect(){
@@ -334,22 +352,66 @@ class SetupCentral extends Component{
 		})
 	}
 
-
 	activateHandleCharacteristic(){
-		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)
+		console.log("activateHandleCharacteristic()",this.props.handleCharacteristic)
+		if(this.props.handleCharacteristic){
+			console.log("Handle characteristic notification its already active")
+		}else{
+			this.props.dispatch({type:"SET_HANDLE_CHARACTERISTIC",handleCharacteristic:true})
+			this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic',this.handleCharacteristicNotification)	
+		}	
 	}
 
-	disactivateHandleCharacteristic(){
-		this.handleCharacteristic.remove()
+	removeHandleCharacteristic(){
+		console.log("removeHandleCharacteristic()",this.props.handleCharacteristic)
+		if(this.props.handleCharacteristic){
+			this.props.dispatch({type:"SET_HANDLE_CHARACTERISTIC",handleCharacteristic:false})
+			this.handleCharacteristic.remove()
+		}else{
+			console.log("Handle characteristic was remove previosly")
+		}
+	}
+
+	activateHandleConnectDevice(){
+		console.log("activateHandleConnectDevice()",this.props.handleConnected)
+		if(this.props.handleConnected){
+			console.log("Handle connected device its already active")
+		}else{
+			this.props.dispatch({type:"SET_HANDLE_CONNECT",handleConnected:true})
+			this.handleConnected = bleManagerEmitter.addListener('BleManagerConnectPeripheral',this.handleConnectedDevice)
+		}
+	}
+
+	removeHandleConnectDevice(){
+		console.log("removeHandleConnectDevice()",this.props.handleConnected)
+		if(this.props.handleConnected){
+			this.props.dispatch({type:"SET_HANDLE_CONNECT",handleConnected:false})
+			this.handleConnected.remove()	
+		}else{
+			console.log("Handle disconnect was remove previosly")
+		}
 	}
 
 	activateHandleDisconnectedPeripheral(){
-		this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
+		console.log("activateHandleDisconnectedPeripheral()",this.props.handleDisconnected)
+		if(this.props.handleDisconnected){
+			console.log("Handle disconnect listener its already active")
+		}else{
+			this.props.dispatch({type:"SET_HANDLE_DISCONNECT",handleDisconnected:true})
+			this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
+		}
+		
 	}
-
+	
 	removeHandleDisconnectedPeripheral(){
-		this.handleDisconnected.remove()
-	}
+		console.log("removeHandleDisconnectedPeripheral()",this.props.handleDisconnected)
+		if(this.props.handleDisconnected){
+			this.props.dispatch({type:"SET_HANDLE_DISCONNECT",handleDisconnected:false})
+			this.handleDisconnected.remove()
+		}else{
+			console.log("Handle disconnect was remove previosly")
+		}
+	}	
 
 	fastTryToConnect(device){
 		console.log("fastTryToConnect()")
@@ -463,6 +525,7 @@ class SetupCentral extends Component{
 
     handleConnectedDevice(){
     	console.log("handleConnectedDevice()")
+    	LOG_INFO([0xA1],CONNECTED,this.device.manufactured_data.device_id) // 0xA1 ITS DEFINED ON commands.js
     	this.retrieveServices()
     }
 
@@ -683,7 +746,9 @@ class SetupCentral extends Component{
     		this.props.deploy_disconnect,
     		this.props.switch_disconnect
     	)
+
     	this.props.dispatch({type:"SET_CONNECTION_ESTABLISHED",connection_established:false})
+    	LOG_INFO([0xA2],DISCONNECTED,this.props.device.manufactured_data.device_id)
 
     	if(this.props.pair_disconnect){
     		console.log("entra aqui - 1");
@@ -908,12 +973,6 @@ class SetupCentral extends Component{
 	    return value;
 	};
 	
-	toHexString(byteArray) {
-	  return Array.from(byteArray, function(byte) {
-	    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-	  }).join('')
-	}
-
 	saveOnCloudLog(value,log_type){
 		var body = LOG_CREATOR(value,this.device.manufactured_data.device_id,this.device.id,log_type)
 		POST_LOG(body)
@@ -1057,6 +1116,13 @@ class SetupCentral extends Component{
 		.catch(error => console.log("Error on resetBoard()",error))
 	}
 
+	clearRunTime(){
+		WRITE_COMMAND(this.device.id,[COMMAND_RESET_RUN_TIME])
+		.then(response => {	
+			setTimeout(() => this.getWarrantyInformation(),2000)
+		})
+		.catch(error => console.log("Error on resetBoard()",error))		
+	}
 
 	getLastPackageTime(){
 		WRITE_COMMAND(this.device.id,[0x2A])
@@ -1212,8 +1278,6 @@ class SetupCentral extends Component{
 						)
 					}
 
-					
-					
 					<View style={{marginBottom:80}}>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
@@ -1253,17 +1317,27 @@ class SetupCentral extends Component{
 
 	}
 
+	goToDebugLog(){
+		this.props.navigator.push(
+			{
+				screen:"BluetoothDebugLog",
+				title: "Bluetooth Debug Log",
+			}
+		)
+	}
+
 	getOtherCommands(user_type){
 
 		if(user_type){
 		//if(true){
-			console.log("this.props.debug_mode_status",this.props.debug_mode_status);
 			return (
 				<View>
 					<WhiteRowLink name="Restart Application Board" callback={() => this.resetBoard()}/>
 					<WhiteRowLink name={this.props.debug_mode_status ? "Disable Debug Mode" : "Enable Debug Mode"}  callback={() => this.setDebugModeStatus()}/>
 					<WhiteRowLink name="Get Last Packet Time" callback={() => this.getLastPackageTime()}/>
 					<WhiteRowLink name="View Reset Counts" callback={() => this.getResetCauses()}/>
+					<WhiteRowLink name="Bluetooth Debug Log" callback={() => this.goToDebugLog()}/>
+					<WhiteRowLink name="Clear Runtime" callback={() => this.clearRunTime()}/>
 				</View>
 			)
 		}else{
@@ -1277,8 +1351,6 @@ class SetupCentral extends Component{
 	}
 
 	renderOptions(){
-		
-		console.log("this.props.indicator_number",this.props.indicator_number)
 
 		return <Options 
 			device={this.props.device}
@@ -1290,6 +1362,7 @@ class SetupCentral extends Component{
 			goToForcePair={() => this.goToForcePair()}
 			goToInstructionalVideos = {() => this.goToInstructionalVideos()}
 			goToOperationValues = {() => this.goToOperationValues()}
+			goToRsSettings = {() => this.goToRsSettings()}
 			device_status = {this.props.central_device_status}
 			fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 			getCloudStatus = {(device) => this.getCloudStatus(device)}
@@ -1350,7 +1423,7 @@ class SetupCentral extends Component{
 	}
 
 	goToDeploy(){
-		this.handleCharacteristic.remove()
+		this.removeHandleCharacteristic()
 		var getCloudStatus = (device) => this.getCloudStatus(device)
 		
 		/*this.props.navigator.push({
@@ -1364,8 +1437,8 @@ class SetupCentral extends Component{
 	}
 
 	goToFirmwareUpdate(){
-		this.handleCharacteristic.remove()
-		this.handleDisconnected.remove()
+		this.removeHandleCharacteristic()
+		this.activateHandleDisconnectedPeripheral()
 
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
@@ -1373,8 +1446,8 @@ class SetupCentral extends Component{
 
 		this.eraseSecondInterval()
 
-		if(admin_options.lastIndexOf(user_type) !== -1){
-		//if(true){
+		//if(admin_options.lastIndexOf(user_type) !== -1){
+		if(true){
 			this.props.navigator.push({
 				screen: "FirmwareUpdate",
 				title : "Firmware Update",
@@ -1411,7 +1484,7 @@ class SetupCentral extends Component{
 	}
 
 	goToConfigureRadio(){
-		this.handleCharacteristic.remove()
+		this.removeHandleCharacteristic()
 		this.props.navigator.push(
 			{
 				screen:"ConfigureRadio",
@@ -1424,6 +1497,8 @@ class SetupCentral extends Component{
 			}
 		)
 	}
+
+
 
 	goToRelay(){
 		console.log("goToRelay()");
@@ -1449,7 +1524,7 @@ class SetupCentral extends Component{
 
 	goToChat(){
 		console.log("goToChat--Device_Control()");
-		this.disactivateHandleCharacteristic()
+		this.removeHandleCharacteristic()
 
 		this.props.navigator.push({
 			screen : "Chat",
@@ -1462,7 +1537,7 @@ class SetupCentral extends Component{
 	}
 
 	goToForcePair(){
-		this.handleCharacteristic.remove()
+		this.removeHandleCharacteristic()
 		
 		var getCloudStatus = (device) => this.getCloudStatus(device)
 		
@@ -1489,7 +1564,7 @@ class SetupCentral extends Component{
 	}
 	
 	goToOperationValues(){
-		this.disactivateHandleCharacteristic()
+		this.removeHandleCharacteristic()
 		this.props.navigator.push({
 			screen : "OperationValues",
 			title : "Operating Values",
@@ -1510,10 +1585,33 @@ class SetupCentral extends Component{
 			animated: false,
 			passProps:{
 				showAlert: false,
+				cancel_scan: true,
 				device_id: this.props.device.manufactured_data.device_id
 			}
 		})
 	}
+
+	goToRsSettings(){
+        console.log("goToRsSettings()");
+		this.removeHandleCharacteristic()
+        this.props.navigator.push({
+        	screen: "RSSettings",
+        	title: "RS-485 Settings",
+        	passProps:{
+        		activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
+        		saveOnCloudLog : (data,type)  => this.saveOnCloudLog(data,type),
+        	},
+			navigatorButtons: {
+				righButtons: [
+					{
+						id: "update",
+						title: "UPDATE"
+					}
+				]
+			}
+        })
+    }
+
 	
 	/* --------------------------------------------------------------------------------------------------- End Go To Seccion ---------------------------------------------------------------*/	
 
@@ -1634,6 +1732,31 @@ class SetupCentral extends Component{
 		}else{
 			this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: false})
 		}		
+	}
+
+	bytesToHex(bytes) {
+	    for (var hex = [], i = 0; i < bytes.length; i++) {
+	        hex.push((bytes[i] >>> 4).toString(16));
+	        hex.push((bytes[i] & 0xF).toString(16));
+	    }
+	    return hex.join("");
+	}
+
+
+	updateWarrantyInformation(values){
+		console.log("updateWarrantyInformation()",values)
+		if(values){
+			if(values.length){
+				var hex_values =  BYTES_TO_HEX(values)
+				console.log("hex_values",hex_values)
+				var decimal_values = parseInt(hex_values,16)
+				this.props.dispatch({type: "SET_WARRANTY_INFORMATION",warranty_information:decimal_values})
+			}else{
+				console.log("the array on updateWarranty() its empty")
+			}
+		}else{
+			console.log("the array on updateWarranty() its undefined or null")
+		}
 	}
 
 	clearGeneralInterval(){
@@ -1803,6 +1926,14 @@ class SetupCentral extends Component{
 		})
 	}
 
+	getWarrantyInformation(){
+		WRITE_COMMAND(this.device.id,[COMMAND_GET_RUN_TIME]) // should return 0x28
+		.then(response => {
+
+		})
+		.catch(error => console.log("Error on getWarrantyInformation()"))
+	}
+
 
 	getAllVersion(){
 		console.log("getAllVersion()")
@@ -1822,15 +1953,16 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- End commands Seccion ---------------------------------------------------------------*/	
 
 	handleCharacteristicNotification(data){
-		//console.log("handleCharacteristicNotification",this.props.allow_notifications,values)
+		console.log("handleCharacteristicNotification",data)
 		//console.log("handleCharacteristicNotification()")
 		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
 			var values = data.value;
 			var value = values[0]
 			var device = this.device;
 			//console.log("handleCharacteristicNotification on device ()",value);
-			
-			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26]
+			LOG_INFO(values,NOTIFICATION)
+
+			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26,0x28]
 
 			if(commands.indexOf(values[0]) !== -1)
 				values.shift()
@@ -1907,9 +2039,14 @@ class SetupCentral extends Component{
 				case 0x1B: //get debug mode status
 						//this.clearGeneralInterval()
 						console.log("get 0x1B debug mode status")
-						this.getAllVersion()
+						this.getWarrantyInformation()
 					break
 
+				case 0x28:
+					console.log("get 0x28 warranty_information",)
+					this.updateWarrantyInformation(values)
+					this.getAllVersion()
+				break
 				case 0x1E: // all versions
 					console.log("get 0x1E all versions")
 					this.saveOnCloudLog(values,"FIRMWAREVERSIONS")
@@ -2085,8 +2222,7 @@ class SetupCentral extends Component{
 			this.fast_manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,found_device) => {
 	            //console.log("device",device)
 	            if(error){
-	                //console.log("error",error)
-	                Alert.alert("Error",)
+	                console.log("error",error.message)
 	                return
 	            }
 
@@ -2210,7 +2346,7 @@ class SetupCentral extends Component{
 	}
 
 	fetchDeviceName(device_id,remote_device_id){
-		console.log("fetchDeviceName()");
+		console.log("fetchDeviceName()",device_id,remote_device_id);
 		fetch(GET_DEVICE_NAME_ROUTE,{
 			method: "POST",
 			headers: {
@@ -2220,6 +2356,7 @@ class SetupCentral extends Component{
 			body: JSON.stringify({hardware_serial: device_id})
 		})
 		.then(response => {
+			console.log("response 1",response)
 			var data = JSON.parse(response._bodyInit).data
 
 			this.props.dispatch({type: "UPDATE_DEVICE_NAME",device_name : data.name,original_name:data.name})
@@ -2233,6 +2370,7 @@ class SetupCentral extends Component{
 
 			})
 			.then(response => {
+				console.log("response 2",response)
 				var data = JSON.parse(response._bodyInit).data
 				
 				this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : data.name})
@@ -2262,12 +2400,59 @@ class SetupCentral extends Component{
 
 		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase());
 		this.searchPairedUnit(this.device)
+	}
 
+	renderWarrantyInformation(){
+		var warranty_days = Math.round(((this.props.warranty_information / 60) / 60) / 24) 
+		var number_of_day  = 365
+		var warranty_remainin_days = number_of_day - warranty_days
+		var porcentage = (warranty_days / (number_of_day) )
 
+		console.log("porcentage",porcentage) 
+		return(
+			<View style={{marginVertical:10,height:140,width:width}}>
+				<View style={{position: 'absolute',zIndex:0}}>
+					<View style={{alignItems:"center"}}>
+						<Text style={{color:"gray",fontSize:20,marginBottom:5}}>
+							WARRANTY INFORMATION
+						</Text>
+					</View>
+					<View style={{height:70,backgroundColor:"white",width:width,alignItems:"center",justifyContent:"center",zIndex:1}}>
+							<View style={{zIndex:3,position: 'absolute'}}>
+								<Text style={{color:"white",fontSize:20}}> 
+									{warranty_remainin_days} days remaining
+								</Text>
+							</View>
+							<View style={{zIndex:2,position:'absolute'}}>						
+								<ProgressBar 
+									progress={porcentage} 
+									width={width-60} 
+									height={30} 
+									borderRadius={5} 
+									color="green" 
+									unfilledColor="black"
+								/>
+							</View>
+					</View>
+					<View style={{justifyContent:"center",alignItems:"center",backgroundColor:"white"}}>
+						<Text style={{color:"black"}}>
+							Run Time : {warranty_days} Days
+						</Text>						
+					</View>					
+				</View>
+			</View>
+		)
 	}
 
 	render(){
 		//console.log("datos aca",this.props.central_device_status,this.props.indicator_number,this.props.power_voltage)
+		
+		/*
+		console.log("this.props --------------------------")
+		
+		console.log("this.props --------------------------")
+		*/
+
 		var props = this.props
 		if(!IS_EMPTY(this.device) &&  props.central_device_status == "connected"){
 			var content = (
@@ -2277,6 +2462,9 @@ class SetupCentral extends Component{
 					</View>
 					<View>
 						{this.renderOptions()}
+					</View>
+					<View>
+						{this.renderWarrantyInformation()}
 					</View>
 					<View>
 						{this.renderInfo()}
@@ -2357,6 +2545,11 @@ const mapStateToProps = state => ({
 	central_device_status: state.configurationScanCentralReducer.central_device_status,
   	user_status : state.mainScreenReducer.user_status,  	
   	user_data : state.loginReducer.user_data,
+  	handleDisconnected : state.setupCentralReducer.handleDisconnected,
+	handleConnected : state.setupCentralReducer.handleConnected,
+	handleCharacteristic : state.setupCentralReducer.handleCharacteristic,
+	commands : state.bluetoothDebugLog.commands,
+	warranty_information : state.scanCentralReducer.warranty_information
 });
 
 

@@ -214,7 +214,7 @@ class Options extends Component{
     }
 
     getOperatingValuesOption(){
-    	return <Option callback={() => this.props.goToOperationValues()} image={require('../images/menu_operating.imageset/menu_operating.png')} name="Operating Values"/>
+    	return <Option callback={() => this.props.goToOperationValues()} image={require('../images/menu_operating_dark.imageset/menu_operating.png')} name="Operating Values"/>
     }
 
     getInstructionalVideos(){
@@ -230,15 +230,19 @@ class Options extends Component{
     }
 
     getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay.imageset/menu_relay.png')} name="Default Settings" />
+    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay_dark.imageset/menu_relay.png')} name="Default Settings" />
    	}
 
    	getSureFiChat(){
-   		return <Option callback={() => this.props.goToChat()} image={require('../images/menu_chat.imageset/menu_chat.png')} name="Sure-Fi Chat" />
+   		return <Option callback={() => this.props.goToChat()} image={require('../images/menu_chat_dark.imageset/menu_chat.png')} name="Sure-Fi Chat" />
    	}
 
     getUnPairBridgeOption(){
-    	return <Option callback={() => this.showAlertUnpair()} image={require('../images/menu_unpair.imageset/menu_unpair.png')} name="Unpair Bridge"/>
+    	return <Option callback={() => this.showAlertUnpair()} image={require('../images/menu_unpair_dark.imageset/menu_unpair.png')} name="Unpair Bridge"/>
+    }
+
+    getRsSettings(){
+    	return <Option callback={() => this.props.goToRsSettings()} image={require('../images/menu_serial_settings.imageset/menu_serial_settings.png')} name="RS-485 Settings"/>
     }
 
     getPairBridgeOption(){
@@ -256,7 +260,7 @@ class Options extends Component{
 						alignItems:"center",						
   					}}>
 						<View style={styles.white_touchable_highlight_image_container}>
-							<Image source={require('../images/menu_pair.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+							<Image source={require('../images/menu_pair_dark.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
 						</View>
 						<View style={styles.white_touchable_text_container}>
 							<Text style={styles.white_touchable_text}>
@@ -271,15 +275,15 @@ class Options extends Component{
     }
 
     getUpdateFirwmareOption(){
-    	return <Option callback={() => this.props.goToFirmwareUpdate()} image={require('../images/menu_flash_firmware.imageset/menu_flash_firmware.png')} name="Update Firmware" />
+    	return <Option callback={() => this.props.goToFirmwareUpdate()} image={require('../images/menu_flash_firmware_dark.imageset/menu_flash_firmware.png')} name="Update Firmware" />
     }
 
     getConfigureRadioOption(){
-    	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../images/menu_radio_settings.imageset/menu_radio_settings.png')} name="Configure Radio" />
+    	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../images/menu_radio_settings_dark.imageset/menu_radio_settings.png')} name="Configure Radio" />
     }
 
     getDocumentationOption(){
-    	return <Option callback={() => this.props.goToDocumentation()} image={require('../images/menu_docs.imageset/menu_documents.png')} name="Documentation"/>
+    	return <Option callback={() => this.props.goToDocumentation()} image={require('../images/menu_docs_dark.imageset/menu_documents.png')} name="Documentation"/>
     }
 
     getDeployCentralUnitOption(){
@@ -386,7 +390,7 @@ class Options extends Component{
 	getAdditionalOptions(){
 		
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data);
+		//console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data);
 		
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 		var sales_dist = ["SALES","DIST"]		
@@ -417,6 +421,8 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
+						{this.getConfigureRadioOption()}
+						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -431,6 +437,7 @@ class Options extends Component{
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -445,6 +452,7 @@ class Options extends Component{
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			case 0xE0:
@@ -492,6 +500,8 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}	
 						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
+
 					</View>
 				)
 			break
@@ -505,6 +515,7 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -518,6 +529,7 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -555,6 +567,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}	
+						{this.getRsSettings()}
 					</View>
 				)
 
@@ -566,6 +579,7 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			
@@ -577,6 +591,7 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
+						{this.getRsSettings()}
 					</View>
 				)
 			case 0xE0:

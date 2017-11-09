@@ -31,10 +31,12 @@ import {
     SUREFI_CMD_READ_UUID,
     HEX_TO_BYTES,
     BYTES_TO_HEX,
-    IS_EMPTY
+    IS_EMPTY,
+    NOTIFICATION
 } from '../../constants'
 import {
-    WRITE_COMMAND
+    WRITE_COMMAND,
+    LOG_INFO
 } from '../../action_creators'
 import {
     GiftedChat,
@@ -204,6 +206,7 @@ class Chat extends Component {
     handleCharacteristicNotification(data) {
         console.log("dataNotification on chat", data.value)
         var value = data.value[0]
+        LOG_INFO(data.value,NOTIFICATION)
         switch (value) {
 
             case 0x21: //MsgPackageSending

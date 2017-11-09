@@ -53,11 +53,17 @@ class DeviceNotMatched extends Component {
         this.path = ""
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
         this.devices = this.props.devices
+        this.manager = props.manager
     }
 
 
     componentDidMount() {
-        this.createInterval()
+        console.log("this.props.navigator",this.props.navigator,this.props.cancel_scan)
+        if(!this.props.cancel_scan){
+            setTimeout(() => this.props.startScanning(this.manager),2000)
+            this.createInterval()            
+        }
+
     }
 
     componentWillUnmount() {
@@ -71,9 +77,10 @@ class DeviceNotMatched extends Component {
     }
 
     createInterval() {
+
         console.log("createInterval()")
         if (interval == 0) {
-            interval = setInterval(() => this.checkForDevice(), 1000)
+            interval = setInterval(() => this.checkForDevice(), 2000)
             console.log("interval created")
         } else {
             console.log("the interval can't be created it was created previosly")
@@ -202,11 +209,11 @@ class DeviceNotMatched extends Component {
     }
 
     handleDeviceSelected(){
-		
+
         if(this.matched_devices){
             if(this.matched_devices.length > 0){
-                console.log("matched_devices",this.matched_devices)
                 var matched_device = this.matched_devices[0]
+                delete matched_device._manager;
                 this.props.navigator.pop()
                 this.props.goToDeviceControl(matched_device)          
             }else{
@@ -264,6 +271,7 @@ const mapStateToProps = state => ({
     documentation_path: state.loginReducer.documentation_path,
     device_found: state.loginReducer.device_found,
     devices : state.pairReducer.devices,
+    manager : state.scanCentralReducer.manager,
 });
 
 export default connect(mapStateToProps)(DeviceNotMatched);

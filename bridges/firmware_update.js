@@ -257,17 +257,16 @@ class UpdateFirmwareCentral extends Component {
         if(this.device){
             console.log("this.device",this.device)
             this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0}) 
-            this.fetchFirmwareFiles()
+            if(this.device.manufactured_data)
+                this.fetchFirmwareFiles()
+            else
+                Alert.alert("Error","Device not found, restart bluetooth.")
         }
     }
 
     componentWillUnmount() {
         this.props.activateHandleCharacteristic()
-        this.props.activateHandleDisconnectedPeripheral()
     }    
-
-
-
 
     fetchFirmwareFiles(){
         console.log("fetchFirmwareFiles()")
@@ -280,6 +279,7 @@ class UpdateFirmwareCentral extends Component {
         var bluetooth_body = {firmware_type: "bluetooth"}
 
         console.log("device on firmware",this.device.manufactured_data);
+
         if(this.device.manufactured_data.hardware_type == "01"){
             
             application_body.hardware_type_key = hardware_central_type
@@ -503,13 +503,13 @@ class UpdateFirmwareCentral extends Component {
         switch(status){
             case "no_started":
 
-                return {text:"NOT STARTED",style:{color:"blue",fontSize:9}}
+                return {text:"NOT STARTED",style:{color:"#000099",fontSize:9}}
             case "update_required":
                 return {text:"UPDATE REQUIRED",style:{color: "#000099",fontSize:9}}
             case "no_update_required":
                 return {text:"NO UPDATE REQUIRED",style:{color: "#009900",fontSize:9}}
             case "updating":
-                return {text:"UPDATING",style:{color: "#FF7F00",fontSize:9}}
+                return {text:"UPDATING",style:{color: "orange",fontSize:9}}
             case "updated":
                 return {text:"Completed",style:{color:"#009900",fontSize:9}}
             default:

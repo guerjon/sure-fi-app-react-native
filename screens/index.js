@@ -29,11 +29,12 @@ import DeviceNotMatched from '../bridges/device_not_matched'
 import Relay from '../bridges/relay'
 import Login from '../login'
 import Videos from '../videos'
-
+import BluetoothDebugLog from '../bluetooth_debug_log'
 
 import Chat from '../bridges/chat'
 import CustomMap from '../bridges/chat/custom_map'
 import ChatOptions from '../bridges/chat/chat_options'
+import RSSettings from '../bridges/rs_settings'
 
 
 export function registerScreens(store,Provider){
@@ -68,5 +69,7 @@ export function registerScreens(store,Provider){
 	Navigation.registerComponent('InsertIDModal',() => InsertIDModal,store,Provider)
 	Navigation.registerComponent('CustomMap',() => CustomMap,store,Provider)
 	Navigation.registerComponent('DeviceNotMatched',() => DeviceNotMatched,store,Provider)
-
+	Navigation.registerComponent('BluetoothDebugLog',() => BluetoothDebugLog,store,Provider)
+	Navigation.registerComponent('RSSettings',() => RSSettings,store,Provider)
+	
 }

@@ -6,7 +6,8 @@ import {
 	SUREFI_CMD_WRITE_UUID,
 	SUREFI_CMD_READ_UUID,
 	TWO_BYTES_TO_INT,
-	HEX_TO_BYTES
+	HEX_TO_BYTES,
+	NOTIFICATION
 } from "../constants"
 import {
 	View,
@@ -21,11 +22,10 @@ import {
 	Button,
 	Alert,
 	Picker,
-	
 } from 'react-native'
 import ActivityIndicator from '../helpers/centerActivityIndicator'
 import Background from '../helpers/background'
-import {WRITE_COMMAND} from '../action_creators'
+import {WRITE_COMMAND,LOG_INFO} from '../action_creators'
 import Power from '../radio_buttons/power'
 import Acknowledments from '../radio_buttons/acknowledments'
 import BandWidth from '../radio_buttons/bandWidth'
@@ -42,6 +42,7 @@ COMMAND_GET_HOPPING_TABLE,
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
 import Icon from 'react-native-vector-icons/FontAwesome';
 const myIcon = (<Icon name="angle-right" size={25} color="#E4E9EC" />)
 const check = (<Icon name="check" size={25} color={success_green} />)
@@ -69,7 +70,7 @@ class ConfigureRadio extends Component {
 
     onNavigatorEvent(event){
     	if(event.id == "update"){
-    		this.update()
+    		this.checkUpdate()
     	}
     }
 
@@ -107,6 +108,16 @@ class ConfigureRadio extends Component {
 	writeStartUpdate(){
 		console.log("writeStartUpdate()")
 		WRITE_COMMAND(this.device.id,[0x09])
+	}
+
+	checkUpdate(){
+		var {hopping_table_selected} = this.props
+
+		if(this.props.hopping_table_selected != 255 && (this.props.hopping_table_selected > 215 || this.props.hopping_table_selected < 0)){
+			Alert.alert("Error","The hopping table is incorrect.")
+		}else{
+			this.update()
+		}
 	}
 
 	update(){
@@ -241,7 +252,7 @@ class ConfigureRadio extends Component {
 		console.log("notification on configure_radio",data)
 		var {dispatch} = this.props
 		var values = data.value
-		
+		LOG_INFO(values,NOTIFICATION)
 
 		switch(values[0]){
 
@@ -262,7 +273,7 @@ class ConfigureRadio extends Component {
 
 				var heart = parseInt(byte_hex,16)
 
-				console.log("heart",heart);
+				console.log("this.props.radio_values_lenght",this.props.radio_values_lenght);
 				if(this.props.radio_values_lenght == 9){
 					
 					this.updateBandWidth(values[1])

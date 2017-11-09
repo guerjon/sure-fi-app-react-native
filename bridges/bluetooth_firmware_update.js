@@ -95,6 +95,11 @@ class BluetoothFirmwareUpdate extends Component{
 				
 				this.filePath = res.path()
 
+		    	this.props.dispatch({
+		    		type:"SET_DEPLOY_DISCONNECT",
+		    		deploy_disconnect:true
+		    	})	 
+
 				WRITE_COMMAND(this.device.id,[0x1A])
 				this.searchDevices()
 
@@ -202,6 +207,10 @@ class BluetoothFirmwareUpdate extends Component{
 						if(this.scanning_status != "stopped"){
 							this.scanning_status = "stopped"; //just should be in one time
 							clearInterval(this.scanning)
+					    	this.props.dispatch({
+					    		type:"SET_DEPLOY_DISCONNECT",
+					    		deploy_disconnect:false
+					    	})							
 	          				this.props.dispatch({type: "START_UPDATE"})
 	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),2000)							
 						}

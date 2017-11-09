@@ -489,13 +489,68 @@ El componentDidMount que primero se renderiza es el de los hijos.
 	Ahora si el bit mas a la izquerda es 0 entonces el numero es positivo si es 1 es negativo, a este bit se le llama el sign bit
 
 
+-------------------------------------------- IOS ------------------------------------------- IOS -------------------------------------
+
+Segue its the transition between scenes.
+
+For Add a navigation controller you should choose Editor Embeded in Navigation Controller
 
 
+** Swift
 
--------------------------------------------------------------------- To do list ------------------------------------------------------------------------
+to assign multiple variables in one single line we can change 
+
+var age1 = 10
+var age2 = 30 
+var age3 = 50
+
+to
+
+var (age1,age2,age3) = (10,12,16)
 
 
-Save the messages on 
+To get the first and the last on an array in swift you can use
+
+var new_array = ["uno","dos","tres","cuatro"]
+print(new_array.first) --> uno
+print(new_array.last) --> cuatro
+
+on of the biggest changes on swift with the other languages is how to declare a empty array, for this you shoud write the next sintax
+
+var newArr = [Int]()
+var stringArr = [String]()
+
+Lets suppouse we have a array 
+
+var shoppingList = ["protein","vitamin","fruit"]
+
+then
+
+for(index,value) in shopping.enumerated()
+{
+	
+}
+and we can have the index and the value, enumerated() function will do something like legend = [0:"apples",1,"Oranges",2:"Bananas"]
 
 
--------------------------------------------------------------------- To do list ------------------------------------------------------------------------
+repeat {
+	print(counter)
+
+}
+
+A struct its a reserverd keyword for put toguether a set of characteristics the sintax is similiar to
+
+struct nameOfLocation {
+	var nameVar1 : String
+	var nameVar2 : Int
+	var nameVar3 : Double
+}
+
+then you can use nameOfLocation and so on
+
+if we want round a number we can import Foundation, Foundation allow us round a number just calling the rotund method on this way
+
+round(num)
+
+-------------------------------------------- IOS ---------------END------------------------- IOS -------------------------------------
+

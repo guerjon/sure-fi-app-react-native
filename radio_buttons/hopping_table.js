@@ -6,7 +6,7 @@ import {
   	ScrollView,
   	TextInput
 } from 'react-native'
-import {styles,first_color,width,success_green} from '../styles/index.js'
+import {styles,first_color,width,success_green,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -34,12 +34,12 @@ class HoppingTable extends Component{
 	}
 
 	updateHoppingTable(hopping_table_selected){
+		console.log("updateHoppingTable",hopping_table_selected)
 		this.props.dispatch({type: "UPDATE_HOPPING_TABLE_SELECTED",hopping_table_selected:hopping_table_selected})
 	}
 
 	handleCheckBoxSelected(checkbox_selected){
 		console.log("checkbox_selected",checkbox_selected);
-
 		
 		this.props.dispatch({type:"UPDATE_CHECKBOX_SELECTED",checkbox_selected:checkbox_selected})
 		
@@ -52,10 +52,39 @@ class HoppingTable extends Component{
 		}
 	}
 
+	getMessage(){
+		
+		if( (this.props.current_value != 255) && (this.props.current_value > 215 || this.props.current_value < 0) ){
+			return <Text style={{color:"red"}}>Invalid hopping table (accept a value between 0 and 215) </Text>
+		} 	
+
+		return null
+
+	}
+
+	getValue(){
+		console.log("this.props.current_value",this.props.current_value);
+
+		if (this.props.current_value) {
+			console.log("1")
+			if(this.props.current_value != ''){
+				console.log("2")
+				return this.props.current_value.toString()
+			}else{
+				console.log("3")
+				return ''
+			}
+		}else{
+			console.log("4")
+			return ''
+		} 
+	}
+
 	render(){
 		
 		console.log("this.props.checkbox_selected",this.props.checkbox_selected);
 		console.log("this.props.text_input_editable",this.props.text_input_editable);
+		console.log("this.props.text_input_editable",this.props.hopping_table_selected);
 
 		return(
 			<View>
@@ -68,7 +97,7 @@ class HoppingTable extends Component{
 							  initial={this.props.checkbox_selected}
 							  formHorizontal={false}
 							  labelHorizontal={true}
-							  buttonColor={success_green}
+							  buttonColor={option_blue}
 							  onPress={(value) => this.handleCheckBoxSelected(value)}
 							/>	
 						</View>
@@ -80,7 +109,7 @@ class HoppingTable extends Component{
 			    				editable={this.props.text_input_editable}
 			    				onChangeText={(hopping_table_selected) => this.updateHoppingTable(hopping_table_selected)}
 			    				underlineColorAndroid="transparent" 
-			    				value={this.props.current_value ?  this.props.current_value.toString() : ""}
+			    				value={this.getValue()}
 			    				placeholder="XXX"
 			  				/>
 		  				</View>

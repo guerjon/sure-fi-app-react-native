@@ -22,6 +22,12 @@ export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
 export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
 export const WRITE_HARDWARE_LOG = BASE_URL + "hardware/write_hardware_log"
 
+export const COMMAND = 0
+export const NOTIFICATION = 1
+export const ERROR = 2
+export const CONNECTED = 3
+export const DISCONNECTED = 4
+export const LOOKED  = 5
 
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
@@ -116,6 +122,24 @@ export const TO_HEX_STRING = string_array => {
 	}).join('')
 }
 
+export const BYTES_VALUES = [
+	"0000",
+	"0001",
+	"0010",
+	"0011",
+	"0100",
+	"0101",
+	"0110",
+	"0111",
+	"1000",
+	"1001",
+	"1010",
+	"1011",
+	"1100",
+	"1101",
+	"1110",
+	"1111",
+]
 
 export const BYTES_TO_HEX = (byteArray) => {
 	return byteArray.map(function(byte) {
@@ -632,3 +656,4 @@ var Base64 = {
         return string;
     }
 }
+

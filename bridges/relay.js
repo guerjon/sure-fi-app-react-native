@@ -17,33 +17,19 @@ import { connect } from 'react-redux';
 import { 
 	LOADING,
 	DEC2BIN,
-	SET_CHAR_AT
+	NOTIFICATION,
+	BYTES_VALUES
 } from '../constants'
 import Background from '../helpers/background'
 import {
 	WRITE_COMMAND,
+	LOG_INFO
 } from '../action_creators'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
-var bytes_values = [
-	"0000",
-	"0001",
-	"0010",
-	"0011",
-	"0100",
-	"0101",
-	"0110",
-	"0111",
-	"1000",
-	"1001",
-	"1010",
-	"1011",
-	"1100",
-	"1101",
-	"1110",
-	"1111",
-]
+var bytes_values = BYTES_VALUES
+	
 
 class Relay extends Component{
 
@@ -77,6 +63,7 @@ class Relay extends Component{
 
 	handleCharacteristicNotification(data){
 		console.log("data",data)
+		LOG_INFO(data.value,NOTIFICATION)
 		var value = data.value[0]
 		
 		switch(value){

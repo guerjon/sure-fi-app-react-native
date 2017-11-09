@@ -6,7 +6,7 @@ import {
   	ScrollView,
   	TouchableHighlight
 } from 'react-native'
-import {styles,first_color,success_green} from '../styles/index.js'
+import {styles,first_color,success_green,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -35,7 +35,7 @@ class Button extends Component{
 			justifyContent:"center",
 			borderRadius: 10,
 			marginHorizontal: 5,
-			backgroundColor: success_green
+			backgroundColor: option_blue
 		}
 
 		var active_button_text_style = {

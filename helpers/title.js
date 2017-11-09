@@ -14,15 +14,16 @@ import {
 export default class Title extends Component{
 	
 	render(){	
+		var size = this.props.size ? this.props.size : 20
 		var title_container = {
 			backgroundColor:"white",
-			marginTop:10,
 			justifyContent:"center",
 			alignItems:"center",
-			flexDirection:"row"
+			flexDirection:"row",
+			padding:10
 		}		
 		var simple_text = {
-			fontSize:20,
+			fontSize:size,
 			padding:5,
 			marginLeft:5,
 		}	

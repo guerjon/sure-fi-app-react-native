@@ -21,18 +21,33 @@ import {
 	FIND_PROGRAMING_NUMBER,
 	DEC2HEX,
 	CRC16,
-	HEX_TO_BYTES
+	HEX_TO_BYTES,
+	COMMAND,
+	NOTIFICATION
 } from '../constants'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import SelectFirmwareCentral from './bridges_configuration/select_firmware_central'
 import RNFetchBlob from 'react-native-fetch-blob'
 import ProgressBar from 'react-native-progress/Bar';
 import {
+	SECURITY_ERROR,
+	START_UPDATE_ERROR,
+	ALREADY_STARTED_ERROR,
+	NOT_STARTED_ERROR,
+	INVALID_NUM_BYTES_ERROR,
+	PAGE_FAILURE,
+	IMAGE_CRC_FAILURE_ERROR,
+	REGISTER_FAILURE,
+	DEPLOY_FAILURE,
+	UNSUPPORTED_CMD,
+} from "../errors"
+import {
     NavigationActions
 } from 'react-navigation'
 
 import {
-	WRITE_COMMAND
+	WRITE_COMMAND,
+	LOG_INFO
 } from '../action_creators'
 
 
@@ -133,6 +148,9 @@ class RadioFirmwareUpdate extends Component{
 
 	handleCharacteristicRadioNotification(data){
 		console.log("data",data);
+		
+		LOG_INFO(data.value,NOTIFICATION)
+		
 		var {dispatch} = this.props
 		var response = data.value[0]
 
@@ -191,20 +209,23 @@ class RadioFirmwareUpdate extends Component{
 					this.props.startNextUpdate("radio")
 				}
 				return
-			case 224:
+			case SECURITY_ERROR:
 				console.log("BleRsp_SecurityError")
 				return
-			case 225:
+			case START_UPDATE_ERROR:
 				console.log("BleRsp_StartUpdateError")
 				return
-			case 226:
+			case ALREADY_STARTED_ERROR:
+				Alert.alert("Error","BleRsp_AlreadyStartedError")
 				console.log("BleRsp_AlreadyStartedError")
-				Alert.alert("Error","Disconnect and connect the bluetooth to continue.")
 				return
-			case 227:
+			case NOT_STARTED_ERROR:
+
+				Alert.alert("Error","BleRsp_NotStartedError")
 				console.log("BleRsp_NotStartedError")
+				
 				return
-			case 228: // 0xE4
+			case INVALID_NUM_BYTES_ERROR: // 0xE4
 				this.errorHandleRow()
 				/*
 				if(!this.error_handle){				
@@ -218,15 +239,13 @@ class RadioFirmwareUpdate extends Component{
 				}
 				*/
 				return
-			case 229:
-				console.log("BleRsp_PageFailure")
-
+			case PAGE_FAILURE:
+					Alert.alert("Error","BleRsp_PageFailure")
 				return
-			case 230:
-				Alert.alert("Error","Something was wrong on the firmware update.")
-				console.log("BleRsp_ImageCrcFailureError") //BleRsp_ImageCrcFailureError
+			case IMAGE_CRC_FAILURE_ERROR:
+				Alert.alert("Error","BleRsp_ImageCrcFailureError")
 				return
-			case 0xE9:
+			case UNSUPPORTED_CMD:
 				if(data.value[1] == 0x1D){
 					clearInterval(this.interval)
 					this.interval = setInterval(() => WRITE_COMMAND(this.device.id,[0x2E]),1000) 
@@ -284,7 +303,7 @@ class RadioFirmwareUpdate extends Component{
 		if(this.new_rows){
 			if(this.new_rows.length > 0){
 				this.new_current_row = this.new_rows.shift()
-				console.log("this.new_current_row (first_row)",this.new_current_row)
+				//console.log("this.new_current_row (first_row)",this.new_current_row)
 				this.processRadioRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
 				
@@ -329,11 +348,11 @@ class RadioFirmwareUpdate extends Component{
 			this.writeWithoutResponse(data) // no response to this command
 		}
 
-		setTimeout(() => this.write([0x10]),1000) // you should wait a 0x0B if all is ok
+		setTimeout(() => this.write([0x10]),2500) // you should wait a 0x0B if all is ok
 	}
 
 	errorHandleRow(){
-		console.log("this.new_current_row",this.new_current_row)
+		console.log("this.new_current_row")
 		this.processRadioRow(this.new_current_row)
 	}
 
@@ -374,8 +393,8 @@ class RadioFirmwareUpdate extends Component{
 
 	write(data){
 		let device = this.device;
+		LOG_INFO(data,COMMAND)
 		BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
-		
 	}
 
 	writeWithoutResponse(data){

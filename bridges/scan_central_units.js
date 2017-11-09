@@ -41,7 +41,6 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import Camera from 'react-native-camera';
 const RTCamera = NativeModules.RCTCameraModule
 const bandIcon = (<Icon name="times-circle-o" size={30} color="red" />)
-import BleManager from 'react-native-ble-manager'
 
 var md5 = require('md5');
 //md5 = require('js-md5');

@@ -18,13 +18,15 @@ import {
 	WRITE_HARDWARE_LOG,
 	HEADERS_FOR_POST,
 	BASE64,
+	COMMAND
 } from '../constants'
-
+import {store} from "../app"
 import {
 	COMMAND_FORCE_UNPAIR
 } from '../commands'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+import Command from '../command'
 
 function bytesToHex(bytes) {
     for (var hex = [], i = 0; i < bytes.length; i++) {
@@ -95,10 +97,11 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 
 export const WRITE_COMMAND = (id,data) => {
 	
-	//console.log("WRITING_COMMAND: " + data)
-
+	LOG_INFO(data,COMMAND)
+	
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
+			
 			BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 			.then(response => {
 				fulfill(response)
@@ -111,7 +114,25 @@ export const WRITE_COMMAND = (id,data) => {
 	})
 }
 
+
+export const LOG_INFO = (data,type,name) => {
+	var data_to_save = data.slice(0)	
+	var value = data_to_save.shift()
+
+	var commands = store.getState().bluetoothDebugLog.commands
+	var id = store.getState().bluetoothDebugLog.global_command_id
+	id += 1
+
+	var command = new Command(id,value,type,data_to_save,name,"action")
+
+	commands.unshift(command)
+
+	store.dispatch({type:"UPDATE_COMMANDS",commands:commands,global_command_id:id})
+}
+
+
 export const WRITE_PAIRING = (id,data) => {
+	//LOG_INFO(data,COMMAND)
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
 			console.log("1")
@@ -144,6 +165,7 @@ export const WRITE_FORCE_UNPAIR = (id) => {
 
 
 export const WRITE_UNPAIR = (id) => {
+	LOG_INFO([0,0,0])
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
 			BleManagerModule.unPair(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,20,() => {

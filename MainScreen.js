@@ -15,7 +15,7 @@ import {
   	TouchableWithoutFeedback,
   	TouchableNativeFeedback
 } from 'react-native';
-
+import GoTo from "./goTo"
 import {
 	DEVICE_REGISTRATION_LINK,
 	DEVICE_REGISTRATE_LINK,
@@ -96,15 +96,14 @@ class FadeInView extends React.Component {
   }
 }
 
-
 class MainScreen extends Component {
   
   	constructor(props) {
 		super(props);	
   	}
 
+
   	componentWillMount() {
-  		console.log("2rfdsfdsfds");
   		this.props.dispatch({type: "SHOW_MAIN_SCREEN"})
   		this.getSessionKey()
   		this.checkRegister()
@@ -142,7 +141,10 @@ class MainScreen extends Component {
   			}else{
   				Alert.alert("Error","Error connecting with the server.")
   			}
-  		}).catch(error => Alert.alert("Error",error))
+  		}).catch(error => {
+  			console.log("Error",error)
+  			Alert.alert("Error","Error on the network")	
+  		})
   	}
 
   	sendPushNotification(){
@@ -214,7 +216,6 @@ class MainScreen extends Component {
   		})
   	}
 
-
   	checkLogin(){
   		console.log("checkLogin()");
 		KeyChain
@@ -234,8 +235,6 @@ class MainScreen extends Component {
 			this.props.dispatch({type: "USER_LOGIN",user: null,password:null,status:"logout"})
 		})
   	}
-
-
 
 	getUserInfo(email,password,session_key){
 		console.log("getUserInfo()",email,password)
@@ -271,7 +270,6 @@ class MainScreen extends Component {
 		.catch(error => {
 			Alert.alert("Error",error)
 		})
-	
 	}
 
 	openSureFiPage(url){
@@ -336,15 +334,6 @@ class MainScreen extends Component {
 		}
 	}
 
-	goToVideos(){
-		this.props.navigator.push({
-			screen : "Videos",
-			title : "Instruction Videos",
-			animated: false,
-			animationType: 'slide-up'
-		})
-	}
-
 	static navigationOptions = { title: 'Welcome', header: null };
   
 	renderWelcomeScreen(){
@@ -373,20 +362,62 @@ class MainScreen extends Component {
 		)
 	}
 
+	renderBall(image,text,action){
+		return(
+			<View style={styles.textViewContainer}>
+				<View>
+					<TouchableNativeFeedback onPress={action} >
+						<Image source={image} style={{width:width -105,height:307}}>
+						</Image>
+					</TouchableNativeFeedback>
+				</View>
+				<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
+					<Text style={{fontSize:30}}>
+						{text}
+					</Text>
+				</View>
+			</View>
+		)
+	}
+
 	renderMainScreen(){
+	}
+
+	renderRegister(){
+		let info = this.info
+		return <Register info = {info} navigation={this.props.navigation}/>
+	}
+
+  	render() {
+  		var {screen_status} = this.props
 		return (
 			<Background>
 		  		<View style={styles.container}>
 			  			<View style={styles.circleContainer}>
 				  			<View style={styles.launchImage}>
-				  				<View style={{flexDirection:"row",alignItems:"flex-start",justifyContent:"flex-start"}}>
+				  				<View style={{
+				  					
+				  					flexDirection:"row",
+				  					alignItems:"center",
+				  					justifyContent:"center",
+				  					"zIndex":250,
+				  					height:100,
+				  					width:width
+				  				}}>
 					  				<View style={{alignItems:"center"}}>
-					  					<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:250,height:50,top:-30}}/>
+					  					<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:180,height:50}}/>
 					  				</View>
-					  				<View style={{alignItems:"flex-end",right:-30}}>
-										<TouchableHighlight style={{top:-20}} onPress={() =>  this.navigateToLogin()}>
+					  				<View style={{alignItems:"flex-end",right:-50,flexDirection:"row"}}>
+										<TouchableHighlight style={{marginRight:10}} onPress={() =>  this.navigateToLogin()}>
 											<Icon name="user-circle" size={25} color="white" />
 										</TouchableHighlight>
+					  					{this.props.user_data &&
+											(
+												<TouchableHighlight style={{}} onPress={() =>  GoTo.goToDebugLog(this.props.navigator)}>
+													<Icon name="bluetooth" size={25} color="white" />
+												</TouchableHighlight>
+											)
+					  					}
 					  				</View>
 				  				</View>
 				  			</View>
@@ -399,93 +430,34 @@ class MainScreen extends Component {
 			  				initialSelection={0}
 			  				spacing={230}
 			  			>
-							<View style={styles.textViewContainer}>
-								<View>
-									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
-										<Image source={require('./images/menu_wiegand.imageset/menu_wiegand.png')} >
-										</Image>
-									</TouchableNativeFeedback>
-								</View>
-								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
-									<Text style={{fontSize:30}}>
-										Wiegand Wire 
-									</Text>
-									<Text style={{fontSize:30}}>
-										Replacement
-									</Text>
-								</View>
-							</View>
-
-							<View style={styles.textViewContainer}>
-								<View>
-									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
-										<Image source={require('./images/menu_thermostat.imageset/menu_thermostat.png')} >
-										</Image>
-									</TouchableNativeFeedback>	
-								</View>
-								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
-									<Text style={{fontSize:30}}>
-										Thermostat Wire 
-									</Text>
-									<Text style={{fontSize:30}}>
-										Replacement
-									</Text>
-								</View>
-							</View>							
-							<View style={styles.textViewContainer}>
-								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableNativeFeedback onPress={() =>  this.goToScan()} >
-										<Image source={require('./images/menu_data.imageset/menu_data.png')}>
-										</Image>
-									</TouchableNativeFeedback>
-								</View>
-								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
-									<Text style={{fontSize:30}}>
-										Serial Data Wire
-									</Text>
-									<Text style={{fontSize:30}}>
-										Replacement
-									</Text>
-								</View>
-							</View>	
-							<View style={styles.textViewContainer}>
-								<View style={{alignItems:"center",justifyContent:"center"}}>
-									<TouchableNativeFeedback onPress={() =>  this.goToVideos()} >
-										<Image source={require('./images/menu_video.imageset/menu_video.png')}>
-										</Image>
-									</TouchableNativeFeedback>
-								</View>
-								<View style={{width:width,height:80,alignItems:"center",justifyContent:"center"}}>
-									<Text style={{fontSize:30}}>
-										Will it Transmit?
-									</Text>
-								</View>
-							</View>				  			
+			  				{
+			  					this.renderBall(
+			  						require('./images/menu_wiegand.imageset/menu_wiegand.png'),
+			  						"Wiegand",
+			  						() => this.goToScan())
+			  				}
+			  				{
+			  					this.renderBall(
+			  						require('./images/menu_hvac.imageset/menu_hvac.png'),
+			  						"HVAC",
+			  						() => this.goToScan())			  					
+			  				}
+			  				{
+			  					this.renderBall(
+			  						require('./images/menu_serial.imageset/menu_serial.png'),
+			  						"RS-485",
+			  						() => this.goToScan())			  					
+			  				}												
+							{
+			  					this.renderBall(
+			  						require('./images/menu_video.imageset/menu_video.png'),
+			  						"Will it Transmit?",
+			  						() => GoTo.goToVideos(this.props.navigator))									
+							}							  			
 			  			</Coverflow>
 		  		</View>
 		  	</Background>
-		);
-	}
-
-	renderRegister(){
-		let info = this.info
-		return <Register info = {info} navigation={this.props.navigation}/>
-	}
-
-  	render() {
-  		//console.log("this.props",this.props)
-  		var {screen_status} = this.props
-  		return this.renderMainScreen()
-  		/*switch(screen_status){
-  			case "show_main_screen":
-  			return this.renderMainScreen()
-  			case "show_welcome_screen":
-  			return this.renderWelcomeScreen()
-  			case "show_register_screen":
-  			return this.renderRegister()
-  			default:
-  			return <ActivityIndicator />
-  		}*/
+		);  		
   	}
 }
 

@@ -23,7 +23,7 @@ import Background from '../helpers/background'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NavigationActions } from 'react-navigation'
 import { BleManager,Service,Characteristic,Navigation } from 'react-native-ble-plx';
-
+import {LOG_INFO} from '../action_creators'
 import SlowBleManager from 'react-native-ble-manager'
 
 import {
@@ -33,6 +33,8 @@ import {
     MATCH_DEVICE,
     FIND_ID,
     DIVIDE_MANUFACTURED_DATA,
+    PAIR_SUREFI_SERVICE,
+    LOOKED
  } from '../constants' 
 
 const helpIcon = (<Icon name="info-circle" size={40} color="black" />)
@@ -70,19 +72,33 @@ class Bridges extends Component{
                 this.toggleShowDeviceList()
             break
             case "didAppear":
-                this.startAll()
+                this.requestMultiplePermissions()
+            break
+            case "didDisappear":
+                this.hideCamera()
+                this.stopScan()
             break
             default:
             break
         }
     }
 
-    startAll(){
-        
+    resetCentralReducer(){
         this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
+    }
+
+    componentWillMount() {
+      this.resetCentralReducer()
+    }
+
+    componentDidMount() {
+      this.startAll()
+    }
+
+    startAll(){
+        console.log("startAll()")
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
-        this.props.dispatch({type: "RESET_PAIR_REDUCER"})
-        this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
+        this.props.dispatch({type: "RESET_PAIR_REDUCER"})   
         this.checkMultiplePermissions() 
     }
 
@@ -142,8 +158,11 @@ class Bridges extends Component{
         console.log("createScan()")
         if(!this.manager){
             this.manager = new BleManager();
+            this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
+            this.startScanning(this.manager)
         }else{
             console.log("createScan can't create a new scan previous exits")
+            this.startScanning(this.props.manager)
         }
     }
 
@@ -170,7 +189,6 @@ class Bridges extends Component{
           .then((response) => {
             // Success code 
             this.createScan()
-            this.startScanning()
           })
           .catch((error) => {
             // Failure code 
@@ -201,7 +219,7 @@ class Bridges extends Component{
             }else if (response == "restricted"){
                 this.storageActivateFromSettingsAlert()
             }else{
-                this.props.dispatch({type: "RESET_CENTRAL_REDUCER"})
+                this.resetCentralReducer()
                 this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
                 this.props.dispatch({type: "RESET_PAIR_REDUCER"})
                 this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
@@ -254,8 +272,8 @@ class Bridges extends Component{
 
     goToDeviceControl(device){
         console.log("goToDeviceControl",device.manufactured_data)
-        this.deleteScan()
-        this.hideCamera()
+        //this.deleteScan()
+        //this.hideCamera()
         
         if(device){
             this.props.dispatch({
@@ -293,20 +311,6 @@ class Bridges extends Component{
         }   
     }
 
-    restartAll(){
-        console.log("restartAll()")
-        var {dispatch} = this.props 
-        dispatch({type: "RESET_CENTRAL_REDUCER"})
-        dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
-        dispatch({type: "RESET_PAIR_REDUCER"})
-        dispatch({type: "NO_DEVICE_FOUND"})
-
-        this.showCamera()
-        this.startScanning()
-        //setInterval(() this.reviewDevices(),1000)
-
-    }
-
     reviewDevices(){
         var devices = this.props.devices;
         var copy_devices = this.props.devices;
@@ -322,34 +326,39 @@ class Bridges extends Component{
 
     }
 
-    startScanning(){
+    startScanning(manager){
         console.log("startScanning(1)")
         var devices = this.props.devices
         
-        if(this.manager){
-
-            this.manager.startDeviceScan(['98bf000a-0ec5-2536-2143-2d155783ce78'],null,(error,device) => {
-                
-                if(error){
-                    Alert.alert("Error",error.message)
-                    return
-                }
-                console.log("this.device",device.id)
-                if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+        if(manager){
+            try{
+                manager.startDeviceScan([PAIR_SUREFI_SERVICE],null,(error,device) => {
                     
-                    console.log("device",device.id);
-                    
-                    if (!FIND_ID(devices, device.id)) {
-                        
-                        var data = this.getManufacturedData(device)
-                        devices.push(data)
+                    if(error){
+                        Alert.alert("Error",error.message)
+                        return
+                    }
+                    if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+                        //console.log("device",device.id);
+                        if (!FIND_ID(devices, device.id)) {
+                            
+                            var data = this.getManufacturedData(device)
+                            
+                            LOG_INFO([0xA3],LOOKED,data.manufactured_data.device_id) // 0xA3 its defined on commands
 
-                        this.devices = devices
-                        this.remote_devices = this.filterRemoteDevices(devices)
-                        this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
-                    }                
-                }
-            })            
+                            devices.push(data)
+
+                            this.devices = devices
+                            this.remote_devices = this.filterRemoteDevices(devices)
+                            this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
+                        }                
+                    }
+                })           
+            }
+            catch(error){
+                console.log("error",error)
+            }
+
         }else{
             console.log("startScanning() can't start the scann the scan object its empty")
         }
@@ -521,11 +530,9 @@ class Bridges extends Component{
         dispatch({type : "HIDE_DEVICES_LIST"})
     
         if(this.props.show_serial_input){
-            console.log("54321");
             this.showCamera()
             dispatch({type:"HIDE_SERIAL_INPUT"})
         }else{
-            console.log("12345");
             this.hideCamera()
             dispatch({type:"SHOW_SERIAL_INPUT"})
         }
@@ -576,9 +583,6 @@ class Bridges extends Component{
 
     goToDeviceNotMatched(device_id){
         console.log("goToDeviceNotMatched()");
-        //this.stared_scanning = false
-        //this.props.dispatch({type:"UPDATE_DEVICES",devices:[]})
-        //this.stopWithoutDestroy();
 
         this.props.navigator.push({
             screen: "DeviceNotMatched",
@@ -586,14 +590,11 @@ class Bridges extends Component{
             passProps: {
                 device_id : device_id,
                 showAlert: true,
-                startScanning : () => this.startScanning(),
+                startScanning: (manager) => this.startScanning(manager),
                 goToDeviceControl : (matched_device) => {
-                    
                     console.log("matched_device on index",matched_device)
-                    
                     this.goToDeviceControl(matched_device)
                 } 
-                
             },
             appStyle: {
               orientation: 'portrait',
@@ -680,7 +681,8 @@ const mapStateToProps = state => ({
     show_serial_input : state.scanCentralReducer.show_serial_input,
     show_permissions_modal : state.scanCentralReducer.show_permissions_modal,
     user_data : state.loginReducer.user_data,
-    show_camera : state.scanCentralReducer.show_camera
+    show_camera : state.scanCentralReducer.show_camera,
+    manager : state.scanCentralReducer.manager,
 })
 
 export default connect(mapStateToProps)(Bridges)
