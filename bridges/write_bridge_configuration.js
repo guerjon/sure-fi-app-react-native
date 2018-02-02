@@ -386,13 +386,13 @@ class WriteBridgeConfiguration extends Component{
 					<View style={styles.rowContainer}>
 						<View style={styles.titleContainer}>
 								<Text style={styles.title}>
-									Central Unit
+									Controller Interface
 								</Text>
 							</View>
 						<View style={styles.rowContainerContainer}>
 							<View style={styles.simpleRow}>
 								<Text style={styles.simpleRowText}>
-									Scanning Central Unit
+									Scanning Controller Interface
 								</Text>
 								<Text style={styles.simpleRowText}>
 									{scanning_units ? myIcon : spinner } 
@@ -401,7 +401,7 @@ class WriteBridgeConfiguration extends Component{
 							
 							<View style={styles.simpleRow}>
 								<Text style={styles.simpleRowText}>
-									Central Unit Connected
+									Controller Interface Connected
 								</Text>
 								<Text style={styles.simpleRowText}>
 									{connecting_central_unit ? myIcon : spinner } 
@@ -409,7 +409,7 @@ class WriteBridgeConfiguration extends Component{
 							</View>
 							<View style={styles.simpleRow}>
 								<Text style={styles.simpleRowText}>
-									Central Unit Configured
+									Controller Interface Configured
 								</Text>
 								<Text style={styles.simpleRowText}>
 									{writing_central_unit ? myIcon : spinner } 
@@ -417,7 +417,7 @@ class WriteBridgeConfiguration extends Component{
 							</View>
 							<View style={styles.simpleRow}>
 								<Text style={styles.simpleRowText}>
-									Central Unit Paired
+									Controller Interface Paired
 								</Text>
 								<Text style={styles.simpleRowText}>
 									{wrote_central_unit ? myIcon : spinner } 
@@ -458,7 +458,7 @@ class WriteBridgeConfiguration extends Component{
 							</View>
 							<View style={styles.simpleRow}>
 								<Text style={styles.simpleRowText}>
-									Central Unit Paired
+									Controller Interface Paired
 								</Text>
 								<Text style={styles.simpleRowText}>
 									{wrote_remote_unit ? myIcon : spinner }

@@ -99,6 +99,13 @@ export const PAIR_SUREFI_TX = "98BF000B-0EC5-2536-2143-2D155783CE78" // rx
 export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78" //tx 
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
 
+export const CENTRAL_HARDWARE_TYPE = "01"
+export const REMOTE_HARDWARE_TYPE = "02"
+
+export const CENTRAL_SERIAL_HARDWARE_TYPE = "05"
+export const REMOTE_SERIAL_HARDWARE_TYPE = "06"
+
+
 export const LOG_TYPES = [
 	'BOOTLOADERINFO',
 	'FAILSAFES',
@@ -342,41 +349,26 @@ export const FIND_ID = (data, idToLookFor) => {
 export const MATCH_DEVICE = (devices, device_id) => {
 	//console.log("MATCH_DEVICE",device_id);
 	devices = devices.filter(device => {
-		//console.log("device",device.manufactured_data.device_id);
 		if (!device)
 			return false
 		
 		var data_upper_case = device.manufactured_data.device_id.toUpperCase()
 		device_id = device_id.toUpperCase()
-		//console.log("searched_device: " + data_upper_case + " my device: " + device_id);
 		return data_upper_case == device_id;
 	})
-
 	return devices
 }
 
 
-export const GET_CENTRAL_DEVICES = (devices) => {
-	//console.log("first",devices)
-	devices = devices.filter(function(device) {
-		if (!device.manufactured_data)
-			return false
-		return device.manufactured_data.hardware_type == "01"
-	})
-	//console.log("after",devices)
-	return devices
+export const GET_PAIRING_TO_DEVICES = (device,type) => {
+	if (!device.manufactured_data)
+		return false
+		
+	return device.manufactured_data.hardware_type == type
+	
 }
 
-export const GET_REMOTE_DEVICES = (devices) => {
-	devices = devices.filter(function(device) {
-		if (!device.manufactured_data)
-			return false
 
-		return device.manufactured_data.hardware_type == "02"
-	})
-	return devices
-
-}
 
 export const GET_DEVICES_ON_PAIRING_MODE = devices => {
 	devices = devices.filter(device => {
@@ -435,6 +427,7 @@ const LONG_TO_BYTE_ARRAY = long => {
 };
 
 export const GET_LARGEST = (a,b,c) => {
+	//console.log("a: " + a + " b: " + b + " c: " + c)
 	var major_version = 0
     if(a > b)
         if(a > c)

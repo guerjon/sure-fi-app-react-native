@@ -37,7 +37,8 @@ const initialState = {
   manual_disconnect : false,
   handleDisconnected : false,
   handleConnected : false,
-  handleCharacteristic : false
+  handleCharacteristic : false,
+  show_disconnecting_modal : false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -241,6 +242,16 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         handleCharacteristic : action.handleCharacteristic
+      }
+    case "SHOW_DISCONNECT_MODAL":
+      return{
+        ...state,
+        show_disconnecting_modal: true
+      }
+    case "HIDE_DISCONNECT_MODAL":
+      return{
+        ...state,
+        show_disconnecting_modal: false
       }
     default:
       return state

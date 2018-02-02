@@ -104,8 +104,8 @@ class ForcePair extends Component{
 		let remote_device_id = this.remote_device_id
 
 		if(device.manufactured_data.hardware_type == "01"){
-			var first_title = "Sure-Fi Bridge Central"
-			var second_title = "Central Unit Un-Paired"
+			var first_title = "Sure-Fi Bridge Controller"
+			var second_title = "Controller Interface Un-Paired"
 
 			var id_central = device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") 
 
@@ -119,8 +119,8 @@ class ForcePair extends Component{
 
 			var remote_device = remote_device_id
 
-			var tx_first_title = "Sure-Fi Bridge Central"
-			var tx_second_title = "Central Unit Paired"
+			var tx_first_title = "Sure-Fi Bridge Controller"
+			var tx_second_title = "Controller Interface Paired"
 
 			var id_central = device.manufactured_data ? (device.manufactured_data.device_id ? device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") 
 		}

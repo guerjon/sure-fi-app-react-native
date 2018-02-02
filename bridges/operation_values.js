@@ -29,7 +29,7 @@ const text_style = {
 	backgroundColor:"white",
 	width:width/2,
 	alignItems:"center",
-	justifyContent:"center"
+	justifyContent:"center",
 }
 
 
@@ -105,6 +105,7 @@ class OperationValues extends Component{
         navBarButtonColor: "white",
         orientation: 'portrait',
         title : "Scan Device",
+        navBarTitleTextCentered: true,
     }
 
 	constructor(props) {
@@ -157,7 +158,6 @@ class OperationValues extends Component{
 		this.values = values
 		
 		var values_hex = bytesToHex(values)
-
 		var relayValues = parseInt(values_hex.substr(0,2),16)
 		var wiegandValue = values_hex.substr(2,10)
 		var wiegandBytes =  parseInt(values_hex.substr(12,2), 16)
@@ -416,7 +416,7 @@ class OperationValues extends Component{
 					<View>
 						<View style={{height:30,backgroundColor:"gray",width:width/2,alignItems:"center",justifyContent:"center",borderRightWidth:1,borderRightColor:"white"}}>
 							<Text style={{color:"white"}}>
-								Central Unit
+								Controller Interface
 							</Text>
 						</View>
 						<View style={{height:130,backgroundColor:"white",width:width/2,alignItems:"center"}}>

@@ -214,6 +214,7 @@ class UpdateFirmwareCentral extends Component {
         navBarTextColor : "white",
         navBarButtonColor: "white",
         orientation: 'portrait',
+        navBarTitleTextCentered: true,
     }   
 
     constructor(props) {
@@ -223,6 +224,7 @@ class UpdateFirmwareCentral extends Component {
         radio_firmware_files = {}
         bluetooth_firmware_files = {}
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+        this.showing_normal_view = true;
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
@@ -255,7 +257,7 @@ class UpdateFirmwareCentral extends Component {
 
     componentDidMount() {
         if(this.device){
-            console.log("this.device",this.device)
+            //console.log("this.device",this.device)
             this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0}) 
             if(this.device.manufactured_data)
                 this.fetchFirmwareFiles()
@@ -269,7 +271,7 @@ class UpdateFirmwareCentral extends Component {
     }    
 
     fetchFirmwareFiles(){
-        console.log("fetchFirmwareFiles()")
+        //console.log("fetchFirmwareFiles()")
 
         var dispatch = this.props.dispatch;
         let hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
@@ -278,7 +280,7 @@ class UpdateFirmwareCentral extends Component {
         var radio_body = {firmware_type:"radio"}
         var bluetooth_body = {firmware_type: "bluetooth"}
 
-        console.log("device on firmware",this.device.manufactured_data);
+        //console.log("device on firmware",this.device.manufactured_data);
 
         if(this.device.manufactured_data.hardware_type == "01"){
             
@@ -314,16 +316,35 @@ class UpdateFirmwareCentral extends Component {
                     this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
                     this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
                     this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
+                    /* 
+                    console.log("application_files:",this.application_files)
+                    console.log("radio_files:",this.radio_file)
+                    console.log("bt_files:",this.bt_files)
+                    */
+                    let app_version = this.application_files[0]
+                    let radio_version = this.radio_files[0]
+                    let bt_version = this.bt_files[0]
                     
-                    let app_version = parseFloat(this.application_files[0].firmware_version)
-                    let radio_version = parseFloat(this.radio_files[0].firmware_version)
-                    let bt_version = parseFloat(this.bt_files[0].firmware_version)
+                    let app_float_value = parseFloat(app_version.firmware_version)
+                    let radio_float_value = parseFloat(radio_version.firmware_version)
+                    let bt_float_value = parseFloat(bt_version.firmware_version)
+
                     let dispatch = this.props.dispatch
                     
-                    this.largest_version = GET_LARGEST(app_version,radio_version,bt_version)
+                    if(app_float_value == radio_float_value && radio_float_value == bt_float_value){
+                        
+                        this.largest_version = app_float_value
+                    }else{
+                        
+                        this.largest_version = GET_LARGEST(app_float_value,radio_float_value,bt_float_value)    
+                    }
+                    
+                    var versions_objects = [app_version,radio_version,bt_version]
+
                     this.update_requires = this.checkRequireUpdates(app_version,radio_version,bt_version)
                     this.require_update = this.dispatchRequireUpdates(this.update_requires)
-
+                    this.require_update = this.blockDevelopmentUpdate(this.require_update,versions_objects,this.largest_version) // if the user is not admin we should block the update if the next update its only for developers
+                    
                     dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
                     dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
@@ -337,10 +358,45 @@ class UpdateFirmwareCentral extends Component {
         });
     }
 
+
+    blockDevelopmentUpdate(require_update,versions_objects,largest_version){
+        if(!this.props.user_data){ // true if normal user, we only have information in this.props.user_data if its an admin
+            
+            for (var i = versions_objects.length - 1; i >= 0; i--) { //we need check every firmware file to check the largest  
+                            
+                let version_object = versions_objects[i]
+                let firmware_version = parseFloat(version_object.firmware_version) 
+                let firmware_status = version_object.firmware_status
+
+                console.log("firmware_version",firmware_version)
+                console.log("firmware_status",firmware_status)
+                console.log("this.largest_version",this.largest_version)
+
+                if(largest_version == firmware_version){
+                    if(firmware_status == 1){
+                        require_update = false
+                        break
+                    }
+                }
+            }                
+        }
+
+        return require_update
+    }
+
     changeView(){
+
+
         let view_kind = this.props.view_kind
         if(view_kind == "normal"){
-
+            this.props.navigator.setButtons({
+                rightButtons:[
+                    {
+                        title: 'Normal', // for a textual button, provide the button title (label)
+                        id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+                    },
+                ]
+            })
             console.log("this.props.active_tab",this.props.active_tab)
             if(this.props.active_tab == "charging")
                 this.props.dispatch({type: "CHANGE_TAB",active_tab:"app"})
@@ -348,6 +404,15 @@ class UpdateFirmwareCentral extends Component {
             this.showAdvanceView()
         }
         if(view_kind == "advanced"){
+            this.props.navigator.setButtons({
+                rightButtons:[
+                    {
+                        title: 'Advanced', // for a textual button, provide the button title (label)
+                        id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
+                    },
+                ]
+            })
+
            this.props.dispatch({type: "CHANGE_PROGRESS", new_progress: 0}) 
             this.showNormalView()
         }
@@ -362,19 +427,35 @@ class UpdateFirmwareCentral extends Component {
     }
 
     checkRequireUpdates(app_version,radio_version,bt_version){
+        //console.log("checkRequireUpdates()",app_version + radio_version + bt_version)
         let props = this.props
-        let require_app = props.app_version != app_version
-        let require_radio = props.radio_version != radio_version
-        let require_bt = props.bluetooth_version != bt_version
+        let require_app = false
+        let require_radio = false
+        let require_bt = false
 
-        return [require_app,require_radio,require_bt]
+        if(app_version.firmware_version != 1){
+            require_app = props.app_version != app_version.firmware_version    
+        }
+
+        if(radio_version.firmware_version != 1){
+            require_radio = props.radio_version != radio_version.firmware_version    
+        }
+        
+        if(bt_version.firmware_version != 1){
+            require_bt = props.bluetooth_version != bt_version.firmware_version    
+        }
+        
+        var result = [require_app,require_radio,require_bt]
+        //console.log("result",result)
+        return result
     }
 
     dispatchRequireUpdates(updates){
+        //console.log("dispatchRequireUpdates()",updates)
         let props = this.props
         let dispatch = props.dispatch
         let require_update = false
-        //console.log("updates",updates)
+        console.log("updates",updates)
 
         if(updates[0]){
             dispatch({type: "APP_UPDATE_STATUS",app_update_status:"update_required"})
@@ -511,7 +592,7 @@ class UpdateFirmwareCentral extends Component {
             case "updating":
                 return {text:"UPDATING",style:{color: "orange",fontSize:9}}
             case "updated":
-                return {text:"Completed",style:{color:"#009900",fontSize:9}}
+                return {text:"COMPLETED",style:{color:"#009900",fontSize:9}}
             default:
                 return {text:"NO STATUS FOUND",style:{fontSize:9}}
         }
@@ -553,7 +634,6 @@ class UpdateFirmwareCentral extends Component {
 
     }
 
-
     startNextUpdate(current){
         let props = this.props
         let dispatch = props.dispatch
@@ -587,8 +667,6 @@ class UpdateFirmwareCentral extends Component {
             }
         }
     }
-
-
 
     showOrHideList(){
         if(this.props.show_firmware_update_list)
@@ -626,18 +704,35 @@ class UpdateFirmwareCentral extends Component {
     }
 
     renderItem(item){
+        console.log("renderItem()")
         let app_version = parseFloat(item.application_files.firmware_version)
         let radio_version = parseFloat(item.radio_files.firmware_version)
         let bt_version = parseFloat(item.bt_files.firmware_version)
         let largest_version = GET_LARGEST(app_version,radio_version,bt_version)
+        let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 
-        return (
-            <TouchableHighlight onPress={() => this.changeSelectedFirmware(largest_version,item,app_version,radio_version,bt_version)} style={{backgroundColor:"white",padding:15,borderBottomWidth:0.2}}>
-                <Text>
-                    App : {PRETY_VERSION(app_version)}  Radio : {PRETY_VERSION(radio_version)}  Bluetooth : {PRETY_VERSION(bt_version)}
-                </Text>
-            </TouchableHighlight>
-        )
+        if(item.application_files.firmware_status == 1 || item.application_files.firmware_status == 3){
+            console.log("renderItem()",item.application_files)
+            console.log("user_type",user_type)
+            if(user_type){
+                return(
+                    <TouchableHighlight onPress={() => this.changeSelectedFirmware(largest_version,item,app_version,radio_version,bt_version)} style={{backgroundColor:"white",padding:15,borderBottomWidth:0.2}}>
+                        <Text>
+                            App : {PRETY_VERSION(app_version)}  Radio : {PRETY_VERSION(radio_version)}  Bluetooth : {PRETY_VERSION(bt_version)}
+                        </Text>
+                    </TouchableHighlight>                
+                )
+            }
+        }else{
+            return (
+                <TouchableHighlight onPress={() => this.changeSelectedFirmware(largest_version,item,app_version,radio_version,bt_version)} style={{backgroundColor:"white",padding:15,borderBottomWidth:0.2}}>
+                    <Text>
+                        App : {PRETY_VERSION(app_version)}  Radio : {PRETY_VERSION(radio_version)}  Bluetooth : {PRETY_VERSION(bt_version)}
+                    </Text>
+                </TouchableHighlight>
+            )
+        }
+
     }
 
 
@@ -679,7 +774,7 @@ class UpdateFirmwareCentral extends Component {
 
 
     renderUpdateComponent(){
-        console.log("renderUpdateComponent()",this.props.selected_version);
+        //console.log("renderUpdateComponent()",this.props.selected_version);
         let current_update = this.props.current_update
         let device = this.device
         let selected_version = this.props.selected_version
@@ -737,9 +832,9 @@ class UpdateFirmwareCentral extends Component {
     }
 
     renderStartUpdateBtn(){
-        console.log("this.largest_version",this.props.progress)
+        //console.log("this.largest_version",this.props.progress)
+
         if(this.largest_version){
-            
             if(this.require_update){
                 if(this.props.progress == 0)
                     return (
@@ -794,7 +889,7 @@ class UpdateFirmwareCentral extends Component {
     }
 
     renderNormalView(){
-        console.log("renderNormalView()")
+        //console.log("renderNormalView()")
         var flag = null
         if(this.props.admin && (this.props.progress  == 0) )
             var flag = (
@@ -851,9 +946,12 @@ class UpdateFirmwareCentral extends Component {
                     </View>
                     <View style={{backgroundColor:"gray",padding:5,justifyContent:"center",flexDirection:"row"}}>
                         <View style={{flex:0.7,marginLeft:10}}>
-                            <Text style={{color:"white",textAlign:"center"}}>
-                                Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
-                            </Text>
+                            {this.require_update && (
+                                <Text style={{color:"white",textAlign:"center"}}>
+                                    Selected Firmware Version : {PRETY_VERSION(this.props.selected_version)}
+                                </Text>
+                                )
+                            } 
                         </View>
                         {this.props.progress == 0 &&
                             (
@@ -878,7 +976,7 @@ class UpdateFirmwareCentral extends Component {
                             <Text style={{color:"black"}}>
                                 Application
                             </Text>
-                            <Text style={this.getTextVersionAndStyleStatus(props.radio_update_status).style}>
+                            <Text style={this.getTextVersionAndStyleStatus(props.app_update_status).style}>
                                 {this.getTextVersionAndStyleStatus(props.app_update_status).text}
                             </Text>
                         </View>
@@ -886,7 +984,7 @@ class UpdateFirmwareCentral extends Component {
                             <Text style={{color:"black"}}>
                                 Bluetooth
                             </Text>
-                            <Text style={this.getTextVersionAndStyleStatus(props.radio_update_status).style}>
+                            <Text style={this.getTextVersionAndStyleStatus(props.bt_update_status).style}>
                                  {this.getTextVersionAndStyleStatus(props.bt_update_status).text}
                             </Text>
                         </View>
@@ -958,7 +1056,7 @@ class UpdateFirmwareCentral extends Component {
     }
 
     render() {
-        console.log("this.props.view_kind",this.props.view_kind)
+        //console.log("this.props.view_kind",this.props.view_kind)
         if(this.props.view_kind == "normal")
             var content = this.renderNormalView()
         else

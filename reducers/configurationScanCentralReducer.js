@@ -17,7 +17,7 @@ const initialState = {
   central_device_status : "disconnected" 
 }
 
-export default function configurationScanCentralReducer (state = initialState, action) {
+export default function configurationScanCentralReducer(state = initialState, action) {
   switch (action.type) {
     case "CONFIGURATION_RESET_CENTRAL_REDUCER":
       return {

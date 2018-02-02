@@ -157,7 +157,7 @@ class SetupRemote extends Component{
     	.then(response => {
     		console.log("response deploy",response)
 	    	if(this.device.manufactured_data.hardware_type == "01"){
-	    		var message = "This Central Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
+	    		var message = "This Controller Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
 	    	}else{
 	    		var message = "This Remote Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
 	    	}
@@ -199,7 +199,7 @@ class SetupRemote extends Component{
     goToExamples(){
     	this.props.navigator.showModal({
     		screen : "SetupCentralExamples",
-    		title: "Examples Central",
+    		title: "Examples Controller",
     		navigatorStyle: {
     			screenBackgroundColor: "white"
     		},
@@ -215,7 +215,7 @@ class SetupRemote extends Component{
 				<View style={styles.pairSectionsContainer}>
 					<View style={{alignItems:"center"}}>
 						<Text style={styles.bigTitle}>
-							{this.device.manufactured_data.hardware_type == "01" ? "Central Bridge" : "Remote Bridge"}
+							{this.device.manufactured_data.hardware_type == "01" ? "Controller Interface" : "Remote Bridge"}
 						</Text>
 					</View>
 					<View style={{marginHorizontal:10,marginVertical:10,flex:1}}>
@@ -249,7 +249,7 @@ class SetupRemote extends Component{
 							</View>
 							<View style={{width:width * 0.6 ,alignItems:"center",justifyContent:"center"}}>
 								<Text>
-									Take a picture of {this.device.manufactured_data.hardware_type == "01" ? "Central Bridge" : "Remote Bridge"}  the Sure-Fi Bridge and ensure that you can clearly see what system/devices it is connected to.
+									Take a picture of {this.device.manufactured_data.hardware_type == "01" ? "Controller Interface" : "Remote Bridge"}  the Sure-Fi Bridge and ensure that you can clearly see what system/devices it is connected to.
 									See examples images below
 								</Text>
 								<TouchableHighlight onPress={() => this.goToExamples()} style={{padding:10}} >
@@ -261,7 +261,7 @@ class SetupRemote extends Component{
 						</View>
 						<View>
 							<Text style={{marginVertical:10}}>
-								Description of {this.device.manufactured_data.hardware_type == "01" ? "Central Bridge" : "Remote Bridge"} Unit Installation
+								Description of {this.device.manufactured_data.hardware_type == "01" ? "Controller Interface" : "Remote Bridge"} Unit Installation
 							</Text>
 							<View style={{width:width-40,height:80,margin:10,alignItems:"center",justifyContent:"center"}}>
 								<View style={{alignItems:"center",justifyContent:"center",height:80,width:width-40,backgroundColor:"white"}}>

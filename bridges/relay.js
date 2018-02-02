@@ -37,7 +37,8 @@ class Relay extends Component{
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
         navBarButtonColor: "white",
-        orientation: 'portrait'
+        orientation: 'portrait',
+        navBarTitleTextCentered: true, 
     }	
 
     constructor(props) {
@@ -45,6 +46,7 @@ class Relay extends Component{
     	this.device = this.props.device
     	this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
     	this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+    	this.updating = false
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
@@ -52,6 +54,7 @@ class Relay extends Component{
         if (event.type == 'NavBarButtonPress') { // this is the event type for button presses
             switch(event.id){
                 case "update":
+                	this.props.dispatch({type: "SET_SAVING",saving:true})
                     this.save()
                 break
                 default:
@@ -168,6 +171,7 @@ class Relay extends Component{
 				WRITE_COMMAND(this.device.id,[0x0C,number])
 				.then(() =>{
 					Alert.alert("Update Complete","Sure-Fi Relay Settings successfully updated.")
+					this.props.dispatch({type: "SET_SAVING",saving:false})
 				})
 				.catch(error => {
 					Alert.alert("Error",error)
@@ -300,10 +304,10 @@ class Relay extends Component{
 				<View>
 					<View style={styles.relay_option}>
 						<Switch 
-							onValueChange={slider_value => this.updateQs(1)} 
+							onValueChange={slider_value => this.updateQs(2)} 
 							onTintColor={option_blue}
 							tintColor="orange"
-							value={this.props.qs.substr(1,1) == "1" ? true : false}
+							value={this.props.qs.substr(2,1) == "1" ? true : false}
 						/>
 						<Text style={{marginLeft:20,fontSize:18}}>
 							Activate for All Messages
@@ -313,10 +317,10 @@ class Relay extends Component{
 
 					<View style={styles.relay_option}>
 						<Switch 
-							onValueChange={slider_value => this.updateQs(3)} 
+							onValueChange={slider_value => this.updateQs(1)} 
 							onTintColor={option_blue}
 							tintColor="orange"
-							value={this.props.qs.substr(3,1) == "1" ? true : false}
+							value={this.props.qs.substr(1,1) == "1" ? true : false}
 						/>
 						<Text style={{marginLeft:20,fontSize:18}}>
 							Enable Long Duration
@@ -351,13 +355,12 @@ class Relay extends Component{
 							</Text>
 						</View>
 						<View style={{marginBottom:30,backgroundColor:"white"}}>
-
 							<View style={styles.relay_option}>
 								<Switch 
-									onValueChange={slider_value => this.updateQs(2)} 
+									onValueChange={slider_value => this.updateQs(3)} 
 									onTintColor={option_blue}
 									tintColor="orange"
-									value={this.props.qs.substr(2,1) == "1" ? true : false}
+									value={this.props.qs.substr(3,1) == "1" ? true : false}
 								/>
 								<Text style={{marginLeft:20,fontSize:18}}>
 									Active for Status Indications
@@ -375,7 +378,6 @@ class Relay extends Component{
 									Quality of Service Lights
 								</Text>
 							</View>
-
 
 							{this.renderQualityDependes()}
 
@@ -403,6 +405,8 @@ class Relay extends Component{
 								</View>
 							</View>
 						</View>
+
+						{this.props.saving && <ActivityIndicator  style={{marginTop:30}}/>}
 					</View>
 				</Background>
 			</ScrollView>
@@ -418,7 +422,9 @@ const mapStateToProps = state => ({
 	relay_loading : state.relayReducer.relay_loading,
 	qs : state.relayReducer.qs,
 	show_quality_dependes : state.relayReducer.show_quality_dependes,
+	saving: state.relayReducer.saving,
 	device : state.scanCentralReducer.central_device,
+
 
 });
 

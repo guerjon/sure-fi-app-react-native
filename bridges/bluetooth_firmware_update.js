@@ -100,6 +100,11 @@ class BluetoothFirmwareUpdate extends Component{
 		    		deploy_disconnect:true
 		    	})	 
 
+		    	console.log("Connected device UUID:" + this.device.id)
+		    	console.log("Connected device id:" + this.device.device_id)
+		    	console.log("Connected device name" + this.device.name)
+
+
 				WRITE_COMMAND(this.device.id,[0x1A])
 				this.searchDevices()
 
@@ -145,7 +150,6 @@ class BluetoothFirmwareUpdate extends Component{
 
 
 	searchDevices(){
-
 		this.scanning = setInterval(() => {
 			BleManager.scan([], 3, true).then(() => {
         	})
@@ -192,26 +196,39 @@ class BluetoothFirmwareUpdate extends Component{
 	}
 
 	handleDiscoverPeripheral(device){
-		console.log("handleDiscoverPeripheral()",device)
-		var devices = this.devices;
 		
+		console.log("device.name",device)
+
 		if(device.name){
-	        if (device.name.toUpperCase() == "DFUT") {
+			console.log("1")
+	        if (device.name.toUpperCase().indexOf("DF") !== -1){
 	        	
 	        	let short_id = this.device.manufactured_data.device_id.substring(2,6)
-	        	
-
-	        	if(device.new_representation == short_id){
+	        	//console.log("this.device",this.device)
+	        	console.log("device",device.new_representation)
+	        	if(device.new_representation.indexOf(short_id) !== -1){
 	        		
+	        		console.log("this.scanning",this.scanning)
+
 					if(this.scanning){
+						
+						console.log("this.scanning_status",this.scanning_status)
+
 						if(this.scanning_status != "stopped"){
 							this.scanning_status = "stopped"; //just should be in one time
+							
 							clearInterval(this.scanning)
+					    	
 					    	this.props.dispatch({
 					    		type:"SET_DEPLOY_DISCONNECT",
 					    		deploy_disconnect:false
 					    	})							
+	          				
 	          				this.props.dispatch({type: "START_UPDATE"})
+	          				
+	          				console.log("Founded Device  ID ",device.id)
+							console.log("Founded Device  Name ",device.name.toUpperCase())
+
 	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),2000)							
 						}
 					}

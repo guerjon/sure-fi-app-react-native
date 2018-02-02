@@ -24,7 +24,12 @@ import {
 	PAIR_SUREFI_READ_UUID,
 	UPDATE_DEVICE_NAME_ROUTE,
 	BASE64,
-	DIVIDE_MANUFACTURED_DATA
+	DIVIDE_MANUFACTURED_DATA,
+	CENTRAL_HARDWARE_TYPE,
+	REMOTE_HARDWARE_TYPE,
+	CENTRAL_SERIAL_HARDWARE_TYPE,
+	REMOTE_SERIAL_HARDWARE_TYPE,
+
 } from '../constants'
 
 import {IS_CONNECTED} from '../action_creators/'
@@ -51,7 +56,6 @@ class StatusBox extends Component{
 		let device_id = device.manufactured_data.device_id.toUpperCase()
 		let remote_device_id = device.manufactured_data.tx.toUpperCase()
 	}
-	
 
 	renderConnectingBox(){
 		return (
@@ -125,7 +129,6 @@ class StatusBox extends Component{
 
     renderStatusDevice(){
     	var {device_status,remote_devices,remote_device_status,device} = this.props
-    	console.log("device_status",device_status)
     	switch(device_status){
     		case "normal_connecting":
     			return this.renderNormalConnecting()
@@ -228,16 +231,26 @@ class StatusBox extends Component{
 	}
 
 	getSwitchButton(){
+		var hardware_type = this.props.device.manufactured_data.hardware_type
+		var correct_string = ""
+
+		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE)
+			correct_string = "Switch to Remote Unit"
+		else
+			correct_string = "Switch to Controller Interface"
+
 		return(
 			<WhiteRowLink 
-				name={this.props.device.manufactured_data.hardware_type == "01" ? "Switch to Remote Unit" : "Switch to Central Unit"} 
+				name={correct_string} 
 				callback={() => this.props.switchUnit()}
 			/>
 		)
 	}
 
 	getSerialInfo(){
-		if(this.props.device.manufactured_data.hardware_type == "01"){
+		var hardware_type = this.props.device.manufactured_data.hardware_type
+
+		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
 			return (
 				<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
 					 					 	
@@ -311,8 +324,8 @@ class StatusBox extends Component{
 	}
 
 	getNormalText(){
-		
-		if(this.props.device.manufactured_data.hardware_type == "01"){
+		var hardware_type = this.props.device.manufactured_data.hardware_type
+		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
 			var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
 		}else{
 			var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>

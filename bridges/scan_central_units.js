@@ -261,7 +261,7 @@ class ScanCentralUnits extends Component {
                 var message = <Text style={{fontSize:16, color:"red"}}>Device ({scan_result ? scan_result: "ID UNDEFINED"}) is not on pairing mode</Text>
                  return this.renderCamera(message,confirm_buttons)
             case "is_not_central_device":
-                var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({scan_result ? scan_result : "ID UNDEFINED"}) is not a central device</Text>
+                var message = <Text style={{fontSize:16, color:"red"}}>This Sure-Fi bridge ({scan_result ? scan_result : "ID UNDEFINED"}) is not a controller device</Text>
                 return this.renderCamera(message,clear_button)
             case "clean_camera":
                 return (<View><Text>Charging ... </Text></View>)

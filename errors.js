@@ -1,0 +1,10 @@
+export const SECURITY_ERROR = 0xE0
+export const START_UPDATE_ERROR = 0xE1
+export const ALREADY_STARTED_ERROR = 0xE2
+export const NOT_STARTED_ERROR = 0xE3
+export const INVALID_NUM_BYTES_ERROR = 0xE4
+export const PAGE_FAILURE = 0xE5
+export const IMAGE_CRC_FAILURE_ERROR = 0xE6
+export const REGISTER_FAILURE = 0xE7
+export const DEPLOY_FAILURE = 0xE8
+export const UNSUPPORTED_CMD = 0xE9

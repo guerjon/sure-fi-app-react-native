@@ -54,6 +54,7 @@ class Bridges extends Component{
         navBarButtonColor: "white",
         orientation: 'portrait',
         title : "Scan Device",
+        navBarTitleTextCentered: true,
     }
     
     constructor(props) {
@@ -63,7 +64,7 @@ class Bridges extends Component{
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
         //console.log("event",event)
-        console.log("events on bridges",event)
+        //console.log("events on bridges",event)
          // this is the event type for button presses
         switch(event.id){
             case "devices":
@@ -263,15 +264,14 @@ class Bridges extends Component{
     showHelpAlert(){
         Alert.alert(
             "Instructions",
-            "1. Please make sure your Sure-Fi device is powered on. You must use a 9V battery if Pairing and 12V DV if deploying or configuring. \n\n "+
+            "1. The bridge has to be powered in order to connect to it over bluetooth. \n\n "+
             "2. Locate the QR Code found on your Sure-Fi Device. \n\n" +
-            "3. Using the viewfinder on this screen brring the QR Code into focus. You may have to move the bridge closer or farther away from your device. \n\n" +
-            "4. When the code has been scanned,select \"Continue\" to connect the Sure-Fi Bridge."
+            "3. Using the viewfinder on this screen bring the QR Code into focus. You may have to move the bridge closer or farther away from your device. \n\n"
         )
     }
 
     goToDeviceControl(device){
-        console.log("goToDeviceControl",device.manufactured_data)
+        console.log("goToDeviceControl")
         //this.deleteScan()
         //this.hideCamera()
         
@@ -323,7 +323,6 @@ class Bridges extends Component{
                 copy_devices.splice(i,1) //delete de element from the array
             }
         }
-
     }
 
     startScanning(manager){
@@ -335,7 +334,11 @@ class Bridges extends Component{
                 manager.startDeviceScan([PAIR_SUREFI_SERVICE],null,(error,device) => {
                     
                     if(error){
-                        Alert.alert("Error",error.message)
+                        if(error.message == "Bluetooth location services are disabled"){
+                            Alert.alert("Location Services Unabled.","In order to connect to the Sure-Fi Device you should turn on the location services.")
+                        }else{
+                            Alert.alert("Error",error.message)    
+                        }
                         return
                     }
                     if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {

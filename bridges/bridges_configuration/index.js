@@ -464,7 +464,7 @@ class BridgesConfiguration extends Component {
 									</Image>
 									<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 										<Text >
-											Sure-Fi Bridge Central
+											Sure-Fi Bridge Controller
 										</Text>
 										<Text style={{fontSize:22}}>
 											{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
@@ -641,7 +641,7 @@ class BridgesConfiguration extends Component {
 						<View style={styles.pairSectionsContainer}>
 							<View style={styles.titleContainer}>
 								<Text style={styles.title}>
-									Central Unit
+									Controller Interface
 								</Text>
 							</View>
 							<View style={styles.touchableSectionContainer}>
@@ -654,7 +654,7 @@ class BridgesConfiguration extends Component {
 										</Image>
 										<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 											<Text >
-												Sure-Fi Bridge Central
+												Sure-Fi Bridge Controller
 											</Text>
 											<Text style={{fontSize:22}}>
 												{central_device.manufactured_data ? (central_device.manufactured_data.device_id ? central_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }
@@ -677,7 +677,7 @@ class BridgesConfiguration extends Component {
 						<View style={styles.pairSectionsContainer}>
 							<View style={styles.titleContainer}>
 								<Text style={styles.title}>
-									Central Unit
+									Controller Interface
 								</Text>
 							</View>
 							<View style={styles.touchableSectionContainer}>
@@ -689,7 +689,7 @@ class BridgesConfiguration extends Component {
 										>
 										</Image>
 										<Text style={styles.touchableSectionInnerText}>
-											Select Central Unit
+											Select Controller Interface
 										</Text>
 									</View>
 								</TouchableHighlight>

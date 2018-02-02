@@ -41,7 +41,7 @@ export const IS_CONNECTED = (id) => {
 	
 	return new Promise((fulfill,reject) => {
 		
-		BleManager.getConnectedPeripherals([SUREFI_CMD_SERVICE_UUID]).then(response => {
+		BleManager.getConnectedPeripherals().then(response => {
 			
 			if(response.length){ // means its at least one device connected
 				
@@ -78,6 +78,7 @@ export const START_NOTIFICATION = (id) => {
 }
 
 export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
+	console.log("push_cloud_status() on action_creators")
 	return new Promise((fulfill,reject) => {
 		fetch(PUSH_CLOUD_STATUS_ROUTE,{
 			method : "POST",
@@ -91,17 +92,20 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 			})
 		}).then(response => {
 			fulfill(response)
-		}).catch(error => reject(error))
+		}).catch(error => {
+			console.log("error on PUSH_CLOUD_STATUS",error)
+			reject(error)	
+		})
 	})
 }
 
 export const WRITE_COMMAND = (id,data) => {
-	
+	console.log("WRITE_COMMAND()")
 	LOG_INFO(data,COMMAND)
 	
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
-			
+			console.log("retriveServices callback on WRITE_COMMAND")
 			BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 			.then(response => {
 				fulfill(response)
@@ -116,6 +120,7 @@ export const WRITE_COMMAND = (id,data) => {
 
 
 export const LOG_INFO = (data,type,name) => {
+	//console.log("LOG_INFO()",type)
 	var data_to_save = data.slice(0)	
 	var value = data_to_save.shift()
 
@@ -133,6 +138,7 @@ export const LOG_INFO = (data,type,name) => {
 
 export const WRITE_PAIRING = (id,data) => {
 	//LOG_INFO(data,COMMAND)
+	console.log("WRITE_PAIRING()")
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
 			console.log("1")
@@ -150,9 +156,11 @@ export const WRITE_PAIRING = (id,data) => {
 }
 
 export const WRITE_FORCE_UNPAIR = (id) => {
+	console.log("WRITE_FORCE_UNPAIR()")
 	return new Promise ((fulfill,reject) => {
 		WRITE_COMMAND(id,COMMAND_FORCE_UNPAIR)
 		.then(response => {
+			console.log("BEFORE WRITE UNPAIR")
 			WRITE_UNPAIR(id)
 			.then(response => {
 				fulfill()
@@ -165,6 +173,7 @@ export const WRITE_FORCE_UNPAIR = (id) => {
 
 
 export const WRITE_UNPAIR = (id) => {
+	console.log("WRITE_UNPAIR()")
 	LOG_INFO([0,0,0])
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {

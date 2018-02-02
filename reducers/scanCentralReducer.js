@@ -33,7 +33,6 @@ const initialState = {
 
 
 export default function scanCentralReducer (state = initialState, action) {
-  console.log("action.type",action.type)
   switch (action.type) {
     case "RESET_CENTRAL_REDUCER":
       return {
@@ -60,7 +59,6 @@ export default function scanCentralReducer (state = initialState, action) {
         photo_data : {}
       }
     case "CENTRAL_DEVICE_MATCHED":
-      console.log("CENTRAL_DEVICE_MATCHED executed with",action.central_device)
       return {
         ...state,
         central_device : action.central_device,

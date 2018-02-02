@@ -554,3 +554,14 @@ round(num)
 
 -------------------------------------------- IOS ---------------END------------------------- IOS -------------------------------------
 
+
+
+
+-------------------------------------------- Bluetooth ---------------Start------------------------- Bluetooth ---------------------------
+
+
+Cualquier BLE device que quiera anunciar un paquete tiene 3 canales de comunicaci'on estos 3 canales son 37,38,39 existe un tiempo que se 
+tarda en anunciar los packetes por cada canal a este tiempo 
+
+
+-------------------------------------------- Bluetooth ---------------End------------------------- Bluetooth ---------------------------

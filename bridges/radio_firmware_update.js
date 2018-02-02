@@ -147,7 +147,7 @@ class RadioFirmwareUpdate extends Component{
 	}
 
 	handleCharacteristicRadioNotification(data){
-		console.log("data",data);
+		//console.log("data",data);
 		
 		LOG_INFO(data.value,NOTIFICATION)
 		
@@ -451,7 +451,6 @@ class RadioFirmwareUpdate extends Component{
 		var {progress,radio_version} = this.props
 		
 		if(progress > 0){
-			console.log("progress",progress);
 			let progress_number = this.limitSize(progress.toFixed(2) * 100) 
 
 			var content = (

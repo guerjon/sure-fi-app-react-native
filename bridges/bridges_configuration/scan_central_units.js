@@ -45,7 +45,7 @@ var md5 = require('md5');
 class ScanCentralUnits extends Component {
 
     static navigationOptions = {
-        title: "Scan Central Unit",
+        title: "Scan Controller Interface",
         headerStyle: {
             backgroundColor: first_color
         },
@@ -307,7 +307,7 @@ class ScanCentralUnits extends Component {
 
         switch (scanning_status) {
             case "no_device_found":
-                var message = <Text>Plese scan the QR Code of your Sure-Fi Central Device</Text>
+                var message = <Text>Plese scan the QR Code of your Sure-Fi Controller Device</Text>
             return this.renderCamera(message,clear_button)
             case "device_scanned_not_matched":
                 var message = <Text style={{fontSize:16, color:"red"}}>Device not found ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) </Text>
@@ -321,7 +321,7 @@ class ScanCentralUnits extends Component {
                 return this.renderCamera(message,clear_button)
                 break
             case "is_not_central_device":
-                var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a central device.</Text>
+                var message = <Text style={{fontSize:16, color:"red"}}>Device ({this.scan_result_id ? this.scan_result_id : "ID UNDEFINED"}) is not a controller device.</Text>
                 return this.renderCamera(message,clear_button)
             default:
                 return (

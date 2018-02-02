@@ -86,29 +86,28 @@ class Options extends Component{
     	let rxUUID = device.manufactured_data.device_id
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
 
-    	
-			WRITE_FORCE_UNPAIR(device.id).then(response => {
+		WRITE_FORCE_UNPAIR(device.id).then(response => {
+			console.log("after write_force_unpair")
+			let hardware_status = "01|01|" + rxUUID + "|000000"
+			PUSH_CLOUD_STATUS(device_id,hardware_status)
+			.then(response => {
+				
+				console.log("response on forceUnpair",response)
+				device.manufactured_data.tx = "000000" // this is because we need recalculate the security string to connect again, same reason for the next dispatch
+				device.manufactured_data.device_state = "0001"
 
-    			let hardware_status = "01|01|" + rxUUID + "|000000"
+	    		this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: device
+                });
+				
+				this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 1})
+	    		this.props.setConnectionEstablished()
+	    		
+			})
+			.catch(error => console.log("error",error))
 
-				PUSH_CLOUD_STATUS(device_id,hardware_status)
-				.then(response => {
-					device.manufactured_data.tx = "000000" // this is because we need recalculate the security string to connect again, same reason for the next dispatch
-					device.manufactured_data.device_state = "0001"
-
-		    		this.props.dispatch({
-	                    type: "CENTRAL_DEVICE_MATCHED",
-	                    central_device: device
-	                });
-					
-					this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 1})
-		    		this.props.setConnectionEstablished()
-		    		
-
-				})
-				.catch(error => console.log("error",error))
-
-    		}).catch(error => console.log(error))
+		}).catch(error => console.log(error))
     }
 
     showAlertDeploy(){
@@ -144,7 +143,7 @@ class Options extends Component{
 	    	.then(response => {
 	    		console.log("response deploy",response)
 		    	if(this.device.manufactured_data.hardware_type == 1){
-		    		var message = "This Central Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
+		    		var message = "This Controller Interface has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
 		    	}else{
 		    		var message = "This Remote Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
 		    	}
@@ -218,13 +217,13 @@ class Options extends Component{
     }
 
     getInstructionalVideos(){
-
+    	//<Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
     	return (
     		<View>
 				<Text style={{textAlign:"center",fontSize:19,color:"black"}}>
 					ADDITIONAL OPTIONS
 				</Text>    		
-    			<Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
+    			
     		</View>
     	)
     }
@@ -290,8 +289,8 @@ class Options extends Component{
     	if(this.props.device){
     		if(this.props.device.manufactured_data){
     			if(this.props.device.manufactured_data.hardware_type){
-    				var status_text = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
-    				let status_text_2 = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Central Unit" : "Deploy Remote Unit" 
+    				var status_text = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Controller Interface" : "Deploy Remote Unit" 
+    				let status_text_2 = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Controller Interface" : "Deploy Remote Unit" 
     			}else{
     				var status_text = "UNDEFINED"
     				let status_text_2 = "UNDEFINED"
@@ -396,11 +395,8 @@ class Options extends Component{
 		var sales_dist = ["SALES","DIST"]		
 		var indicator = this.props.indicatorNumber
 
-		console.log("indicator",this.props.indicatorNumber)
-
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){
-
 			return this.getAdminOptions(indicator)
 
 		}else if(sales_dist.lastIndexOf(user_type) !== -1){
@@ -412,7 +408,7 @@ class Options extends Component{
 	}
 
 	getAdminOptions(bridge_status){
-		//console.log("getAdminOptions()");
+		console.log("getAdminOptions()");
 		switch(bridge_status){
 			case 1:
 				return(
@@ -497,10 +493,9 @@ class Options extends Component{
 					<View>
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}	
+						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 
 					</View>
 				)
@@ -515,7 +510,6 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -529,7 +523,6 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -567,7 +560,6 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}	
-						{this.getRsSettings()}
 					</View>
 				)
 
@@ -579,7 +571,6 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
 			
@@ -591,7 +582,6 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
 			case 0xE0:

@@ -4,7 +4,8 @@ const initialState = {
   relay_2_image_status : false,
   relay_loading: true,
   qs : "0000",
-  show_quality_dependes : false
+  show_quality_dependes : false,
+  saving : false
 }
 
 export default function relayReducer (state = initialState, action) {
@@ -41,6 +42,12 @@ export default function relayReducer (state = initialState, action) {
       }
     case "RESET_RELAY_REDUCER":
       return initialState
+
+    case "SET_SAVING":
+      return{
+        ...state,
+        saving: action.saving
+      }
 
     default:
       return state

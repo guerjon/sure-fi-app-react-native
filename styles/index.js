@@ -36,7 +36,7 @@ export  const styles = StyleSheet.create({
     },
   	circleContainer:{
   		width: width,
-  		height: 150,
+  		height: 100,
   		alignItems:"center",
   		top:-910
   	},

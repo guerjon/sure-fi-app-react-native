@@ -466,7 +466,7 @@ class AppFirmwareUpdate extends Component{
 
 	errorHandleRow(){
 		console.log("errorHandleRow()")
-		console.log("this.new_current_row",this.new_current_row)
+		//console.log("this.new_current_row",this.new_current_row)
 		this.processRow(this.new_current_row)
 	}	
 

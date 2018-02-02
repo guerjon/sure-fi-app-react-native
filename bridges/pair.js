@@ -22,9 +22,12 @@ import {
 	DIVIDE_MANUFACTURED_DATA,
 	FIND_ID,
 	MATCH_DEVICE,
-	GET_REMOTE_DEVICES,
 	GET_DEVICES_ON_PAIRING_MODE,
-	GET_CENTRAL_DEVICES,
+    CENTRAL_SERIAL_HARDWARE_TYPE,
+    REMOTE_SERIAL_HARDWARE_TYPE,
+    CENTRAL_HARDWARE_TYPE,
+    REMOTE_HARDWARE_TYPE,
+    GET_PAIRING_TO_DEVICES
 } from '../constants'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
@@ -48,7 +51,8 @@ class PairBridge extends Component{
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
         navBarButtonColor: "white",
-        orientation: 'portrait'
+        orientation: 'portrait',
+        navBarTitleTextCentered: true,
     }
 
 	constructor(props) {
@@ -56,7 +60,6 @@ class PairBridge extends Component{
 		this.fast_manager = props.manager
 		this.central_device = props.device
 		this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
-
 		this.devices = []
 	}
 
@@ -112,8 +115,9 @@ class PairBridge extends Component{
     showAlertConfirmation(remote_device_id){
   
         var remote_device_id = remote_device_id ? remote_device_id : this.props.remote_device_id;
-    	
-        if(this.central_device.manufactured_data.hardware_type == "01"){
+    	var hardware_type = this.central_device.manufactured_data.hardware_type
+
+        if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
             var central_id = this.central_device.manufactured_data.device_id
             var remote_id = remote_device_id.toUpperCase()
         }else{
@@ -124,7 +128,7 @@ class PairBridge extends Component{
         this.props.dispatch({type: "HIDE_REMOTE_CAMERA"})
     	Alert.alert(
     		"Continue Pairing",
-    		"Are you sure you wish to Pair with the following Sure-Fi devices: \n \n" + "Central : " + central_id + "\n\n" + " Remote : " + remote_id,
+    		"Are you sure you wish to Pair with the following Sure-Fi devices: \n \n" + "Controller : " + central_id + "\n\n" + " Remote : " + remote_id,
     		[
     		 	
     		 	{text : "Cancel", onPress: () => console.log(("CANCEL"))},
@@ -152,6 +156,8 @@ class PairBridge extends Component{
                 console.log("error on scan devices",error)
                 return
             }
+            //console.log("device.name",device.name)
+            
             if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
 
                 if (!FIND_ID(devices, device.id)) {   
@@ -166,26 +172,34 @@ class PairBridge extends Component{
     pair(){
     	console.log("pair()")
 		var {remote_device,dispatch} = this.props
-		let rxUUID = this.central_device.manufactured_data.device_id
+		
+        let rxUUID = this.central_device.manufactured_data.device_id
     	let txUUID = remote_device.manufactured_data.device_id
-
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
-    	
+
+        this.fast_manager.stopDeviceScan();
 
         if(!this.props.debug_mode_status)
             this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
 
         this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
+        
+        console.log("central_device.id",this.central_device.id)
+        console.log("remote_id_bytes",remote_id_bytes)
+        console.log("rxUUID",rxUUID)
+        console.log("txUUID",txUUID)
 
 	    WRITE_PAIRING(this.central_device.id,remote_id_bytes)
 			.then(response => {
 				PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
 		    	.then(response => {	
+                    
+                    //console.log("response 0 on pair",response)
+
 		    		PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
 		    		.then(response => {
-                        
-                        this.fast_manager.stopDeviceScan();
+                        //console.log("response on pair",response)
 
 						this.central_device.manufactured_data.tx = txUUID
 						this.central_device.manufactured_data.device_state = "0004";
@@ -230,119 +244,151 @@ class PairBridge extends Component{
         this.matchDevice(device_id)
     }
 
+    isDeviceOnPairingMode(device){
+        if(!device.manufactured_data)
+            return false
+        var state = device.manufactured_data.device_state.substring(2,4)
+
+        if(state == "01"){
+            return true
+        }       
+        return false        
+    }
+
     matchDevice(device_id){
-    	console.log("matchDevice()",device_id);
+        console.log("matchDevice()")
         var {
             dispatch,
             navigation
         } = this.props;
-        
+        var hardware_type = this.central_device.manufactured_data.hardware_type
         var devices = this.devices
         var matched_device = []
+        var device_on_pairing_mode_flag = false
 
         if(devices){// the scanner should found some devices at this moment, if not just keep looking 
-        
             var matched_devices = MATCH_DEVICE(devices,device_id) //MATCH_DEVICE_CONSTANT looks for devices with the same qr scanned id 
+            var device = matched_devices[0]
 
-            if (matched_devices.length > 0) {  //if we found devices, now we need be sure that the matched devices are REMOTE i.e hardware_type == 01 return true
-            
-                if(this.central_device.manufactured_data.hardware_type == "01"){ // THE PREVIOUS MATCHED DEVICE IS A CENTRAL SO WE NEED FIGURE OUT A REMOTE ONE
-                    
-                    matched_devices = GET_REMOTE_DEVICES(matched_devices)
-                    
-                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-                        matched_devices = GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
-                        if(matched_devices.length > 0){
+            if (device) {  
+               //if we found devices, now we need be sure that the matched devices are the correct type to pair
+               
+                var correct_type = this.getCorrectPairType(this.central_device)
+                console.log("device.manufactured_data.hardware_type",device.manufactured_data.hardware_type)
+                console.log("correct_type",correct_type)
 
-                            let device = matched_devices[0]
-                            //console.log("my_device",device.manufactured_data.device_id);
-                            dispatch({
-                                type: "REMOTE_DEVICE_MATCHED",
-                                remote_device: device
-                            });
-                            this.props.navigator.dismissLightBox();
-                            this.showAlertConfirmation(device_id)
-                            
-                        }else{
-                           Alert.alert(
-                            "Pairing Error",
-                            "Device " + device_id.toUpperCase() +" is not on pairing mode.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }
-                            );   
-                        }
+                if(device.manufactured_data.hardware_type == correct_type){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
+
+                    device_on_pairing_mode_flag = this.isDeviceOnPairingMode(device) // now we need check the state of the device
+
+                    if(device_on_pairing_mode_flag){
+                        
+                        dispatch({
+                            type: "REMOTE_DEVICE_MATCHED",
+                            remote_device: device
+                        });
+
+                        this.props.navigator.dismissLightBox();
+                        this.showAlertConfirmation(device_id)
+                        
                     }else{
-                        Alert.alert(
-                            "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Central Unit. You need to pair to a Sure-Fi Remote Unit.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }
-                        );
+                        this.showDeviceIsNotOnPairingMode()
                     }
-            
                 }else{
-                    matched_devices = GET_CENTRAL_DEVICES(matched_devices)
-                    
-                    if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-                        matched_devices = GET_DEVICES_ON_PAIRING_MODE(matched_devices) // now we need check the state of the device
-                        if(matched_devices.length > 0){
-
-                            let device = matched_devices[0]
-                            dispatch({
-                                type: "REMOTE_DEVICE_MATCHED",
-                                remote_device: device
-                            });
-                            this.props.navigator.dismissLightBox();
-                            this.showAlertConfirmation(device_id)
-                            
-                        }else{
-                            Alert.alert(
-                                "Pairing Error",
-                                "Device \n" + device_id.toUpperCase() +"  \n is not on pairing mode.",
-                                [
-                                    {text: "Accept", onPress: () => this.showCamera()}
-                                ],
-                                {
-                                    cancelable: false
-                                }                            
-                            );
-                        }
-                    }else{
-                        Alert.alert(
-                            "Pairing Error",
-                            "Device \n" + device_id.toUpperCase() + "  \n is a Sure-Fi Remote Unit. You need to pair to a Sure-Fi Remote Unit.",
-                            [
-                                {text: "Accept", onPress: () => this.showCamera()}
-                            ],
-                            {
-                                cancelable: false
-                            }                            
-                        );
-                    }
+                    this.showCorrectErrorForPair(this.central_device)
                 }
             }else{
-                Alert.alert(
-                    "Pairing error",
-                    "The device " + device_id.toUpperCase() + " was not found",
-                    [
-                        {text: "Accept", onPress: () => this.showCamera()}
-                    ],
-                    {
-                        cancelable: false
-                    }
-                );
+                this.showDeviceNotFound(device_id)
             }
         }
     }
 
+    showDeviceIsNotOnPairingMode(device_id){
+        Alert.alert(
+            "Pairing Error",
+            "Device " + device_id.toUpperCase() +" is not on pairing mode.",
+            [
+                {text: "Accept", onPress: () => this.showCamera()}
+            ],
+            {
+                cancelable: false
+            }
+        );   
+    }
+
+    showDeviceNotFound(device_id){
+        Alert.alert(
+            "Pairing error",
+            "The device " + device_id.toUpperCase() + " was not found",
+            [
+                {text: "Accept", onPress: () => this.showCamera()}
+            ],
+            {
+                cancelable: false
+            }
+        );        
+    }
+
+
+
+
+    showCorrectErrorForPair(device){
+        var device_type = device.manufactured_data.hardware_type
+        var correct_device = ""
+        switch(device_type){
+            case CENTRAL_HARDWARE_TYPE:
+                correct_device = "Remote Sure-Fi Bridge"
+            break
+            case REMOTE_HARDWARE_TYPE:
+                correct_device = "Controller Sure-Fi Bridge"
+            break
+            case CENTRAL_SERIAL_HARDWARE_TYPE:
+                correct_device = "Remote Serial Sure-Fi Bridge"
+            break
+            case REMOTE_SERIAL_HARDWARE_TYPE:
+                correct_device = "Controller Serial Sure-Fi Bridge"
+            break
+            default:
+                correct_device = " "
+            break
+        }
+
+        Alert.alert(
+            "Pairing Error",
+            "Device \n" + device.manufactured_data.device_id.toUpperCase() + "  \n needs be paired with a "+ correct_device +" .",
+            [
+                {text: "Accept", onPress: () => this.showCamera()}
+            ],
+            {
+                cancelable: false
+            }
+        );        
+
+    }
+
+    getCorrectPairType(device){
+        var device_type = device.manufactured_data.hardware_type 
+        var correct_type = 0
+
+        switch(device_type){
+            case CENTRAL_HARDWARE_TYPE:
+                correct_type = REMOTE_HARDWARE_TYPE
+            break
+            case REMOTE_HARDWARE_TYPE:
+                correct_type = CENTRAL_HARDWARE_TYPE
+            break
+            case CENTRAL_SERIAL_HARDWARE_TYPE:
+                correct_type = REMOTE_SERIAL_HARDWARE_TYPE
+            break
+            case REMOTE_SERIAL_HARDWARE_TYPE:
+                correct_type = CENTRAL_SERIAL_HARDWARE_TYPE
+            break
+            default:
+                correct_type = 0
+            break
+        }
+        return correct_type
+    }
 
     showCamera(){
         this.props.dispatch({type:"SHOW_REMOTE_CAMERA"})
@@ -355,6 +401,20 @@ class PairBridge extends Component{
 	render(){
 		let current_device = this.central_device
 		let remote_device = this.props.remote_device
+        var hardware_type = current_device.manufactured_data.hardware_type
+        var first_string = ""
+        var second_string = ""
+        var third_string = ""
+
+        if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
+            first_string = "Remote Unit"
+            second_string = "Scan Remote Unit"
+            third_string = "Sure-Fi Bridge Controller"
+        }else{  
+            first_string = "Controller Interface"
+            second_string = "Scan Controller Interface"
+            third_string = "Sure-Fi Bridge Remote"
+        }
 
 		if(IS_EMPTY(remote_device))
 			var remote_content = (
@@ -369,10 +429,10 @@ class PairBridge extends Component{
 							</View>
 							<View style={{flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 								<Text style={{textAlign:"center",justifyContent:"center"}}> 
-									{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 
+									{first_string} 
 								</Text>
 								<Text style={{fontSize:22,textAlign:"center"}}>
-									{current_device.manufactured_data.hardware_type == "01" ? "Scan Remote Unit" : "Scan Central Unit"} 
+									{second_string} 
 								</Text>
 							</View>
 						</View>
@@ -399,7 +459,7 @@ class PairBridge extends Component{
 						</View>
 						<View style={{}}>
 							<Text style={{textAlign:"center"}}>
-								{current_device.manufactured_data.hardware_type == "01" ? "Remote Unit" : "Central Unit"} 
+								{first_string} 
 							</Text>
 							<Text style={{fontSize:22,textAlign:"center"}}>
 								{remote_device.manufactured_data ? (remote_device.manufactured_data.device_id ? remote_device.manufactured_data.device_id.toUpperCase() : "UNKNOWN" ) : "UNKNOWN"}
@@ -424,7 +484,7 @@ class PairBridge extends Component{
 								</View>
 								<View style={{}}>
 									<Text style={{textAlign:"center"}}>
-										{current_device.manufactured_data.hardware_type == "01" ? "Sure-Fi Bridge Central" : "Sure-Fi Bridge Remote"} 
+										{third_string} 
 									</Text>
 									<Text style={{fontSize:22,textAlign:"center"}}>
 										{current_device.manufactured_data ? (current_device.manufactured_data.device_id ? current_device.manufactured_data.device_id.toUpperCase() : ("UNKNOWN") ) : ("UNKNOWN") }

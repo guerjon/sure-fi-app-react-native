@@ -56,7 +56,8 @@ class ConfigureRadio extends Component {
         navBarBackgroundColor : first_color,
         navBarTextColor : "white",
         navBarButtonColor: "white",
-        orientation: 'portrait'
+        orientation: 'portrait',
+        navBarTitleTextCentered: true, 
     }
 
 	static navigatorButtons = {

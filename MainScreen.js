@@ -13,7 +13,8 @@ import {
   	PermissionsAndroid,
   	Animated,
   	TouchableWithoutFeedback,
-  	TouchableNativeFeedback
+  	TouchableNativeFeedback,
+  	ScrollView
 } from 'react-native';
 import GoTo from "./goTo"
 import {
@@ -346,9 +347,7 @@ class MainScreen extends Component {
 						</Text>
 					</View>
 					<FadeInView style={{alignItems:"center",justifyContent:"center",height:height/2}}>
-						<Image source={require('./images/sure-fi_logo.imageset/sure-fi_logo.png')}>
-
-						</Image>
+						<Image source={require('./images/sure-fi_logo.imageset/sure-fi_logo.png')}></Image>
 					</FadeInView>
 					<View style={{alignItems:"center",justifyContent:"center",height:height/4}}>
 						<TouchableHighlight style={{borderWidth:1,padding:15,borderRadius:10}} onPress={() => this.showMainScreen()}>
@@ -362,12 +361,18 @@ class MainScreen extends Component {
 		)
 	}
 
+	renderRegister(){
+		let info = this.info
+		return <Register info = {info} navigation={this.props.navigation}/>
+	}
+
+/*
 	renderBall(image,text,action){
 		return(
 			<View style={styles.textViewContainer}>
 				<View>
 					<TouchableNativeFeedback onPress={action} >
-						<Image source={image} style={{width:width -105,height:307}}>
+						<Image source={image} style={{width:200,height:200}}>
 						</Image>
 					</TouchableNativeFeedback>
 				</View>
@@ -378,14 +383,16 @@ class MainScreen extends Component {
 				</View>
 			</View>
 		)
-	}
+	}*/
 
-	renderMainScreen(){
-	}
-
-	renderRegister(){
-		let info = this.info
-		return <Register info = {info} navigation={this.props.navigation}/>
+	renderBall(image,text,action){
+		return(
+			<View style={{padding:5}}>	
+				<TouchableNativeFeedback onPress={action}>
+					<Image source={image} style={{width:width * .65,height:width * .65}}></Image>
+				</TouchableNativeFeedback>
+			</View>
+		)
 	}
 
   	render() {
@@ -393,72 +400,112 @@ class MainScreen extends Component {
 		return (
 			<Background>
 		  		<View style={styles.container}>
-			  			<View style={styles.circleContainer}>
-				  			<View style={styles.launchImage}>
-				  				<View style={{
-				  					
-				  					flexDirection:"row",
-				  					alignItems:"center",
-				  					justifyContent:"center",
-				  					"zIndex":250,
-				  					height:100,
-				  					width:width
-				  				}}>
-					  				<View style={{alignItems:"center"}}>
-					  					<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:180,height:50}}/>
-					  				</View>
-					  				<View style={{alignItems:"flex-end",right:-50,flexDirection:"row"}}>
-										<TouchableHighlight style={{marginRight:10}} onPress={() =>  this.navigateToLogin()}>
-											<Icon name="user-circle" size={25} color="white" />
-										</TouchableHighlight>
-					  					{this.props.user_data &&
-											(
-												<TouchableHighlight style={{}} onPress={() =>  GoTo.goToDebugLog(this.props.navigator)}>
-													<Icon name="bluetooth" size={25} color="white" />
-												</TouchableHighlight>
-											)
-					  					}
-					  				</View>
+		  			<View style={styles.circleContainer}>
+			  			<View style={styles.launchImage}>
+			  				<View style={{
+			  					
+			  					flexDirection:"row",
+			  					alignItems:"center",
+			  					justifyContent:"center",
+			  					"zIndex":250,
+			  					height:100,
+			  					width:width
+			  				}}>
+				  				<View style={{alignItems:"center"}}>
+				  					<Image source={require('./images/sure-fi_menu.imageset/sure-fi_menu.png')} style={{width:180,height:50}}/>
 				  				</View>
-				  			</View>
+				  				<View style={{alignItems:"flex-end",right:-50,flexDirection:"row"}}>
+									<TouchableHighlight style={{marginRight:10}} onPress={() =>  this.navigateToLogin()}>
+										<Icon name="user-circle" size={25} color="white" />
+									</TouchableHighlight>
+				  					{this.props.user_data &&
+										(
+											<TouchableHighlight style={{}} onPress={() =>  GoTo.goToDebugLog(this.props.navigator)}>
+												<Icon name="bluetooth" size={25} color="white" />
+											</TouchableHighlight>
+										)
+				  					}
+				  				</View>
+			  				</View>
 			  			</View>
+		  			</View>
+		  			<ScrollView style={{width:width}}>
+		  				<View style={{alignItems:"center"}}>
+				  			<View>
+								{
+									this.renderBall(
+										require('./images/menu_wiegand.imageset/menu_wiegand.png'),
+										"Wiegand",
+										() => this.goToScan())
+								}			  				
+				  			</View>
+				  			<View>
+								{
+									this.renderBall(
+										require('./images/menu_hvac.imageset/menu_hvac.png'),
+										"HVAC",
+										() => this.goToScan())			  					
+								}			  			
+				  			</View>				  		
+				  			<View>
 
-			  			<Coverflow 
-			  				onChange={(index) => null} 
-			  				style={styles.coverflow}
-			  				midRotation={50} //se queda
-			  				initialSelection={0}
-			  				spacing={230}
-			  			>
-			  				{
-			  					this.renderBall(
-			  						require('./images/menu_wiegand.imageset/menu_wiegand.png'),
-			  						"Wiegand",
-			  						() => this.goToScan())
-			  				}
-			  				{
-			  					this.renderBall(
-			  						require('./images/menu_hvac.imageset/menu_hvac.png'),
-			  						"HVAC",
-			  						() => this.goToScan())			  					
-			  				}
-			  				{
-			  					this.renderBall(
-			  						require('./images/menu_serial.imageset/menu_serial.png'),
-			  						"RS-485",
-			  						() => this.goToScan())			  					
-			  				}												
-							{
-			  					this.renderBall(
-			  						require('./images/menu_video.imageset/menu_video.png'),
-			  						"Will it Transmit?",
-			  						() => GoTo.goToVideos(this.props.navigator))									
-							}							  			
-			  			</Coverflow>
-		  		</View>
+				  			
+				  				{
+									this.renderBall(
+										require('./images/menu_serial.imageset/menu_serial.png'),
+										"RS-485",
+										() => this.goToScan())			  					
+								}
+							</View>
+							<View>												
+								{
+									this.renderBall(
+										require('./images/menu_video.imageset/menu_video.png'),
+										"Will it Transmit?",
+										() => GoTo.goToVideos(this.props.navigator))									
+								}	
+				  			</View>
+			  			
+			  			</View>
+	  				</ScrollView>
+	  			</View>
 		  	</Background>
 		);  		
   	}
+  	/*
+		<Coverflow 
+			onChange={(index) => null} 
+			style={styles.coverflow}
+			midRotation={50} //se queda
+			initialSelection={0}
+			spacing={230}
+		>
+			{
+				this.renderBall(
+					require('./images/menu_wiegand.imageset/menu_wiegand.png'),
+					"Wiegand",
+					() => this.goToScan())
+			}
+			{
+				this.renderBall(
+					require('./images/menu_hvac.imageset/menu_hvac.png'),
+					"HVAC",
+					() => this.goToScan())			  					
+			}
+			{
+				this.renderBall(
+					require('./images/menu_serial.imageset/menu_serial.png'),
+					"RS-485",
+					() => this.goToScan())			  					
+			}												
+		{
+				this.renderBall(
+					require('./images/menu_video.imageset/menu_video.png'),
+					"Will it Transmit?",
+					() => GoTo.goToVideos(this.props.navigator))									
+		}							  			
+		</Coverflow>
+  	*/
 }
 
 

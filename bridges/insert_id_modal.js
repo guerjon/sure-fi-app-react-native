@@ -65,7 +65,7 @@ class InsertIdModal extends Component{
 				        			Manual Entry
 				        		</Text>
 				        		<Text style={{textAlign:"center"}}>
-				        			Please enter your 6 Character Serial Number for the Central device.
+				        			Please enter your 6 Character Serial Number for the Controller device.
 				        		</Text>
 			        		</View>
 		        		</View>
