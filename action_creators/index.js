@@ -99,8 +99,13 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 	})
 }
 
+/*
+	Data is an array with the hex commands to write and sometimes have data
+	example simple command [0x21]
+	example command with data [0x21,0x04,0x23,0x52]
+*/
 export const WRITE_COMMAND = (id,data) => {
-	console.log("WRITE_COMMAND()")
+	console.log("WRITE_COMMAND()","data : " + data)
 	LOG_INFO(data,COMMAND)
 	
 	return new Promise((fulfill,reject) => {
@@ -118,7 +123,14 @@ export const WRITE_COMMAND = (id,data) => {
 	})
 }
 
+/*
+	@data is an array with the hex commands to write and sometimes have data
+	example simple command [0x21]
+	example command with data [0x21,0x04,0x23,0x52]
+	@type is the type of command we have 5 types COMMAND, NOTIFICATION, ERROR, CONNECTED, DISCONNECTED AND LOCKED
+	the types can be found in constans.js
 
+*/
 export const LOG_INFO = (data,type,name) => {
 	//console.log("LOG_INFO()",type)
 	var data_to_save = data.slice(0)	
@@ -137,7 +149,7 @@ export const LOG_INFO = (data,type,name) => {
 
 
 export const WRITE_PAIRING = (id,data) => {
-	//LOG_INFO(data,COMMAND)
+	LOG_INFO(data,COMMAND)
 	console.log("WRITE_PAIRING()")
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
@@ -236,7 +248,7 @@ export const CONNECT = (device) => {
 }
 
 export const POST_LOG = log => {
-
+	console.log("POST_LOG",log)
 	fetch(WRITE_HARDWARE_LOG,{
 		method: "post",
 		headers: HEADERS_FOR_POST,
@@ -252,7 +264,6 @@ export const POST_LOG = log => {
 */
 export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type,text) => {
 
-	
 	var log_value = bytesToHex(bytes)
 	log_value = BASE64.btoa(log_value)
 

@@ -41,12 +41,12 @@ import {
 	DIVIDE_MANUFACTURED_DATA,
 	FIND_ID,
 	stringFromUTF8Array,
-	LOG_TYPES,
 	BASE64,
 	GET_DEVICE_NAME_ROUTE,
 	NOTIFICATION,
 	CONNECTED,
-	DISCONNECTED
+	DISCONNECTED,
+	HEX_TO_BYTES
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -300,6 +300,13 @@ class SetupCentral extends Component{
 
 		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
 
+		POST_LOG({
+			log_type : "UNPAIR",
+			device_id : this.device.id, 
+			log_value: " ",
+			hardware_serial : this.device.manufactured_data.device_id.toUpperCase()
+		})
+
 		WRITE_UNPAIR(this.device.id).then(response => {
 			var state = "01|01|"+this.device.manufactured_data.device_id+"|000000"
 			
@@ -314,6 +321,7 @@ class SetupCentral extends Component{
 				this.device.writeUnpairResult = true
 
 		    	this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.device});
+		    	this.props.dispatch({type:"SET_WRITE_PAIR_RESULT",write_pair_result: false})
 		    	this.props.dispatch({type: "SET_WRITE_UNPAIR_RESULT",write_unpair_result: true})
 		    	this.props.dispatch({type: "UPDATE_REMOTE_DEVICE_NAME",remote_device_name : ""})
 
@@ -447,7 +455,7 @@ class SetupCentral extends Component{
 	}
 
 	deployConnection(device,type){
-		console.log("deployConnection()",type)
+		//console.log("deployConnection()",type)
 		this.props.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:true})
 		if(!type)
 			type = 0
@@ -500,7 +508,7 @@ class SetupCentral extends Component{
 	}
 
 	eraseInterval(){
-		console.log("eraseInterval()")
+		//console.log("eraseInterval()")
 		if(interval){
 			clearInterval(interval)
 			interval = 0
@@ -510,7 +518,7 @@ class SetupCentral extends Component{
 	}
 
 	eraseSecondInterval(){
-		console.log("eraseSecondInterval()");
+		//console.log("eraseSecondInterval()");
 		if(second_interval){
 			clearInterval(second_interval)
 			second_interval = 0
@@ -1175,7 +1183,6 @@ class SetupCentral extends Component{
 	}
 
 	setBoardVersion(setAppBoardVersion){
-		
 	  	let app_board_version = this.props.app_board_version.split(" ")
 	  	console.log("app_board_version",app_board_version)
 		fetch(
@@ -1409,6 +1416,7 @@ class SetupCentral extends Component{
 			readStatusOnDevice = {(device) => this.readStatusOnDevice(device)}
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
+			saveOnCloudLog = { (bytes,type) => this.saveOnCloudLog(bytes,type)}
 			unPair = {() => this.unPair()}
 		/>
 	}
@@ -1442,7 +1450,8 @@ class SetupCentral extends Component{
 					checkDeviceState : (device) => this.checkDeviceState(device),
 					readStatusOnDevice : (device) => this.readStatusOnDevice(device),
 					getCloudStatus : (device) => this.getCloudStatus(device),
-					searchPairedUnit : (device) => this.searchPairedUnit(device)
+					searchPairedUnit : (device) => this.searchPairedUnit(device),
+					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
 				},
 				rightButtons: [
 		            {
@@ -1585,7 +1594,8 @@ class SetupCentral extends Component{
 			{
 				getCloudStatus:getCloudStatus,
 				setConnectionEstablished : () => this.setConnectionEstablished(),
-				fetchDeviceName: (device_id,remote_device_id) => this.fetchDeviceName(device_id,remote_device_id) 
+				fetchDeviceName: (device_id,remote_device_id) => this.fetchDeviceName(device_id,remote_device_id),
+				saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type)	
 			}
 		})
 	}
@@ -2114,9 +2124,14 @@ class SetupCentral extends Component{
 				/* --------------------------------------------------------------  --------------------------------------------------------------  --------------------------------------------------------------*/
 
 				case 0x16: // pair result
-					console.log("getting pair result");
-					
+					console.log("getting pair result", values);
+					//let pair_result = hex  + "-" + values[0]
+					let bytes = HEX_TO_BYTES("0"+ values[0])
+
+					this.saveOnCloudLog(bytes,"PAIR-RESULT")
+
 					if(values[0] == 2){
+
 						Alert.alert(
 							"Pairing Complete",
 							"The pairing command has been successfully sent. Please test your Bridge and Confirm that it is functioning correctly.",
@@ -2127,11 +2142,12 @@ class SetupCentral extends Component{
 						)
 					}
 					
-					
-
 					break
 				case 0x17: // un-pair result
 					console.log("getting unpair result");
+
+					this.saveOnCloudLog([values[0]],"UNPAIR-RESULT")
+
 					if(this.props.force){ //this comes from the file options method resetStacktoForce
 						Alert.alert(
 			    			"Success", "Un-Pair successfully sent"    		
@@ -2454,9 +2470,7 @@ class SetupCentral extends Component{
 		console.log("checkPairOrUnPairResult()",this.props.write_pair_result,this.props.write_unpair_result)
 
 		if(this.props.write_pair_result || this.props.write_unpair_result){
-			
 			if(this.props.write_pair_result){
-
 				this.props.dispatch({type:"SET_WRITE_PAIR_RESULT",write_pair_result: false})
 				this.writePairResult(this.device)
 

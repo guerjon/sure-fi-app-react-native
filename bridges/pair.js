@@ -177,7 +177,6 @@ class PairBridge extends Component{
     	let txUUID = remote_device.manufactured_data.device_id
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
-
         this.fast_manager.stopDeviceScan();
 
         if(!this.props.debug_mode_status)
@@ -185,10 +184,13 @@ class PairBridge extends Component{
 
         this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
         
+        this.props.saveOnCloudLog(remote_id_bytes,"PAIR")
+
         console.log("central_device.id",this.central_device.id)
         console.log("remote_id_bytes",remote_id_bytes)
         console.log("rxUUID",rxUUID)
         console.log("txUUID",txUUID)
+
 
 	    WRITE_PAIRING(this.central_device.id,remote_id_bytes)
 			.then(response => {
@@ -206,7 +208,8 @@ class PairBridge extends Component{
 						this.central_device.writePairResult = true
                         
                         this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
-			    		
+			    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
+                        
                         this.props.dispatch({
 		                    type: "CENTRAL_DEVICE_MATCHED",
 		                    central_device: this.central_device

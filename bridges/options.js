@@ -86,6 +86,9 @@ class Options extends Component{
     	let rxUUID = device.manufactured_data.device_id
     	let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
 
+    	
+    	this.props.saveOnCloudLog([0],"UNPAIR-FORCE")
+
 		WRITE_FORCE_UNPAIR(device.id).then(response => {
 			console.log("after write_force_unpair")
 			let hardware_status = "01|01|" + rxUUID + "|000000"

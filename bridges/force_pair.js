@@ -67,7 +67,9 @@ class ForcePair extends Component{
 
     forcePair(){
     	let txUUID = HEX_TO_BYTES(this.remote_device_id)
-    
+    	
+    	this.props.saveOnCloudLog(txUUID,"PAIR-FORCE")
+
     	WRITE_COMMAND(this.device.id,[0x20,0x01]) // 0x01 its for set false the origin
     	.then(() => {
     		WRITE_PAIRING(this.device.id,txUUID).then(() => {

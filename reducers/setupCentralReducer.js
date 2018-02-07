@@ -44,6 +44,7 @@ const initialState = {
 export default function setupCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_SETUP_CENTRAL_REDUCER":
+      console.log("RESET_SETUP_CENTRAL_REDUCER")
       return initialState
     case "UPDATE_OPTIONS":
       return {
@@ -128,11 +129,13 @@ export default function setupCentralReducer (state = initialState, action) {
         remote_device_name : action.remote_device_name
       }
     case "SET_WRITE_PAIR_RESULT":
+        console.log("SET_WRITE_PAIR_RESULT",action.write_pair_result)
       return {
         ...state,
         write_pair_result : action.write_pair_result
       }
     case "SET_WRITE_UNPAIR_RESULT":
+      console.log("SET_WRITE_UNPAIR_RESULT",action.write_unpair_result)
       return {
         ...state,
         write_unpair_result: action.write_unpair_result
