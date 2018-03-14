@@ -110,6 +110,10 @@ class OperationValues extends Component{
 
 	constructor(props) {
 		super(props);
+		/*console.log("--------")
+		console.log(props)
+		console.log("--------")
+		*/
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.device = this.props.device
 	}
@@ -213,7 +217,8 @@ class OperationValues extends Component{
 
 
 	tryWiegandValues(wiegandValue,wiegandBytes){
-
+		console.log("wiegandValue",wiegandValue)
+		console.log("wiegandBytes",wiegandBytes)
         var codeString = ""
         var facString = ""
         var rawString = wiegandValue
@@ -232,12 +237,14 @@ class OperationValues extends Component{
 
 		}else if(wiegandBytes == 26){ 
 			
+		//var wiegandValue = values_hex.substr(2,10)
+		//var wiegandBytes =  parseInt(values_hex.substr(12,2), 16)
 
 			var wiegandValueBin = Hex2Bin(wiegandValue)
-
+			console.log("wiegandValue",wiegandValueBin)
 			var wiegandBinary = wiegandValueBin
 
-			if(this.wiegandValueBin.length < 26){
+			if(wiegandValueBin.length < 26){
 				wiegandBinary = this.addZerosUntilNumber(wiegandValueBin,26) 
 			}
 

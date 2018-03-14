@@ -335,7 +335,7 @@ class Bridges extends Component{
                     
                     if(error){
                         if(error.message == "Bluetooth location services are disabled"){
-                            Alert.alert("Location Services Unabled.","In order to connect to the Sure-Fi Device you should turn on the location services.")
+                            Alert.alert("Location Services Disabled.","In order to connect to the Sure-Fi Device you should turn on the location services.")
                         }else{
                             Alert.alert("Error",error.message)    
                         }
