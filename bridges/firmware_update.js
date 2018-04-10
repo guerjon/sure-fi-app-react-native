@@ -679,10 +679,11 @@ class UpdateFirmwareCentral extends Component {
         let application_files = this.application_files
         let radio_files = this.radio_files
         let bt_files = this.bt_files
+        var items = []
         
         if(this.props.show_firmware_update_list){
             if(application_files.length == radio_files.length && radio_files.length == bt_files.length){
-                var items = []
+                
                 for (var i = 0; i < application_files.length; i++) {
                     items.push({application_files: application_files[i],radio_files: radio_files[i], bt_files: bt_files[i]})
                 }

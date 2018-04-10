@@ -216,7 +216,7 @@ class DeviceNotMatched extends Component {
                 var matched_device = this.matched_devices[0]
                 delete matched_device._manager;
                 this.props.navigator.pop()
-                this.props.goToDeviceControl(matched_device)          
+                this.props.checkDeviceType(matched_device)          
             }else{
                 this.props.navigator.pop()    
             }

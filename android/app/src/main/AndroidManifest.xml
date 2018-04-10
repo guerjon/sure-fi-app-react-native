@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.surefi"
-    android:versionCode="33"
-    android:versionName="1.33"
+    android:versionCode="34"
+    android:versionName="1.34"
 >
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -39,6 +39,10 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCaDihG0kl8iM_sUMLIVAkv7WHmRWRBboA"
         />
+        <meta-data
+            android:name="com.google.android.gms.wallet.api.enabled"
+            android:value="true"
+            />
         <service
             android:name=".DfuService"
             android:exported="true"

@@ -89,7 +89,9 @@ import {
 	COMMAND_GET_ALL_VERSIONS,
 	COMMAND_GET_DEBUG_MODE_STATUS,
 	COMMAND_GET_RUN_TIME,
-	COMMAND_RESET_RUN_TIME
+	COMMAND_RESET_RUN_TIME,
+	COMMAND_GET_DEMO_TIME,
+	COMMAND_SET_DEMO_TIME
 } from '../commands'
 import {
 	powerOptions,
@@ -261,16 +263,13 @@ class SetupCentral extends Component{
 
 	removeListeners(){
 		console.log("removeListenerss()")
-		
 		this.removeHandleCharacteristic()
 		this.removeHandleConnectDevice()
 		this.removeHandleDisconnectedPeripheral()
-
 	}
 
 	disconnect(){
 		console.log("disconnect() -------")
-		
 		this.fast_manager.stopDeviceScan()
 
 		IS_CONNECTED(this.device.id)
@@ -341,12 +340,26 @@ class SetupCentral extends Component{
             style: {
             	flex:1,
                 backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
-                backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)" // tint color for the background, you can specify alpha here (optional)
+                backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)'" // tint color for the background, you can specify alpha here (optional)
             },
             passProps: {
             	hideRightButton: () => this.hideRightButton()
             }
+        });
+	}
 
+	showDemoUnitTimeModal(){
+		console.log("showDemoUnitTimeModal()")
+		this.props.navigator.showLightBox({
+            screen: "SetDemoUnitTimeModal",
+            style: {
+            	flex:1,
+                backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
+                backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)'" // tint color for the background, you can specify alpha here (optional)
+            },
+            passProps: {
+            	updateDemoUnitTime: (value)  => this.updateDemoUnitTime(value)
+            }
         });
 	}
 
@@ -455,31 +468,23 @@ class SetupCentral extends Component{
 	}
 
 	deployConnection(device,type){
-		//console.log("deployConnection()",type)
+		console.log("deployConnection()",type)
 		this.props.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:true})
 		if(!type)
 			type = 0
-		this.createConnectionInterval(device,type)	
-	}
-	
-	createConnectionInterval(device,type){
-		console.log("createConnectionInterval()",type)
-		if(interval == 0){
-			var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
-			//this.controllConnect(device,data)
-			//if(!type)
-				interval = setInterval(() => this.controllConnect(device,data,type),2000)
-			//else
-				//this.controllConnect(device,data,type)
 
+		if(interval == 0){
+			device.manufactured_data.device_type;
+			var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
+			interval = setInterval(() => this.controllConnect(device,data,type),2000)
 		}else{
 			console.log("the interval can't be created it was created previosly")
 		}
 	}
-
+	
 	controllConnect(device,data,type){
 		console.log("controllConnect()")
-		SlowBleManager.controllConnect(device.id,data,type)
+		SlowBleManager.controllConnect(device.id,data,type,3)
 		.then(response => console.log("response connect()",response))
 		.catch(error => {
 			console.log("error on connect()",error)
@@ -544,10 +549,10 @@ class SetupCentral extends Component{
 		*/
 	}
 
-    handleConnectedDevice(){
-    	console.log("handleConnectedDevice()")
-
+    handleConnectedDevice(data){
+    	console.log("handleConnectedDevice()",data)
     	LOG_INFO([0xA1],CONNECTED,this.device.manufactured_data.device_id) // 0xA1 ITS DEFINED ON commands.js
+    	clearInterval()
     	this.normalConnected()
     }
 
@@ -715,7 +720,8 @@ class SetupCentral extends Component{
 				hardware_serial : hardware_serial
 			})
 		}
-		var status = this.device.manufactured_data.device_state.slice(-2)
+		console.log("this.device.manufactured_data",this.device.manufactured_data)
+		/*var status = this.device.manufactured_data.device_state.slice(-2)
 		
 		//this.getStatus(device,this.c_status,this.c_expected_status)
 		fetch(GET_STATUS_CLOUD_ROUTE,data)
@@ -731,7 +737,7 @@ class SetupCentral extends Component{
 
 			this.choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device)
 
-		}).catch(error => console.log("error",error))
+		}).catch(error => console.log("error",error))*/
 	}
 
 	choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device){
@@ -1369,9 +1375,8 @@ class SetupCentral extends Component{
 	}
 
 	getOtherCommands(user_type){
-
+		var name = "Set Demo Time (" + this.props.demo_unit_time+ ")";
 		if(user_type){
-		// ){
 			return (
 				<View>
 					<WhiteRowLink name="Restart Application Board" callback={() => this.resetBoard()}/>
@@ -1380,6 +1385,7 @@ class SetupCentral extends Component{
 					<WhiteRowLink name="View Reset Counts" callback={() => this.getResetCauses()}/>
 					<WhiteRowLink name="Bluetooth Debug Log" callback={() => this.goToDebugLog()}/>
 					<WhiteRowLink name="Clear Runtime" callback={() => this.clearRunTime()}/>
+					<WhiteRowLink name={name} callback={() => this.showDemoUnitTimeModal()}/>
 				</View>
 			)
 		}else{
@@ -1417,8 +1423,48 @@ class SetupCentral extends Component{
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
 			saveOnCloudLog = { (bytes,type) => this.saveOnCloudLog(bytes,type)}
+			showModalToResetDemoUnits = {() => this.showModalToResetDemoUnits() }
 			unPair = {() => this.unPair()}
 		/>
+	}
+
+	showModalToResetDemoUnits(){
+		this.goToPayMentOptions()
+		/*console.log("showModalToResetDemoUnits")
+
+		this.props.navigator.showLightBox({
+			screen: "DemoUnitKeyModal",
+			style: {
+				flex:1,
+				backgroundColor: "none",
+				backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)' "
+			},
+			passProps: {
+				updateDemoUnitTime : (values) => this.updateDemoUnitTime(values)
+			}
+		})*/
+	}
+
+	goToPayMentOptions(){
+		console.log("goToPaymentOptions() (dad)")
+		this.props.navigator.push({
+			screen : 'PaymentOptions',
+			title: "Activate Product",
+			animated: false,
+			passProps: {
+				paymentResponse: (values) => this.paymentResponse(values),
+				setDemoTimeTo0: () => this.setDemoTimeTo0()
+			}
+		})
+	}
+
+
+	setDemoTimeTo0(){
+		WRITE_COMMAND(this.device.id,[COMMAND_SET_DEMO_TIME,0])
+	    .then(response => {		    		
+	    })
+	    .catch(error => console.log("error",error))						
+	    resetBoard()
 	}
 
 	renderNotification(show_notification,indicator_number){
@@ -1804,6 +1850,11 @@ class SetupCentral extends Component{
 		}
 	}
 
+	updateDemoUnitTime(values){
+		console.log("updateDemoUnitTime",values);
+		this.props.dispatch({type: "SET_DEMO_UNIT_TIME",demo_unit_time:values})
+	}
+
 	clearGeneralInterval(){
 		//console.log("clearGeneralInterval()",general_interval)
 		if(general_interval != 0){
@@ -1855,7 +1906,8 @@ class SetupCentral extends Component{
 			setTimeout(() => this.renderConnectedStatus(),5000)
 
 			this.props.dispatch({type: "SET_GETTING_COMMANDS",getting_commands:true})
-			this.getFirmwareVersion()	
+			this.getDemoModeTime()
+			//this.getFirmwareVersion()	
 		}else{
 			console.log("write commands was stoped by this.props.getting_commands")
 		}
@@ -1980,6 +2032,7 @@ class SetupCentral extends Component{
 		.catch(error =>  Alert.alert("Error",error))
 	}
 
+	
 
 	getWarrantyInformation(){
 		WRITE_COMMAND(this.device.id,[COMMAND_GET_RUN_TIME]) // should return 0x28
@@ -1989,12 +2042,19 @@ class SetupCentral extends Component{
 		.catch(error => console.log("Error on getWarrantyInformation()"))
 	}
 
-
 	getAllVersion(){
 		console.log("getAllVersion()")
 		this.createGeneralInterval(() => {
 			WRITE_COMMAND(this.device.id,[COMMAND_GET_ALL_VERSIONS]) // should get a 0x1E	
 		})
+	}
+
+	getDemoModeTime(){
+		console.log("getDemoModeTime");
+		WRITE_COMMAND(this.device.id,[COMMAND_GET_DEMO_TIME])
+		.then(response => {
+
+		}).catch(error => console.log("Error on getDemoModeTime"))
 	}
 
 	getBootloaderInfo(){
@@ -2008,7 +2068,7 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- End commands Seccion ---------------------------------------------------------------*/	
 
 	handleCharacteristicNotification(data){
-		//console.log("handleCharacteristicNotification",data)
+		console.log("handleCharacteristicNotification",data)
 		//console.log("handleCharacteristicNotification()")
 		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
 			var values = data.value;
@@ -2017,7 +2077,7 @@ class SetupCentral extends Component{
 			//console.log("handleCharacteristicNotification on device ()",value);
 			LOG_INFO(values,NOTIFICATION)
 
-			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26,0x28,0xE9,0x19]
+			var commands = [0x01,0x07,0x08,0x09,0x10,0x11,0x12,0x14,0x16,0x17,0x1E,0x1B,0x1C,0x1A,0x20,0x25,0x26,0x28,0xE9,0x19,0x2C]
 
 			if(commands.indexOf(values[0]) !== -1)
 				values.shift()
@@ -2094,6 +2154,7 @@ class SetupCentral extends Component{
 				case 0x1B: //get debug mode status
 						//this.clearGeneralInterval()
 						console.log("get 0x1B debug mode status")
+						this.updateDebugModeStatus(values)
 						this.getWarrantyInformation()
 					break
 
@@ -2106,6 +2167,14 @@ class SetupCentral extends Component{
 					console.log("get 0x1E all versions")
 					this.saveOnCloudLog(values,"FIRMWAREVERSIONS")
 					this.getBootloaderInfo()
+					break
+
+				case 0x2C:
+					console.log("get 0x2C getDemoModeTime")
+					console.log(values)
+					this.updateDemoUnitTime(values)
+					this.getFirmwareVersion()	
+					
 					break
 
 				case 0x07: //Bootloader info
@@ -2630,7 +2699,8 @@ const mapStateToProps = state => ({
 	handleConnected : state.setupCentralReducer.handleConnected,
 	handleCharacteristic : state.setupCentralReducer.handleCharacteristic,
 	commands : state.bluetoothDebugLog.commands,
-	warranty_information : state.scanCentralReducer.warranty_information
+	warranty_information : state.scanCentralReducer.warranty_information,
+	demo_unit_time : state.scanCentralReducer.demo_unit_time
 });
 
 

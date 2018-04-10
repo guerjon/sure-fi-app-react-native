@@ -1,18 +1,11 @@
 package com.surefi;
 
-import android.app.Application;
-
 import com.facebook.react.ReactApplication;
+import com.gettipsi.stripe.StripeReactPackage;
 import com.airbnb.android.react.maps.MapsPackage;
 import com.inprogress.reactnativeyoutube.ReactNativeYouTube;
-//import com.reactnativecomponent.barcode.RCTCapturePackage;
-//import com.bitgo.randombytes.RandomBytesPackage;
 import com.oblador.keychain.KeychainPackage;
-import com.github.xfumihiro.react_native_image_to_base64.ImageToBase64Package;
-import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
-import com.facebook.react.shell.MainReactPackage;
-import com.facebook.soloader.SoLoader;
 import com.polidea.reactnativeble.BlePackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
@@ -43,8 +36,8 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new BlePackage(),
               new KeychainPackage(),
               new ReactNativeYouTube(),
-              new MapsPackage()
-
+              new MapsPackage(),
+               new StripeReactPackage()
        );
    }
 
@@ -52,5 +45,4 @@ public class MainApplication extends NavigationApplication implements ReactAppli
      public List<ReactPackage> createAdditionalReactPackages() {
          return getPackages();
      }
-
 }

@@ -308,7 +308,6 @@ class MainScreen extends Component {
 	}
 
 	goToScan(){
-
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 
 		if(user_type){
@@ -447,16 +446,7 @@ class MainScreen extends Component {
 										() => this.goToScan())			  					
 								}			  			
 				  			</View>				  		
-				  			<View>
 
-				  			
-				  				{
-									this.renderBall(
-										require('./images/menu_serial.imageset/menu_serial.png'),
-										"RS-485",
-										() => this.goToScan())			  					
-								}
-							</View>
 							<View>												
 								{
 									this.renderBall(
@@ -471,6 +461,17 @@ class MainScreen extends Component {
 	  			</View>
 		  	</Background>
 		);  		
+		/*
+  			<View>
+  				{
+					this.renderBall(
+						require('./images/menu_serial.imageset/menu_serial.png'),
+						"RS-485",
+						() => this.goToScan())			  					
+				}
+			</View>
+
+		*/
   	}
   	/*
 		<Coverflow 

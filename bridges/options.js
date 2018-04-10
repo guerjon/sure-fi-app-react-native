@@ -9,7 +9,12 @@ import {
   	TouchableWithoutFeedback
 } from 'react-native'
 
-import {styles,first_color,width} from '../styles/index.js'
+import {
+	styles,
+	first_color,
+	width,
+	success_green
+} from '../styles/index.js'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
 import { 
@@ -25,6 +30,7 @@ import {
 	WRITE_COMMAND
 } from '../action_creators/index'
 import {COMMAND_MAKE_DEPLOY} from '../commands'
+
 
 const next_step = <Text style={styles.device_control_title_container}>NEXT STEP</Text>
 
@@ -247,6 +253,32 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToRsSettings()} image={require('../images/menu_serial_settings.imageset/menu_serial_settings.png')} name="RS-485 Settings"/>
     }
 
+    getResetDemoOption(){
+    	if(this.props.demo_unit_time != 0){
+	    	return (
+				<View style={{marginBottom:20}}>		
+					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.showModalToResetDemoUnits()}>
+						<View style={{
+							flexDirection:"row",
+							padding:10,
+							alignItems:"center",						
+							justifyContent:"center"
+	  					}}>
+							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:success_green,padding:10,borderRadius:10}}>
+								<Text style={styles.white_touchable_text}>
+									30 days Demo Unit
+								</Text>
+								<Text style={{fontSize:22,color:"white"}}>
+									Touch to Activate
+								</Text>
+							</View>
+						</View>
+					</TouchableHighlight>
+				</View>
+			)   	
+    	}
+    }
+
     getPairBridgeOption(){
 		return (
 			<View style={{marginBottom:20}}>
@@ -416,6 +448,7 @@ class Options extends Component{
 			case 1:
 				return(
 					<View>
+						{this.getResetDemoOption()}
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
@@ -428,6 +461,7 @@ class Options extends Component{
 			case 3:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
@@ -494,18 +528,19 @@ class Options extends Component{
 			case 1:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}
-
 					</View>
 				)
 			break
 			case 3:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
@@ -519,6 +554,7 @@ class Options extends Component{
 			case 4:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
@@ -558,6 +594,7 @@ class Options extends Component{
 			case 1:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
@@ -569,6 +606,7 @@ class Options extends Component{
 			case 3:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
@@ -580,6 +618,7 @@ class Options extends Component{
 			case 4:
 				return (	
 					<View style={{flex:1}}>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
@@ -629,6 +668,7 @@ const mapStateToProps = state => ({
 	user_status : state.mainScreenReducer.user_status,
 	user_data : state.loginReducer.user_data,
 	debug_mode_status : state.setupCentralReducer.debug_mode_status,
+	demo_unit_time : state.scanCentralReducer.demo_unit_time
 });
 
 export default connect(mapStateToProps)(Options);

@@ -21,7 +21,7 @@ export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
 export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
 export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
 export const WRITE_HARDWARE_LOG = BASE_URL + "hardware/write_hardware_log"
-
+export const HVAC_TYPE = 4
 export const COMMAND = 0
 export const NOTIFICATION = 1
 export const ERROR = 2
@@ -99,7 +99,14 @@ export const PAIR_SUREFI_TX = "98BF000B-0EC5-2536-2143-2D155783CE78" // rx
 export const PAIR_SUREFI_WRITE_UUID = "98BF000C-0EC5-2536-2143-2D155783CE78" //tx 
 export const PAIR_SUREFI_READ_UUID = "98BF000D-0EC5-2536-2143-2D155783CE78"
 
-export const CENTRAL_HARDWARE_TYPE = "01"
+
+export const HVAC_SUREFI_THERMOSTAT_SERVICE = "E8BF000A-0EC5-2536-2143-2D155783CE78"
+export const RX_DATA_CHAR_SHORT_UUID = "E8BF000B-0EC5-2536-2143-2D155783CE78"
+export const TX_DATA_CHAR_SHORT_UUID = "E8BF000C-0EC5-2536-2143-2D155783CE78"
+export const RADIO_STATUS_CHAR_SHORT_UUID = "E8BF000D-0EC5-2536-2143-2D155783CE78"
+export const ADV_DATA_CHAR_SHORT_UUID = "E8BF000E-0EC5-2536-2143-2D155783CE78"
+
+export const MODULE_SERVICE_SHORT_UUID = "01"
 export const REMOTE_HARDWARE_TYPE = "02"
 
 export const CENTRAL_SERIAL_HARDWARE_TYPE = "05"
@@ -147,6 +154,9 @@ export const BYTES_VALUES = [
 	"1110",
 	"1111",
 ]
+
+export const FORCE_PAIR = 1
+export const NORMAL_PAIR = 0
 
 export const BYTES_TO_HEX = (byteArray) => {
 	return byteArray.map(function(byte) {
@@ -215,6 +225,8 @@ export const byteArrayToLong = (byteArray) => {
 };
 
 export const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+
 export const BASE64 = {
 	btoa: (input: string = '') => {
 		let str = input;
@@ -313,7 +325,7 @@ export const CRC16 = bytes => {
 export const DIVIDE_MANUFACTURED_DATA = (manufacturedData, address) => {
 	var divide_manufactured_data = {}
 	if(manufacturedData){
-	
+		//console.log("manufacturedData",manufacturedData)
 		divide_manufactured_data.hardware_type = manufacturedData.substr(0, 2) // 01 or 02
 		divide_manufactured_data.firmware_version = manufacturedData.substr(2, 2) //all four bytes combinations
 		divide_manufactured_data.device_state = manufacturedData.substr(4, 4)
@@ -347,7 +359,6 @@ export const FIND_ID = (data, idToLookFor) => {
 }
 
 export const MATCH_DEVICE = (devices, device_id) => {
-	//console.log("MATCH_DEVICE",device_id);
 	devices = devices.filter(device => {
 		if (!device)
 			return false

@@ -206,7 +206,6 @@ class ConfigureRadio extends Component {
 			
 			var sf = this.choseSpreadingFactor(selectedDeviceSF)
 			var bw = this.chooseBandWidth(selectedDeviceBandwidth)
-			console.log("sf",sf)
 			this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:hopping_table})
         	this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor:sf})
         	this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width:bw})

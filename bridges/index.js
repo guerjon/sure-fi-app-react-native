@@ -34,7 +34,8 @@ import {
     FIND_ID,
     DIVIDE_MANUFACTURED_DATA,
     PAIR_SUREFI_SERVICE,
-    LOOKED
+    LOOKED,
+    HVAC_SUREFI_THERMOSTAT_SERVICE
  } from '../constants' 
 
 const helpIcon = (<Icon name="info-circle" size={40} color="black" />)
@@ -270,45 +271,45 @@ class Bridges extends Component{
         )
     }
 
-    goToDeviceControl(device){
-        console.log("goToDeviceControl")
-        //this.deleteScan()
-        //this.hideCamera()
-        
+    checkDeviceType(device){
         if(device){
             this.props.dispatch({
                 type: "CENTRAL_DEVICE_MATCHED",
                 central_device: device
             });
+
+            if(device.manufactured_data.hardware_type == '03' || device.manufactured_data.hardware_type == '04'){
+                this.goToDeviceControl(device,"HVACDeviceControlPanel")
+            }else{
+                this.goToDeviceControl(device,"DeviceControlPanel")
+            }            
+        }
+    }
+
+    goToDeviceControl(device,screen){
+        console.log("goToDeviceControl")
+        var data = 
+        {
+            screen: screen,
+            overrideBackPress: true,
+            title : "Device Details",
+            appStyle: {
+              orientation: 'portrait',
+            }
         }
 
-        if(this.props.user_data){
-            this.props.navigator.push({
-                screen: "DeviceControlPanel",
-                overrideBackPress: true,
-                title : "Device Details",
-                appStyle: {
-                  orientation: 'portrait',
-                },
-            })            
-        }else{
-            this.props.navigator.push({
-                screen: "DeviceControlPanel",
-                title : "Device Details",
-                overrideBackPress: true,
-                navigatorButtons: {
-                    rightButtons: [
-                        {
-                            id: "pin_number",
-                            icon: require('../images/settings_bar_icon.imageset/settings_bar_icon.png'), 
-                        }
-                    ],
-                },
-                appStyle: {
-                  orientation: 'portrait',
-                },
-            })            
+        if(!this.props.user_data){
+            data.navigatorButtons =  
+            {
+                rightButtons: [
+                    {
+                        id: "pin_number",
+                        icon: require('../images/settings_bar_icon.imageset/settings_bar_icon.png'), 
+                    }
+                ],
+            }
         }   
+        this.props.navigator.push(data)        
     }
 
     reviewDevices(){
@@ -325,13 +326,14 @@ class Bridges extends Component{
         }
     }
 
+
     startScanning(manager){
         console.log("startScanning(1)")
         var devices = this.props.devices
         
         if(manager){
             try{
-                manager.startDeviceScan([PAIR_SUREFI_SERVICE],null,(error,device) => {
+                manager.startDeviceScan([],null,(error,device) => {
                     
                     if(error){
                         if(error.message == "Bluetooth location services are disabled"){
@@ -341,20 +343,25 @@ class Bridges extends Component{
                         }
                         return
                     }
-                    if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                        //console.log("device",device.id);
-                        if (!FIND_ID(devices, device.id)) {
+                    
+                    if(device.name != null){
+                        if((device.name.indexOf("Sure-Fi") != -1) || (device.name.indexOf("SF Bridge") != -1)){
                             
-                            var data = this.getManufacturedData(device)
-                            
-                            LOG_INFO([0xA3],LOOKED,data.manufactured_data.device_id) // 0xA3 its defined on commands
+                        //if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
+                            //console.log("device",device.id);
 
-                            devices.push(data)
+                            if (!FIND_ID(devices, device.id)) {
+                                
+                                var data = this.getManufacturedData(device)
+                                //LOG_INFO([0xA3],LOOKED,data.manufactured_data.device_id) // 0xA3 its defined on commands
 
-                            this.devices = devices
-                            this.remote_devices = this.filterRemoteDevices(devices)
-                            this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
-                        }                
+                                devices.push(data)
+
+                                this.devices = devices
+                                this.remote_devices = this.filterRemoteDevices(devices)
+                                this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
+                            }                
+                        }
                     }
                 })           
             }
@@ -503,7 +510,7 @@ class Bridges extends Component{
                                 type: "CENTRAL_DEVICE_MATCHED",
                                 central_device: matched_device
                             });
-                            this.goToDeviceControl(matched_device)
+                            this.checkDeviceType(matched_device)
                         }else{
                         
                             dispatch({
@@ -594,9 +601,9 @@ class Bridges extends Component{
                 device_id : device_id,
                 showAlert: true,
                 startScanning: (manager) => this.startScanning(manager),
-                goToDeviceControl : (matched_device) => {
+                checkDeviceType : (matched_device) => {
                     console.log("matched_device on index",matched_device)
-                    this.goToDeviceControl(matched_device)
+                    this.checkDeviceType(matched_device)
                 } 
             },
             appStyle: {
@@ -633,7 +640,7 @@ class Bridges extends Component{
                             {this.props.show_camera && ( 
                                 <ScanCentralUnits
                                     navigation={this.props.navigation} 
-                                    goToDeviceControl={(device)=> this.goToDeviceControl(device)}
+                                    checkDeviceType={(device)=> this.checkDeviceType(device)}
                                     scanResult = {this.scan_result}
                                     manager = {this.manager}
                                     requestMultiplePermissions = {() => this.requestMultiplePermissions()}

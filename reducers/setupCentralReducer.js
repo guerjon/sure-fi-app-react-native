@@ -38,7 +38,8 @@ const initialState = {
   handleDisconnected : false,
   handleConnected : false,
   handleCharacteristic : false,
-  show_disconnecting_modal : false
+  show_disconnecting_modal : false,
+  registration_info : []
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -255,6 +256,11 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         show_disconnecting_modal: false
+      }
+    case "UPDATE_REGISTRATION_INFO":
+      return {
+        ...state,
+        registration_info : action.registration_info
       }
     default:
       return state

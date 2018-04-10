@@ -18,7 +18,11 @@ import {
 	WRITE_HARDWARE_LOG,
 	HEADERS_FOR_POST,
 	BASE64,
-	COMMAND
+	COMMAND,
+	HVAC_TYPE,
+	HVAC_SUREFI_THERMOSTAT_SERVICE,
+	RX_DATA_CHAR_SHORT_UUID,
+	TX_DATA_CHAR_SHORT_UUID
 } from '../constants'
 import {store} from "../app"
 import {
@@ -104,10 +108,10 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 	example simple command [0x21]
 	example command with data [0x21,0x04,0x23,0x52]
 */
-export const WRITE_COMMAND = (id,data) => {
+export const WRITE_COMMAND = (id,data,type) => {
 	console.log("WRITE_COMMAND()","data : " + data)
 	LOG_INFO(data,COMMAND)
-	
+
 	return new Promise((fulfill,reject) => {
 		BleManagerModule.retrieveServices(id,() => {
 			console.log("retriveServices callback on WRITE_COMMAND")
@@ -122,6 +126,24 @@ export const WRITE_COMMAND = (id,data) => {
 		})
 	})
 }
+
+export const HVAC_WRITE_COMMAND = (id,data,type) => {
+	LOG_INFO(data,COMMAND)
+	var command = data[0];
+	data.shift(); //remove the command
+	var new_structure_command = [0x7E,command,data.length].concat(data)
+	return new Promise((fulfill,reject) => {
+		BleManager.write(id,HVAC_SUREFI_THERMOSTAT_SERVICE,TX_DATA_CHAR_SHORT_UUID,new_structure_command,20)
+		.then(response => {
+			fulfill(response)
+		})
+		.catch(error => {
+			console.log("Error on WRITE_COMMAND",error)
+			reject(error)
+		})
+	})
+}
+
 
 /*
 	@data is an array with the hex commands to write and sometimes have data
@@ -248,7 +270,6 @@ export const CONNECT = (device) => {
 }
 
 export const POST_LOG = log => {
-	console.log("POST_LOG",log)
 	fetch(WRITE_HARDWARE_LOG,{
 		method: "post",
 		headers: HEADERS_FOR_POST,

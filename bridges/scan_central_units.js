@@ -94,7 +94,7 @@ class ScanCentralUnits extends Component {
                                 type: "CENTRAL_DEVICE_MATCHED",
                                 central_device: matched_device
                             });
-                            this.props.goToDeviceControl(matched_device)
+                            this.props.checkDeviceType(matched_device)
                         }else{
                         
                             dispatch({
@@ -119,7 +119,6 @@ class ScanCentralUnits extends Component {
 
 
     clearQr(){
-        
         this.props.dispatch({type: "ALLOW_SCANNING",allow_scanning:true})
         this.props.dispatch({type: "RESET_CAMERA"})
         this.props.dispatch({type :"SHOW_CAMERA"})

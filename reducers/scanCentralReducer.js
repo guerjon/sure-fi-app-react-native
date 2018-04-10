@@ -28,7 +28,8 @@ const initialState = {
   show_camera : true,
   getting_commands: false,
   show_device_not_matched : false,
-  warranty_information : 0
+  warranty_information : 0,
+  demo_unit_time : true
 }
 
 
@@ -189,6 +190,11 @@ export default function scanCentralReducer (state = initialState, action) {
       return {
         ...state,
         warranty_information : action.warranty_information
+      }
+    case "SET_DEMO_UNIT_TIME":
+      return{
+        ...state,
+        demo_unit_time: action.demo_unit_time
       }
     default:
       return state

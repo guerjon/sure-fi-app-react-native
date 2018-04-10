@@ -7,9 +7,7 @@ import android.util.DisplayMetrics;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.graphics.Color;
-import android.widget.TextView;
 import android.view.Gravity;
-import android.util.TypedValue;
 
 public class MainActivity extends SplashActivity {
 

@@ -5,7 +5,6 @@ import {COMMANDS,RESPONSES,ERRORS,ACTIONS} from "./commands"
 var map_commands = new Map(COMMANDS)
 var map_response = new Map(RESPONSES)
 var map_actions = new Map(ACTIONS)
- 
 export default class Command{ 
 
 	constructor(id,value,type,data,bridge_name,action) {

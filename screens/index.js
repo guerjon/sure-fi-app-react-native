@@ -16,10 +16,13 @@ import SelectFirmwareCentral from '../bridges/bridges_configuration/select_firmw
 import FirmwareUpdate from '../bridges/firmware_update'
 import ConfigureRadio from '../bridges/configure_radio'
 import DeviceControlPanel from '../bridges/device_control_panel'
+import HVACDeviceControlPanel from '../bridges/hvac_device_control_panel'
 import SetupCentralExamples from '../bridges/setup_central_examples'
 import Deploy from '../bridges/deploy'
 import PINCodeModal from '../bridges/pin_code_modal'
+import DemoUnitKeyModal from '../bridges/demo_unit_key_modal'
 import InsertIDModal from '../bridges/insert_id_modal'
+import SetDemoUnitTimeModal from '../bridges/set_demo_unit_time_modal'
 
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
@@ -35,41 +38,59 @@ import Chat from '../bridges/chat'
 import CustomMap from '../bridges/chat/custom_map'
 import ChatOptions from '../bridges/chat/chat_options'
 import RSSettings from '../bridges/rs_settings'
+import PaymentOptions from '../bridges/payment/payment_options'
+import AndroidPayment from '../bridges/payment/android_payment'
+import CreditCardPayment from '../bridges/payment/credit_card_payment'
+import HVACPair from '../bridges/hvac/pair'
 
+const screens =
+[
+	['MainScreen',MainScreen],
+	['Bridges',Bridges],
+	['PairBridge',PairBridge],
+	['ForcePair',ForcePair],
+	['ScanCentralUnits',ScanCentralUnits],
+	['ScanRemoteUnits',ScanRemoteUnits],
+	['WriteBridgeConfiguration',WriteBridgeConfiguration],
+	['BridgesConfiguration',BridgesConfiguration],
+	['ConfigurationScanCentralUnits',ConfigurationScanCentralUnits],
+	['ConfigurationScanRemoteUnits',ConfigurationScanRemoteUnits],
+	['BatteryLevel',BatteryLevel],
+	['UpdateFirmwareCentral',UpdateFirmwareCentral],
+	['SelectFirmwareCentral',SelectFirmwareCentral],
+	['FirmwareUpdate',FirmwareUpdate],
+	['ConfigureRadio',ConfigureRadio],
+	['DeviceControlPanel',DeviceControlPanel],
+	['SetupCentralExamples',SetupCentralExamples],
+	['Deploy',Deploy],
+	['BridgeDetails',BridgeDetails],
+	['Register',Register],
+	['RadioConfiguration',RadioConfiguration],
+	['Login',Login],
+	['Videos',Videos],
+	['OperationValues',OperationValues],
+	['Relay',Relay],
+	['Chat',Chat],
+	['ChatOptions',ChatOptions],
+	['PINCodeModal',PINCodeModal],
+	['DemoUnitKeyModal',DemoUnitKeyModal],
+	['InsertIDModal',InsertIDModal],
+	['SetDemoUnitTimeModal',SetDemoUnitTimeModal],
+	['CustomMap',CustomMap],
+	['DeviceNotMatched',DeviceNotMatched],
+	['BluetoothDebugLog',BluetoothDebugLog],
+	['RSSettings',RSSettings],
+	['HVACDeviceControlPanel',HVACDeviceControlPanel],
+	['PaymentOptions',PaymentOptions],
+	["AndroidPayment",AndroidPayment],
+	["CreditCardPayment",CreditCardPayment],
+	["HVACPair",HVACPair]
+];
 
 export function registerScreens(store,Provider){
-	Navigation.registerComponent('MainScreen', () => MainScreen,store,Provider)
-	Navigation.registerComponent('Bridges', () => Bridges,store,Provider)
-	Navigation.registerComponent('PairBridge', () => PairBridge,store,Provider)
-	Navigation.registerComponent('ForcePair', () => ForcePair,store,Provider)
-	Navigation.registerComponent('ScanCentralUnits', () => ScScanRemoteUnitsanCentralUnits,store,Provider)
-	Navigation.registerComponent('ScanRemoteUnits', () => ScanRemoteUnits,store,Provider)
-	Navigation.registerComponent('WriteBridgeConfiguration', () => WriteBridgeConfiguration,store,Provider)
-	Navigation.registerComponent('BridgesConfiguration', () => BridgesConfiguration,store,Provider)
-	Navigation.registerComponent('ConfigurationScanCentralUnits', () => ConfigurationScanCentralUnits,store,Provider)
-	Navigation.registerComponent('ConfigurationScanRemoteUnits', () => ConfigurationScanRemoteUnits,store,Provider)
-	Navigation.registerComponent('BatteryLevel', () => BatteryLevel,store,Provider)
-	Navigation.registerComponent('UpdateFirmwareCentral', () => UpdateFirmwareCentral,store,Provider)
-	Navigation.registerComponent('SelectFirmwareCentral', () => SelectFirmwareCentral,store,Provider)
-	Navigation.registerComponent('FirmwareUpdate', () => FirmwareUpdate,store,Provider)
-	Navigation.registerComponent('ConfigureRadio', () => ConfigureRadio,store,Provider)
-	Navigation.registerComponent('DeviceControlPanel', () => DeviceControlPanel,store,Provider)
-	Navigation.registerComponent('SetupCentralExamples', () => SetupCentralExamples,store,Provider)
-	Navigation.registerComponent('Deploy', () => Deploy,store,Provider)
-	Navigation.registerComponent('BridgeDetails', () => BridgeDetails,store,Provider)
-	Navigation.registerComponent('Register', () => Register,store,Provider)
-	Navigation.registerComponent('RadioConfiguration', () => RadioConfiguration,store,Provider)
-	Navigation.registerComponent('Login', () => Login,store,Provider)
-	Navigation.registerComponent('Videos',() => Videos,store,Provider)
-	Navigation.registerComponent('OperationValues', () => OperationValues,store,Provider)
-	Navigation.registerComponent('Relay',() => Relay,store,Provider)
-	Navigation.registerComponent('Chat',() => Chat,store,Provider)
-	Navigation.registerComponent('ChatOptions',() => ChatOptions,store,Provider)
-	Navigation.registerComponent('PINCodeModal',() => PINCodeModal,store,Provider)
-	Navigation.registerComponent('InsertIDModal',() => InsertIDModal,store,Provider)
-	Navigation.registerComponent('CustomMap',() => CustomMap,store,Provider)
-	Navigation.registerComponent('DeviceNotMatched',() => DeviceNotMatched,store,Provider)
-	Navigation.registerComponent('BluetoothDebugLog',() => BluetoothDebugLog,store,Provider)
-	Navigation.registerComponent('RSSettings',() => RSSettings,store,Provider)
-	
+	screens.forEach((screen) => {
+		var screen_name = screen[0]
+		var screen_object = screen[1]
+		Navigation.registerComponent(screen_name, () => screen_object,store,Provider)		
+	})	
 }

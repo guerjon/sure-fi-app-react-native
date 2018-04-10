@@ -37,6 +37,8 @@ export const COMMAND_RESET_RUN_TIME = 0x39
 export const COMMAND_GET_SETTIAL_SETTINGS = 0x3A
 export const COMMAND_SET_SERIAL_SETTINGS = 0x3B
 
+export const COMMAND_SET_DEMO_TIME = 0x3E
+export const COMMAND_GET_DEMO_TIME = 0x3F
 
 export const COMMANDS = 
 [
