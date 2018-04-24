@@ -23,6 +23,8 @@ import PINCodeModal from '../bridges/pin_code_modal'
 import DemoUnitKeyModal from '../bridges/demo_unit_key_modal'
 import InsertIDModal from '../bridges/insert_id_modal'
 import SetDemoModeTimeModal from '../bridges/set_demo_unit_time_modal'
+import SetRuntimeModal from '../bridges/set_run_time_modal'
+
 
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
@@ -82,7 +84,8 @@ const screens =
 	['HVACDeviceControlPanel',HVACDeviceControlPanel],
 	['PaymentOptions',PaymentOptions],
 	["HVACPair",HVACPair],
-	["HVACOperatingValues",HVACOperatingValues]
+	["HVACOperatingValues",HVACOperatingValues],
+	["SetRuntimeModal",SetRuntimeModal]
 ];
 
 export function registerScreens(store,Provider){

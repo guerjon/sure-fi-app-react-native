@@ -53,7 +53,8 @@ import {
 	RX_DATA_CHAR_SHORT_UUID,
 	prettyBytesToHex,
 	EQUIPMENT_TYPE,
-	THERMOSTAT_TYPE
+	THERMOSTAT_TYPE,
+	BYTES_TO_INT_LITTLE_ENDIANG
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -78,6 +79,7 @@ import {
 	READ_TX,
 	WRITE_UNPAIR,
 	LOG_INFO,
+	parseSecondsToHumanReadable
 } from '../action_creators'
 import Notification from '../helpers/notification'
 import {
@@ -152,7 +154,10 @@ import {
 	PhoneCmd_SetDebugModeEnabled,
 	PhoneCmd_ClearResetCauses,
 	PhoneRsp_PairingInfo,
-	PhoneCmd_GetLastPacketTime
+	PhoneCmd_GetLastPacketTime,
+	PhoneCmd_SetRunTime,
+	PhoneRsp_Activated,
+	PhoneCmd_SetActivated
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -409,7 +414,7 @@ class SetupCentral extends Component{
 	showDemoUnitTimeModal(){
 		console.log("showDemoUnitTimeModal()")
 		this.props.navigator.showLightBox({
-            screen: "SetDemoUnitTimeModal",
+            screen: "SetDemoModeTimeModal",
             style: {
             	flex:1,
                 backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
@@ -419,6 +424,23 @@ class SetupCentral extends Component{
             	updateDemoUnitTime: (value)  => this.updateDemoUnitTime(value)
             }
         });
+	}
+
+
+	showRunTimeModal(){
+		this.props.navigator.showLightBox({
+            screen: "SetRuntimeModal",
+            style: {
+            	flex:1,
+                backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
+                backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)'" // tint color for the background, you can specify alpha here (optional)
+            },
+            passProps: {
+            	setRunTime: (value)  => this.setRunTime(value),
+            	getRunTime: (value) => this.getRunTime(value)
+            }
+        });
+
 	}
 
 	hideRightButton(){
@@ -1209,7 +1231,7 @@ class SetupCentral extends Component{
 	clearRunTime(){
 		HVAC_WRITE_COMMAND(this.device.id,[COMMAND_RESET_RUN_TIME])
 		.then(response => {	
-			setTimeout(() => this.getWarrantyInformation(),2000)
+			setTimeout(() => this.getRunTime(),2000)
 		})
 		.catch(error => console.log("Error on resetBoard()",error))		
 	}
@@ -1444,6 +1466,8 @@ class SetupCentral extends Component{
 
 	getOtherCommands(user_type){
 		var name = "Set Demo Time (" + this.props.demo_unit_time+ ")";
+		var activated_name = this.props.activated[0] ? "Deactivate" : "Activate"
+		var activated_value = this.props.activated[0] ? 0 : 1
 		if(user_type){
 			return (
 				<View>
@@ -1453,6 +1477,9 @@ class SetupCentral extends Component{
 					<WhiteRowLink name="Bluetooth Debug Log" callback={() => this.goToDebugLog()}/>
 					<WhiteRowLink name="Clear Runtime" callback={() => this.clearRunTime()}/>
 					<WhiteRowLink name={name} callback={() => this.showDemoUnitTimeModal()}/>
+					<WhiteRowLink name="Set Run Time" callback={() => this.showRunTimeModal()}/>
+					<WhiteRowLink name={activated_name} callback={() => this.setActivate(activated_value)}/>
+
 				</View>
 			)
 		}else{
@@ -1529,6 +1556,26 @@ class SetupCentral extends Component{
 		// Some cool code will happend here.
 	}
 
+	setRunTime(value){
+		var data = [PhoneCmd_SetRunTime].concat(value)
+		HVAC_WRITE_COMMAND(this.device.id,data)
+		.then(response => {
+
+		})
+		.catch(error => console.log("error",error))
+	}
+
+	setActivate(value){
+		console.log("setActivate()",value)
+		HVAC_WRITE_COMMAND(this.device.id,[PhoneCmd_SetActivated,value])
+		.then(response => {
+
+		})
+		.catch(error => console.log("error",error))		
+		setTimeout(() => this.getActivated(),2000)
+	}
+
+
 	renderNotification(show_notification,indicator_number){
 
 		if(show_notification && indicator_number){
@@ -1543,6 +1590,8 @@ class SetupCentral extends Component{
 		}
 		return null
 	}
+
+
 	
 	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
 
@@ -2027,30 +2076,30 @@ class SetupCentral extends Component{
 	}
 
 
-	updateWarrantyInformation(values){
-		console.log("updateWarrantyInformation()",values)
+	updateRunTime(values){
+		console.log("updateRunTime()",values)
 		if(values){
 			if(values.length){
-				var hex_values =  BYTES_TO_HEX(values)
-				console.log("hex_values",hex_values)
-				var decimal_values = parseInt(hex_values,16)
-				this.props.dispatch({type: "SET_WARRANTY_INFORMATION",warranty_information:decimal_values})
+				this.props.dispatch({type: "SET_RUN_TIME",run_time:values})
 			}else{
-				console.log("the array on updateWarranty() its empty")
+				console.log("the array on updateRunTime its empty")
 			}
 		}else{
-			console.log("the array on updateWarranty() its undefined or null")
+			console.log("the array on updateRunTime its undefined or null")
 		}
 	}
 
 	updateDemoUnitTime(values){
 		console.log("updateDemoUnitTime",values);
 		this.props.dispatch({type: "SET_DEMO_UNIT_TIME",demo_unit_time:values})
+	}
 
+	updateActivated(values){
+		console.log("updateActivated()",values)
+		this.props.dispatch({type: "SET_ACTIVATED",activated:values})	
 	}
 
 	setDemoUnitTime(){
-
 	}
 
 	clearGeneralInterval(){
@@ -2274,12 +2323,12 @@ class SetupCentral extends Component{
 
 	
 
-	getWarrantyInformation(){
-		HVAC_WRITE_COMMAND(this.device.id,[COMMAND_GET_RUN_TIME]) // should return 0x28
+	getRunTime(){
+		HVAC_WRITE_COMMAND(this.device.id,[PhoneCmd_GetRunTime]) // should return 0x28
 		.then(response => {
 
 		})
-		.catch(error => console.log("Error on getWarrantyInformation()"))
+		.catch(error => console.log("Error on getRunTime()"))
 	}
 
 	getAllVersion(){
@@ -2292,6 +2341,13 @@ class SetupCentral extends Component{
 	getDemoModeTime(){
 		console.log("getDemoModeTime");
 		HVAC_WRITE_COMMAND(this.device.id,[PhoneRsp_DemoModeTime])
+		.then(response => {
+		}).catch(error => console.log("Error on getDemoModeTime"))
+	}
+
+	getActivated(){
+		console.log("getDemoModeTime");
+		HVAC_WRITE_COMMAND(this.device.id,[PhoneCmd_GetActivated])
 		.then(response => {
 		}).catch(error => console.log("Error on getDemoModeTime"))
 	}
@@ -2356,6 +2412,8 @@ class SetupCentral extends Component{
 			commands.push(PhoneCmd_GetPowerOnTime)
 		}
 		
+
+
 		console.log("commands",prettyBytesToHex(commands) ,"MAX_NUMBER_OF_RETRIES",MAX_NUMBER_OF_RETRIES)
 
 		if(commands.length > 0 && MAX_NUMBER_OF_RETRIES > 0){
@@ -2470,6 +2528,12 @@ class SetupCentral extends Component{
 			break
 			case PhoneRsp_LastPacketTime:
 				this.updateLastPackageTime(data)
+			break
+			case PhoneRsp_RunTime:
+				this.updateRunTime(data)
+			break
+			case PhoneRsp_Activated:
+				this.updateActivated(data)
 			break
 			case PhoneRsp_UartTimeout: //0x82
 				Alert.alert("Failure", "PhoneRsp_UartTimeout (" + command.toString(16) + ") data: ( " + prettyBytesToHex(data) + ")")
@@ -2767,10 +2831,17 @@ class SetupCentral extends Component{
 	}
 
 	renderWarrantyInformation(){
-		var warranty_days = Math.round(((this.props.warranty_information / 60) / 60) / 24) 
+		console.log("run_time",this.props.run_time)
+		if(this.props.run_time.length == 0)
+			return null
+
+		var time = BYTES_TO_INT_LITTLE_ENDIANG(this.props.run_time)
+
+		var warranty_days = Math.round(((time / 60) / 60) / 24) 
 		var number_of_day  = 365
 		var warranty_remainin_days = number_of_day - warranty_days
 		var porcentage = (warranty_days / (number_of_day) )
+
 		return(	
 			<View style={{marginVertical:10,height:140,width:width}}>
 				<View style={{position: 'absolute',zIndex:0}}>
@@ -2929,7 +3000,9 @@ const mapStateToProps = state => ({
 	power_on_time: state.operationValuesReducer.power_on_time,
 	pairing_info: state.scanCentralReducer.pairing_info,
 	last_package_time : state.scanCentralReducer.last_package_time,
-	last_package_time_thermostat : state.scanCentralReducer.last_package_time_thermostat
+	last_package_time_thermostat : state.scanCentralReducer.last_package_time_thermostat,
+	run_time: state.scanCentralReducer.run_time,
+	activated : state.scanCentralReducer.activated
 });
 
 

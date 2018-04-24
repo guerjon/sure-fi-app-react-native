@@ -35,7 +35,9 @@ const initialState = {
   partners: [],
   pairing_info: [],
   last_package_time: [],
-  last_package_time_thermostat : []
+  last_package_time_thermostat : [],
+  run_time : [],
+  activated : true
 }
 
 
@@ -235,7 +237,16 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         last_package_time_thermostat : action.last_package_time_thermostat
       }
-
+    case "SET_RUN_TIME":
+      return {
+        ...state,
+        run_time: action.run_time
+      }
+    case "SET_ACTIVATED":
+      return{
+        ...state,
+        activated: action.activated
+      }
     default:
       return state
   }

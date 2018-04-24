@@ -25,10 +25,14 @@ import {
 	NOTIFICATION,
 	FOUR_BYTES_ARRAY_TO_DECIMAL,
 	BYTES_TO_INT,
-	BYTES_TO_INT_LITTLE_ENDIANG,
 	prettyBytesToHex
 } from '../../constants'
-import {WRITE_COMMAND,LOG_INFO,HVAC_WRITE_COMMAND} from '../../action_creators'
+import {
+	WRITE_COMMAND,
+	LOG_INFO,
+	HVAC_WRITE_COMMAND,
+	parseSecondsToHumanReadable
+	} from '../../action_creators'
 import Background from '../../helpers/background'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -334,45 +338,6 @@ class OperationValues extends Component{
 		})
 	}
 
-	calculateHours(number_seconds){
-		return parseInt(number_seconds / 3600)
-	}
-
-	calculateMinutes(number_seconds){
-		return parseInt(number_seconds / 60)
-	}	
-
-	calculateSeconds(number_seconds,minutes){
-		return number_seconds - (minutes * 60)
-	}
-
-	parseSecondsToHumanReadable(number_seconds){
-		console.log("parseSecondsToHumanReadable",parseInt(number_seconds) )
-		var time = ""
-		if(number_seconds < 60 ){ // a min
-			time = number_seconds + " seconds "
-		}else if(number_seconds < 3600){ //an hour
-			
-			let minutes = this.calculateMinutes(number_seconds)
-			let rest_of_seconds = this.calculateSeconds(number_seconds,minutes)
-
-			time = minutes + "m " + rest_of_seconds + "s " 
-			
-		}else if(number_seconds < 86400){ // a day
-
-			let hours = this.calculateHours(number_seconds)
-			let minutes = this.calculateMinutes(number_seconds - (3600 * hours))
-			let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
-
-			time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
-
-		}else if(number_seconds >= 86400){ //more than a day
-			var days = number_seconds / 86400
-			time = parseInt(days) + " days "
-		}
-
-		return time
-	}
 
 	renderStatus(demo_unit_status,transmit_states,failure_states,power_on_time){
 		var status = "uknown"
@@ -389,9 +354,8 @@ class OperationValues extends Component{
 		}
 		var decimal_transmit_states = FOUR_BYTES_ARRAY_TO_DECIMAL(transmit_states) 
 		var decimal_failure_states = FOUR_BYTES_ARRAY_TO_DECIMAL(failure_states) 
-		power_on_time = BYTES_TO_INT_LITTLE_ENDIANG(power_on_time)
 		
-		var power_on_time_string = this.parseSecondsToHumanReadable(power_on_time)
+		var power_on_time_string = parseSecondsToHumanReadable(power_on_time)
 	
 		return (
 			<View style={{height:80,width: width,backgroundColor:"white"}}>
@@ -534,7 +498,7 @@ class OperationValues extends Component{
 		console.log("renderPairedDevices()")
 		
 		if(this.props.isEquipment()){
-			var time = this.parseSecondsToHumanReadable(BYTES_TO_INT_LITTLE_ENDIANG(this.props.last_package_time))
+			var time = parseSecondsToHumanReadable(this.props.last_package_time)
 			return(
 				<View style={{backgroundColor:"red"}}>
 					<HVAC_DEVICE time={time} equipment_number={1} device_id={this.device.manufactured_data.tx} />
@@ -568,7 +532,7 @@ class OperationValues extends Component{
 		var item = data.item
 		var new_index = data.index + 1
 		var id = BYTES_TO_HEX(item[0]).toUpperCase()
-		var time = this.parseSecondsToHumanReadable(BYTES_TO_INT_LITTLE_ENDIANG(item[1]))
+		var time = parseSecondsToHumanReadable(item[1])
 		return (
 			<View style={{backgroundColor:"red",height:100,width:width}}> 
 				<HVAC_DEVICE time={time} equipment_number={new_index} device_id={id} />

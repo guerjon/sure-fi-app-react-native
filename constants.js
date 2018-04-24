@@ -479,6 +479,18 @@ const LONG_TO_BYTE_ARRAY = long => {
     return byteArray;
 };
 
+export const INT_TO_BYTE_ARRAY = int => {
+	var byteArray = [0, 0, 0, 0];
+
+    for ( var index = 0; index < byteArray.length; index ++ ) {
+        var byte = int & 0xff;
+        byteArray [ index ] = byte;
+        int = (int - byte) / 256 ;
+    }
+
+    return byteArray;
+}
+
 export const GET_LARGEST = (a,b,c) => {
 	//console.log("a: " + a + " b: " + b + " c: " + c)
 	var major_version = 0

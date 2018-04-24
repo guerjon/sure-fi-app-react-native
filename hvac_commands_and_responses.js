@@ -28,7 +28,7 @@ export const PhoneCmd_GetPairResult = 0x45;
 export const PhoneCmd_Unpair = 0x46;
 export const PhoneCmd_GetUnpairResult = 0x47;
 export const PhoneCmd_ClearResetCauses = 0x48;
-export const PhoneCmd_ResetRunTime = 0x49;
+export const PhoneCmd_SetRunTime = 0x49;
 // +==============================+
 // |       Firmware Update        |
 // +==============================+

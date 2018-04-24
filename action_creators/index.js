@@ -23,7 +23,8 @@ import {
 	HVAC_SUREFI_THERMOSTAT_SERVICE,
 	RX_DATA_CHAR_SHORT_UUID,
 	TX_DATA_CHAR_SHORT_UUID,
-	prettyBytesToHex
+	prettyBytesToHex,
+	BYTES_TO_INT_LITTLE_ENDIANG
 } from '../constants'
 import {store} from "../app"
 import {
@@ -297,3 +298,47 @@ export const LOG_CREATOR = (bytes,manufactured_id,UUID,log_type,text) => {
 
 	return body
 }
+
+
+function calculateHours(number_seconds){
+	return parseInt(number_seconds / 3600)
+}
+
+function calculateMinutes(number_seconds){
+	return parseInt(number_seconds / 60)
+}	
+
+function calculateSeconds(number_seconds,minutes){
+	return number_seconds - (minutes * 60)
+}
+
+export const parseSecondsToHumanReadable = (number_seconds) => {
+	number_seconds = BYTES_TO_INT_LITTLE_ENDIANG(number_seconds)
+	var time = ""
+	if(number_seconds < 60 ){ // a min
+		time = number_seconds + " seconds "
+	}else if(number_seconds < 3600){ //an hour
+		
+		let minutes = calculateMinutes(number_seconds)
+		let rest_of_seconds = calculateSeconds(number_seconds,minutes)
+
+		time = minutes + "m " + rest_of_seconds + "s " 
+		
+	}else if(number_seconds < 86400){ // a day
+
+		let hours = calculateHours(number_seconds)
+		let minutes = calculateMinutes(number_seconds - (3600 * hours))
+		let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
+
+		time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
+
+	}else if(number_seconds >= 86400){ //more than a day
+		var days = number_seconds / 86400
+		time = parseInt(days) + " days "
+	}
+
+	return time
+}
+
+
+
