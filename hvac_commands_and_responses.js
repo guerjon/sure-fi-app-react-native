@@ -13,17 +13,22 @@ export const PhoneCmd_GetLastPacketTime = 0x28;
 export const PhoneCmd_GetRadioUpdateStatus = 0x29;
 export const PhoneCmd_GetHoppingTable = 0x2A;
 export const PhoneCmd_GetRunTime = 0x2B;
+export const PhoneCmd_GetPairingInfo = 0x2C
+export const PhoneCmd_GetPowerOnTime = 0x2D
+
 // +==============================+
 // |           Run-Time           |
 // +==============================+
-export const PhoneCmd_FactoryReset = 0x40;
-export const PhoneCmd_Register = 0x41;
-export const PhoneCmd_ResetApplication = 0x42;
-export const PhoneCmd_ForceNextPair = 0x43;
+export const PhoneCmd_SecurityHash = 0x40;
+export const PhoneCmd_FactoryReset = 0x41;
+export const PhoneCmd_Register = 0x42;
+export const PhoneCmd_ResetApplication = 0x43;
 export const PhoneCmd_Pair = 0x44;
 export const PhoneCmd_GetPairResult = 0x45;
-export const PhoneCmd_ClearResetCauses = 0x46;
-export const PhoneCmd_ResetRunTime = 0x47;
+export const PhoneCmd_Unpair = 0x46;
+export const PhoneCmd_GetUnpairResult = 0x47;
+export const PhoneCmd_ClearResetCauses = 0x48;
+export const PhoneCmd_ResetRunTime = 0x49;
 // +==============================+
 // |       Firmware Update        |
 // +==============================+
@@ -49,17 +54,19 @@ export const PhoneCmd_SetDebugModeEnabled = 0x84;
 export const PhoneCmd_SetQuietMode = 0x85;
 export const PhoneCmd_SetWiegandLedMode = 0x86;
 export const PhoneCmd_SetDemoModeTime = 0x87;
+export const PhoneCmd_SetHeartbeatTime = 0x88;
 // +==============================+
 // |             Get              |
 // +==============================+
 export const PhoneCmd_GetActivated = 0xA0;
-export const PhoneCmd_GetRadioSettings = 0xA1;
+export const PhoneCmd_GetRadioSettings = 0xA1; 
 export const PhoneCmd_GetLedsEnabled = 0xA2;
 export const PhoneCmd_GetFailSafeOption = 0xA3;
 export const PhoneCmd_GetDebugModeEnabled = 0xA4;
 export const PhoneCmd_GetQuietMode = 0xA5;
 export const PhoneCmd_GetWiegandLedMode = 0xA6;
 export const PhoneCmd_GetDemoModeTime = 0xA7;
+export const PhoneCmd_GetHeartbeatTime = 0xA8
 
 // +============================================================+
 // |         				Responses          					|
@@ -80,10 +87,14 @@ export const PhoneRsp_LastPacketTime = 0x28;
 export const PhoneRsp_RadioUpdateStatus = 0x20;
 export const PhoneRsp_HoppingTable = 0x2A;
 export const PhoneRsp_RunTime = 0x2B;
+export const PhoneRsp_PairingInfo = 0x2C;
+export const PhoneRsp_PowerOnTime = 0x2D;
+
 // +==============================+
 // |           Run-Time           |
 // +==============================+
 export const PhoneRsp_PairResult = 0x45;
+export const PhoneRsp_UnpairResult = 0x47;
 // +==============================+
 // |       Success/Failure        |
 // +==============================+
@@ -101,7 +112,7 @@ export const PhoneRsp_DebugModeEnabled = 0xA4;
 export const PhoneRsp_QuietMode = 0xA5;
 export const PhoneRsp_WiegandLedMode = 0xA6;
 export const PhoneRsp_DemoModeTime = 0xA7;
-
+export const PhoneRsp_HeartbeatTime = 0xA8
 
 // +============================================================+
 // |         				Errors          					|
@@ -119,7 +130,7 @@ export const PhoneError_AlreadyStarted   = 0x09;
 export const PhoneError_Unsupported      = 0x0A;
 export const PhoneError_NotStarted       = 0x0B;
 export const PhoneError_Security         = 0x0C;
-export const PhoneError_TooMany         = 0x0D;
+export const PhoneError_TooMany          = 0x0D;
 
 
 export const get_codes = [

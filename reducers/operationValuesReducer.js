@@ -22,7 +22,10 @@ const initialState = {
   receive_values : {
     rssiValue_2: 0,
     snrValue_2 : 0
-  }
+  },
+  operating_values: [],
+  power_on_time: [],
+  power_on_time_seconds: 0
 }
 
 export default function operationValuesReducer (state = initialState, action) {
@@ -80,6 +83,22 @@ export default function operationValuesReducer (state = initialState, action) {
         ...state,
         receive_values : action.receive_values
       }
+    case "SET_OPERATING_VALUES":
+      return {
+        ...state,
+        operating_values : action.operating_values
+      }
+    case "SET_POWER_ON_TIME":
+      return{
+        ...state,
+        power_on_time: action.power_on_time
+      }
+    case "SET_POWER_ON_TIME_SECONDS":
+      return{
+        ...state,
+        power_on_time_seconds: action.power_on_time_seconds
+      }
+
     default:
       return state
   }

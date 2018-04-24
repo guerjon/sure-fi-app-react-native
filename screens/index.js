@@ -22,7 +22,7 @@ import Deploy from '../bridges/deploy'
 import PINCodeModal from '../bridges/pin_code_modal'
 import DemoUnitKeyModal from '../bridges/demo_unit_key_modal'
 import InsertIDModal from '../bridges/insert_id_modal'
-import SetDemoUnitTimeModal from '../bridges/set_demo_unit_time_modal'
+import SetDemoModeTimeModal from '../bridges/set_demo_unit_time_modal'
 
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
@@ -39,9 +39,8 @@ import CustomMap from '../bridges/chat/custom_map'
 import ChatOptions from '../bridges/chat/chat_options'
 import RSSettings from '../bridges/rs_settings'
 import PaymentOptions from '../bridges/payment/payment_options'
-import AndroidPayment from '../bridges/payment/android_payment'
-import CreditCardPayment from '../bridges/payment/credit_card_payment'
 import HVACPair from '../bridges/hvac/pair'
+import HVACOperatingValues from '../bridges/hvac/operating_values'
 
 const screens =
 [
@@ -75,16 +74,15 @@ const screens =
 	['PINCodeModal',PINCodeModal],
 	['DemoUnitKeyModal',DemoUnitKeyModal],
 	['InsertIDModal',InsertIDModal],
-	['SetDemoUnitTimeModal',SetDemoUnitTimeModal],
+	['SetDemoModeTimeModal',SetDemoModeTimeModal],
 	['CustomMap',CustomMap],
 	['DeviceNotMatched',DeviceNotMatched],
 	['BluetoothDebugLog',BluetoothDebugLog],
 	['RSSettings',RSSettings],
 	['HVACDeviceControlPanel',HVACDeviceControlPanel],
 	['PaymentOptions',PaymentOptions],
-	["AndroidPayment",AndroidPayment],
-	["CreditCardPayment",CreditCardPayment],
-	["HVACPair",HVACPair]
+	["HVACPair",HVACPair],
+	["HVACOperatingValues",HVACOperatingValues]
 ];
 
 export function registerScreens(store,Provider){

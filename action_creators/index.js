@@ -22,7 +22,8 @@ import {
 	HVAC_TYPE,
 	HVAC_SUREFI_THERMOSTAT_SERVICE,
 	RX_DATA_CHAR_SHORT_UUID,
-	TX_DATA_CHAR_SHORT_UUID
+	TX_DATA_CHAR_SHORT_UUID,
+	prettyBytesToHex
 } from '../constants'
 import {store} from "../app"
 import {
@@ -109,12 +110,11 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 	example command with data [0x21,0x04,0x23,0x52]
 */
 export const WRITE_COMMAND = (id,data,type) => {
-	console.log("WRITE_COMMAND()","data : " + data)
+	console.log("WRITE_COMMAND()","data : " + prettyBytesToHex(data) )
 	LOG_INFO(data,COMMAND)
 
-	return new Promise((fulfill,reject) => {
+	return new Promise((fulfill,reject) => {	
 		BleManagerModule.retrieveServices(id,() => {
-			console.log("retriveServices callback on WRITE_COMMAND")
 			BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 			.then(response => {
 				fulfill(response)
@@ -127,7 +127,7 @@ export const WRITE_COMMAND = (id,data,type) => {
 	})
 }
 
-export const HVAC_WRITE_COMMAND = (id,data,type) => {
+export const HVAC_WRITE_COMMAND = (id,data) => {
 	LOG_INFO(data,COMMAND)
 	var command = data[0];
 	data.shift(); //remove the command

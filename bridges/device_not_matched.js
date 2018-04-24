@@ -59,7 +59,7 @@ class DeviceNotMatched extends Component {
 
 
     componentDidMount() {
-        console.log("this.props.navigator",this.props.navigator,this.props.cancel_scan)
+        //console.log("this.props.navigator",this.props.navigator,this.props.cancel_scan)
         if(!this.props.cancel_scan){
             setTimeout(() => this.props.startScanning(this.manager),2000)
             this.createInterval()            

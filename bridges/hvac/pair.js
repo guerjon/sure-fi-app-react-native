@@ -29,7 +29,9 @@ import {
     REMOTE_HARDWARE_TYPE,
     GET_PAIRING_TO_DEVICES,
     FORCE_PAIR,
-    NORMAL_PAIR
+    NORMAL_PAIR,
+    EQUIPMENT_TYPE,
+    THERMOSTAT_TYPE,
 } from '../../constants'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
@@ -42,7 +44,10 @@ import {
 	CONNECT,
 	READ_STATUS,
 	DISCONNECT,
+    HVAC_WRITE_COMMAND
 } from '../../action_creators/index'
+
+import {PhoneCmd_Pair} from '../../hvac_commands_and_responses'
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -153,21 +158,23 @@ class HVACPair extends Component{
     scanDevices(){
         console.log("scanRemoteDevices()")
         var devices = this.devices
-        this.fast_manager.startDeviceScan(['E8BF000A-0EC5-2536-2143-2D155783CE78'],null,(error,device) => {
+
+        this.fast_manager.startDeviceScan([],null,(error,device) => {
             if(error){
                 console.log("error on scan devices",error)
                 return
             }
-            //console.log("device.name",device.name)
-            
-            //if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-
-                if (!FIND_ID(devices, device.id)) {   
-                    var data = this.getManufacturedData(device)
-                    devices.push(data)
-                    this.devices = devices
-                }                
-            //}
+            if(device.name){
+                if (device.name.indexOf("Sure") !== -1){
+                    
+                    if (!FIND_ID(devices, device.id)) {   
+                        var data = this.getManufacturedData(device)
+                        delete data._manager
+                        devices.push(data)
+                        this.devices = devices
+                    }                
+                }
+            }
         })
     }
 
@@ -192,8 +199,9 @@ class HVACPair extends Component{
         console.log("remote_id_bytes",remote_id_bytes)
         console.log("rxUUID",rxUUID)
         console.log("txUUID",txUUID)
-
-        WRITE_COMMAND(this.central_device.id,[NORMAL_PAIR,remote_id_bytes])
+        let data = [PhoneCmd_Pair,NORMAL_PAIR].concat(remote_id_bytes)
+        console.log("data",data)
+        HVAC_WRITE_COMMAND(this.central_device.id,data)
 			.then(response => {
 				//PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
 		    	//.then(response => {	
@@ -222,11 +230,12 @@ class HVACPair extends Component{
                             setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
                         }
 
-                        this.props.navigator.pop();
+                        
 		               
 	    			//}).catch(error => console.log(error))
 	    		//}).catch(error => console.log("error",error))
 	    	}).catch(error => {console.log("error",error)})	
+            this.props.navigator.pop();
     }
 
     getNoMatchedMessage(){
@@ -245,22 +254,24 @@ class HVACPair extends Component{
         var device_id = scan_result.data.substr(-6).toUpperCase();
         this.scan_result_id = device_id
         this.hideCamera();
+
         this.matchDevice(device_id)
     }
 
     isDeviceOnPairingMode(device){
+        console.log("isDeviceOnPairingMode",device)
         if(!device.manufactured_data)
             return false
         var state = device.manufactured_data.device_state.substring(2,4)
 
-        if(state == "01"){
+        if(state == "00"){
             return true
         }       
         return false        
     }
 
     matchDevice(device_id){
-        console.log("matchDevice()")
+        console.log("matchDevice()",device_id)
         var {
             dispatch,
             navigation
@@ -296,7 +307,7 @@ class HVACPair extends Component{
                         this.showAlertConfirmation(device_id)
                         
                     }else{
-                        this.showDeviceIsNotOnPairingMode()
+                        this.showDeviceIsNotOnPairingMode(device_id)
                     }
                 }else{
                     this.showCorrectErrorForPair(this.central_device)
@@ -375,17 +386,11 @@ class HVACPair extends Component{
         var correct_type = 0
 
         switch(device_type){
-            case CENTRAL_HARDWARE_TYPE:
-                correct_type = REMOTE_HARDWARE_TYPE
+            case EQUIPMENT_TYPE:
+                correct_type = THERMOSTAT_TYPE
             break
-            case REMOTE_HARDWARE_TYPE:
-                correct_type = CENTRAL_HARDWARE_TYPE
-            break
-            case CENTRAL_SERIAL_HARDWARE_TYPE:
-                correct_type = REMOTE_SERIAL_HARDWARE_TYPE
-            break
-            case REMOTE_SERIAL_HARDWARE_TYPE:
-                correct_type = CENTRAL_SERIAL_HARDWARE_TYPE
+            case THERMOSTAT_TYPE:
+                correct_type = EQUIPMENT_TYPE
             break
             default:
                 correct_type = 0

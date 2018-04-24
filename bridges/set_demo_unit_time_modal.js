@@ -12,19 +12,8 @@ import {
   	Alert
 } from 'react-native'
 import { connect } from 'react-redux';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { 
-	LOADING,
-	GET_USERS_FROM_PIN
-} from '../constants'
+import {GET_USERS_FROM_PIN} from '../constants'
 
-import {
-	COMMAND_SET_DEMO_TIME
-} from '../commands'
-
-import {
-	WRITE_COMMAND,
-} from '../action_creators'
 
 const option_blue = "#5AB0E3"
 
@@ -73,25 +62,14 @@ class SetDemoUnitTimeModal extends Component{
 	handleEnterButton(){
 		if(this.text.length){
 			//this.fetchResults(this.text)
-			this.setDemoUnitTime(this.text)
+			var number_of_days = parseInt(this.text) 
+			this.props.setDemoModeTime(number_of_days)
+			setTimeout(() => this.props.getDemoModeTime(),2000)
+			this.closeModal()
+
 		}else{
 			Alert.alert("Error","The field can't be empty.")
 		}
-	}
-
-	setDemoUnitTime(number_of_days){
-		console.log("setDemoUnitTime",number_of_days);
-		var data = [COMMAND_SET_DEMO_TIME,parseInt(number_of_days)]
-		console.log("data",data);
-
-		WRITE_COMMAND(this.props.device.id, data)
-	    	.then(response => {		 
-
-	    	})
-	    	.catch(error => console.log("error",error))		
-
-	    this.props.updateDemoUnitTime(number_of_days)
-	    this.props.navigator.dismissLightBox();
 	}
 
 	longToByteArray (long) {

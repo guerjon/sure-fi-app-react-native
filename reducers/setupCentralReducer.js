@@ -38,6 +38,7 @@ const initialState = {
   handleDisconnected : false,
   handleConnected : false,
   handleCharacteristic : false,
+  getAllCommands: false,
   show_disconnecting_modal : false,
   registration_info : []
 }
@@ -246,6 +247,12 @@ export default function setupCentralReducer (state = initialState, action) {
       return{
         ...state,
         handleCharacteristic : action.handleCharacteristic
+      }
+
+    case "SET_GET_ALL_COMMANDS":
+      return {
+        ...state,
+        getAllCommands: action.getAllCommands
       }
     case "SHOW_DISCONNECT_MODAL":
       return{

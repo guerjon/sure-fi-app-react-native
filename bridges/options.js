@@ -254,22 +254,37 @@ class Options extends Component{
     }
 
     getResetDemoOption(){
-    	if(this.props.demo_unit_time != 0){
+    	console.log("getResetDemoOption()",this.props.warranty_information,this.props.demo_unit_time)
+    	var run_time = this.props.warranty_information
+    	var demo_time = this.props.demo_unit_time[0] * 86400 
+
+    	if(this.props.show_activate_option != 0){
+    		var time = "0 Hours Remaining"
+    		
+    		if(run_time <= demo_time){
+    			var remaining_time = parseInt((demo_time - run_time) / 3600)
+    			if(remaining_time > 24) {
+    				var remaining_days = parseInt(remaining_time / 24) 
+    				time = remaining_days + " Days Remaining" 
+    			}else{
+    				time = remaining_time + " Hours Remaining"	
+    			}
+    		}
+
 	    	return (
 				<View style={{marginBottom:20}}>		
-					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.showModalToResetDemoUnits()}>
+					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPayMentOptions()}>
 						<View style={{
 							flexDirection:"row",
-							padding:10,
 							alignItems:"center",						
 							justifyContent:"center"
 	  					}}>
-							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:success_green,padding:10,borderRadius:10}}>
+							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:"red",padding:10,width:width}}>
 								<Text style={styles.white_touchable_text}>
-									30 days Demo Unit
+									{time}
 								</Text>
 								<Text style={{fontSize:22,color:"white"}}>
-									Touch to Activate
+									Touch to Activate now!
 								</Text>
 							</View>
 						</View>
@@ -303,7 +318,6 @@ class Options extends Component{
 						</View>
 					</View>
 				</TouchableHighlight>
-				
 			</View>
 		)    	
     }
@@ -422,13 +436,12 @@ class Options extends Component{
 	}
 
 	getAdditionalOptions(){
-		
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		//console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data);
+		//console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data,this.props.user_data);
 		
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 		var sales_dist = ["SALES","DIST"]		
-		var indicator = this.props.indicatorNumber
+		var indicator = parseInt(this.props.indicatorNumber) 
 
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){
@@ -443,7 +456,7 @@ class Options extends Component{
 	}
 
 	getAdminOptions(bridge_status){
-		console.log("getAdminOptions()");
+		//console.log("getAdminOptions()",bridge_status);
 		switch(bridge_status){
 			case 1:
 				return(
@@ -477,6 +490,7 @@ class Options extends Component{
 			case 4:
 				return (
 					<View>
+						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
@@ -528,6 +542,7 @@ class Options extends Component{
 			case 1:
 				return (
 					<View>
+						
 						{this.getResetDemoOption()}
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
@@ -540,6 +555,7 @@ class Options extends Component{
 			case 3:
 				return (
 					<View>
+						
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
@@ -554,6 +570,7 @@ class Options extends Component{
 			case 4:
 				return (
 					<View>
+						
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getSureFiChat()}
@@ -668,7 +685,9 @@ const mapStateToProps = state => ({
 	user_status : state.mainScreenReducer.user_status,
 	user_data : state.loginReducer.user_data,
 	debug_mode_status : state.setupCentralReducer.debug_mode_status,
-	demo_unit_time : state.scanCentralReducer.demo_unit_time
+	demo_unit_time : state.scanCentralReducer.demo_unit_time,
+	show_activate_option : state.scanCentralReducer.show_activate_option,
+	warranty_information : state.scanCentralReducer.warranty_information,
 });
 
 export default connect(mapStateToProps)(Options);

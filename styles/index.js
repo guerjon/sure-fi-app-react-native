@@ -14,6 +14,7 @@ export const first_color = "#2a323d"
 export const red_error = "#FF0000"
 export const option_blue = "#5AB0E3"
 export const link_color  = "#000099" 
+export const gray_background = "#E2E2E2"
 
 
 export  const styles = StyleSheet.create({

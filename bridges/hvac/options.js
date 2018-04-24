@@ -62,13 +62,16 @@ const Option = params => {
 class Options extends Component{
 	
 	constructor(props) {
+
 		super(props);	
 		this.device_status = this.props.device_status
 		this.device = this.props.device
-
+		this.hardware_type =  parseInt(this.props.device.manufactured_data.hardware_type)
+		this.device_state = parseInt(this.device.manufactured_data.device_state)
 	}
 
 	showAlertUnpair(){
+
 		var {device} = this.props
 		console.log("device_type",device.manufactured_data)
 		let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
@@ -86,6 +89,7 @@ class Options extends Component{
 
 
     forceUnPair(){
+
     	console.log("forceUnPair()")
     	var {device} = this.props
     	let device_id = device.manufactured_data.device_id
@@ -152,7 +156,7 @@ class Options extends Component{
 	    	PUSH_CLOUD_STATUS(device_id,hardware_status)
 	    	.then(response => {
 	    		console.log("response deploy",response)
-		    	if(this.device.manufactured_data.hardware_type == 1){
+		    	if(this.hardware_type == 1){
 		    		var message = "This Controller Interface has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
 		    	}else{
 		    		var message = "This Remote Unit has been deployed. If you have not done so, you must still deploy the Remote Unit before the bridge will function properly"
@@ -247,11 +251,9 @@ class Options extends Component{
    	}
 
     getUnPairBridgeOption(){
-    	return <Option callback={() => this.showAlertUnpair()} image={require('../../images/menu_unpair_dark.imageset/menu_unpair.png')} name="Unpair Bridge"/>
-    }
 
-    getRsSettings(){
-    	return <Option callback={() => this.props.goToRsSettings()} image={require('../../images/menu_serial_settings.imageset/menu_serial_settings.png')} name="RS-485 Settings"/>
+    	return <Option callback={() => this.showAlertUnpair()} image={require('../../images/menu_unpair_dark.imageset/menu_unpair.png')} name="Unpair Bridge"/>
+
     }
 
     getResetDemoOption(){
@@ -261,16 +263,15 @@ class Options extends Component{
 					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.showModalToResetDemoUnits()}>
 						<View style={{
 							flexDirection:"row",
-							padding:10,
 							alignItems:"center",						
 							justifyContent:"center"
 	  					}}>
-							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:success_green,padding:10,borderRadius:10}}>
+							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:"red",padding:10,width:width}}>
 								<Text style={styles.white_touchable_text}>
-									30 days Demo Unit
+									0 hours remaining
 								</Text>
 								<Text style={{fontSize:22,color:"white"}}>
-									Touch to Activate
+									Touch to Activate now!
 								</Text>
 							</View>
 						</View>
@@ -281,14 +282,47 @@ class Options extends Component{
     }
 
     getPairBridgeOption(){
-		return (
-			<View style={{marginBottom:20}}>
-				<View style={styles.device_control_title_container}>
-					<Text style={styles.device_control_title}>
-						NEXT STEP
-					</Text>
-				</View>			
-				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
+    	console.log("getPairBridgeOption",this.hardware_type)
+    	if(this.hardware_type == 3){
+    		return null
+    	}else{
+			return (
+				<View style={{marginBottom:20}}>
+					<View style={styles.device_control_title_container}>
+						<Text style={styles.device_control_title}>
+							NEXT STEP
+						</Text>
+					</View>			
+					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
+						<View style={{
+							flexDirection:"row",
+							padding:5,
+							alignItems:"center",						
+	  					}}>
+							<View style={styles.white_touchable_highlight_image_container}>
+								<Image source={require('../../images/menu_pair_dark.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+							</View>
+							<View style={styles.white_touchable_text_container}>
+								<Text style={{color:"black",fontSize:30}}>
+									Pair Bridge
+								</Text>
+							</View>
+						</View>
+					</TouchableHighlight>
+					
+				</View>
+			)    	    		
+    	}
+    }
+
+    showPairThermostatOption(){
+    	Alert.alert("Connect to the equipment.","In order to pair this thermostat, you must be connected to the equipment device.")
+    }
+
+    getPairThermostatOption(){
+    	return (
+    		<View>
+				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.showPairThermostatOption()}>
 					<View style={{
 						flexDirection:"row",
 						padding:5,
@@ -303,10 +337,9 @@ class Options extends Component{
 							</Text>
 						</View>
 					</View>
-				</TouchableHighlight>
-				
-			</View>
-		)    	
+				</TouchableHighlight>    			
+    		</View>
+    	)
     }
 
     getUpdateFirwmareOption(){
@@ -324,7 +357,7 @@ class Options extends Component{
     getDeployCentralUnitOption(){
     	if(this.props.device){
     		if(this.props.device.manufactured_data){
-    			if(this.props.device.manufactured_data.hardware_type){
+    			if(this.hardware_type){
     				var status_text = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Controller Interface" : "Deploy Remote Unit" 
     				let status_text_2 = this.props.device.manufactured_data.hardware_type == 1 ? "Deploy Controller Interface" : "Deploy Remote Unit" 
     			}else{
@@ -399,8 +432,6 @@ class Options extends Component{
 				<Text style={{alignSelf:"center"}}>
 					Next Step
 				</Text>
-				
-				
 				<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.forceUnPair()}>
 					<View style={{
 						flexDirection:"row",
@@ -444,82 +475,122 @@ class Options extends Component{
 	}
 
 	getAdminOptions(bridge_status){
-		console.log("getAdminOptions()");
-		switch(bridge_status){
-			case 1:
+		if(this.hardware_type == 3){
+			if(bridge_status == 0){
+				if(false){ //TO DO: check if the device was incorrected paired from equipment
+
+				}else{ //the thermostat isn't paired
+					return(
+						<View>
+							{this.getResetDemoOption()}
+							{this.getPairThermostatOption()}
+							{this.getInstructionalVideos()}
+							{this.getDocumentationOption()}
+							{this.getOperatingValuesOption()}
+						</View>
+					)
+				}
+			}else if(bridge_status > 0){
+
 				return(
 					<View>
 						{this.getResetDemoOption()}
-						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
-						{this.getConfigureRadioOption()}
-						{this.getRsSettings()}
-					</View>
-				)
-			break
-			case 3:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
+						{this.getOperatingValuesOption()}	
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
-						{this.getOperatingValuesOption()}
-						{this.getConfigureRadioOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
-			break
-			case 4:
+			}else{ //undefined status
 				return (
 					<View>
+						<View>
+							<Text style={{padding:5, color:"red"}}>
+								The number of devices isn't correct on the Thermostat.
+							</Text>
+						</View>
 						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
-						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
-						{this.getConfigureRadioOption()}
-						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
-			case 0xE0:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)				
-			case 0xE1:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)
-			break
-			case 0xE2:
-				return (
-					<View>
-						{this.renderForceUnpairOption()}
-					</View>
-				)
-			break
-			case 0xEE:
-				return (
-					<View style={{alignItems:"center"}}>
-						<Text>
-							Error loading the options
-						</Text>
-					</View>
-				)
-			default:
-				return null
-			break
+			}
+
+		}else{
+			switch(bridge_status){
+				case 1:
+					return(
+						<View>
+							{this.getResetDemoOption()}
+							{this.getPairBridgeOption()}
+							{this.getInstructionalVideos()}
+							{this.getUpdateFirwmareOption()}
+							{this.getDocumentationOption()}
+							{this.getConfigureRadioOption()}
+						</View>
+					)
+				break
+				case 3:
+					return (
+						<View>
+							{this.getResetDemoOption()}
+							{this.getInstructionalVideos()}
+							{this.getSureFiChat()}
+							{this.getUpdateFirwmareOption()}
+							{this.getDocumentationOption()}
+							{this.getUnPairBridgeOption()}
+							{this.getOperatingValuesOption()}
+							{this.getConfigureRadioOption()}
+							{this.getRelayDefaults()}
+						</View>
+					)
+				break
+				case 4:
+					return (
+						<View>
+							{this.getInstructionalVideos()}
+							{this.getSureFiChat()}
+							{this.getUpdateFirwmareOption()}
+							{this.getDocumentationOption()}
+							{this.getUnPairBridgeOption()}
+							{this.getOperatingValuesOption()}
+							{this.getConfigureRadioOption()}
+							{this.getRelayDefaults()}
+						</View>
+					)
+				case 0xE0:
+					return (
+						<View>
+							{this.renderForcePairOption()}
+						</View>
+					)				
+				case 0xE1:
+					return (
+						<View>
+							{this.renderForcePairOption()}
+						</View>
+					)
+				break
+				case 0xE2:
+					return (
+						<View>
+							{this.renderForceUnpairOption()}
+						</View>
+					)
+				break
+				case 0xEE:
+					return (
+						<View style={{alignItems:"center"}}>
+							<Text>
+								Error loading the options
+							</Text>
+						</View>
+					)
+				default:
+					return null
+				break
+			}			
 		}
 	}
 

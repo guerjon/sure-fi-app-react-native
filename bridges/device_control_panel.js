@@ -215,6 +215,7 @@ class SetupCentral extends Component{
     }
 
     componentWillMount() {
+    	let device_id = this.device.manufactured_data.device_id.toUpperCase()
 		this.startSlowBleManager()
 		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
@@ -222,7 +223,7 @@ class SetupCentral extends Component{
 		this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
 	
 		this.activateListeners()
-		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())  
+		this.fetchDeviceName(device_id,this.device.manufactured_data.tx.toUpperCase())  
 		this.checkDeviceState(this.device) //enter point for all the connections    
     }
 
@@ -351,14 +352,15 @@ class SetupCentral extends Component{
 	showDemoUnitTimeModal(){
 		console.log("showDemoUnitTimeModal()")
 		this.props.navigator.showLightBox({
-            screen: "SetDemoUnitTimeModal",
+            screen: "SetDemoModeTimeModal",
             style: {
             	flex:1,
                 backgroundBlur: "none", // 'dark' / 'light' / 'xlight' / 'none' - the type of blur on the background
                 backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)'" // tint color for the background, you can specify alpha here (optional)
             },
             passProps: {
-            	updateDemoUnitTime: (value)  => this.updateDemoUnitTime(value)
+            	getDemoModeTime: ()  => this.getDemoModeTime(),
+            	setDemoModeTime: (number_of_days) => this.setDemoModeTime(number_of_days),
             }
         });
 	}
@@ -474,17 +476,17 @@ class SetupCentral extends Component{
 			type = 0
 
 		if(interval == 0){
-			device.manufactured_data.device_type;
+			var device_type =  parseInt(device.manufactured_data.hardware_type);
 			var data = GET_SECURITY_STRING(device.manufactured_data.device_id,device.manufactured_data.tx)
-			interval = setInterval(() => this.controllConnect(device,data,type),2000)
+			interval = setInterval(() => this.controllConnect(device,data,type,device_type),2000)
 		}else{
 			console.log("the interval can't be created it was created previosly")
 		}
 	}
 	
-	controllConnect(device,data,type){
-		console.log("controllConnect()")
-		SlowBleManager.controllConnect(device.id,data,type,3)
+	controllConnect(device,data,type,device_type){
+		//console.log("controllConnect()",device_type)
+		SlowBleManager.controllConnect(device.id,data,type,device_type)
 		.then(response => console.log("response connect()",response))
 		.catch(error => {
 			console.log("error on connect()",error)
@@ -550,7 +552,7 @@ class SetupCentral extends Component{
 	}
 
     handleConnectedDevice(data){
-    	console.log("handleConnectedDevice()",data)
+    	//console.log("handleConnectedDevice()",data)
     	LOG_INFO([0xA1],CONNECTED,this.device.manufactured_data.device_id) // 0xA1 ITS DEFINED ON commands.js
     	clearInterval()
     	this.normalConnected()
@@ -580,7 +582,7 @@ class SetupCentral extends Component{
     }
 
 	normalConnected(){
-		console.log("normalConnected()")
+		//console.log("normalConnected()")
 
 		var device = this.props.device
 		//var id = this.props.device.id
@@ -617,12 +619,12 @@ class SetupCentral extends Component{
 	}
 
     setIndicatorNumber(indicator){
-    	console.log("setIndicatorNumber()",indicator)
+    	//console.log("setIndicatorNumber()",indicator)
     	this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: indicator})
     }
 
 	setConnectionEstablished(){
-    	console.log("setConnectionEstablished()")
+    	//console.log("setConnectionEstablished()")
     	
     	//this.props.dispatch({type:"SET_CONNECTION_ESTABLISHED",connection_established:true})
     	//this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
@@ -683,6 +685,16 @@ class SetupCentral extends Component{
 	}
 */
 
+	setDemoModeTime(number_of_days){
+		console.log("setDemoModeTime()",number_of_days);
+		var data = [COMMAND_SET_DEMO_TIME,parseInt(number_of_days)]
+		
+		WRITE_COMMAND(this.device.id, data)
+    	.then(response => {		 
+    	})
+    	.catch(error => console.log("error",error))		
+	}
+
 
 	readStatusOnDevice(device){
 		console.log("readStatusOnDevice()",device.id);
@@ -720,8 +732,8 @@ class SetupCentral extends Component{
 				hardware_serial : hardware_serial
 			})
 		}
-		console.log("this.device.manufactured_data",this.device.manufactured_data)
-		/*var status = this.device.manufactured_data.device_state.slice(-2)
+		//console.log("this.device.manufactured_data",this.device.manufactured_data)
+		var status = this.device.manufactured_data.device_state.slice(-2)
 		
 		//this.getStatus(device,this.c_status,this.c_expected_status)
 		fetch(GET_STATUS_CLOUD_ROUTE,data)
@@ -737,11 +749,11 @@ class SetupCentral extends Component{
 
 			this.choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device)
 
-		}).catch(error => console.log("error",error))*/
+		}).catch(error => console.log("error",error))
 	}
 
 	choseNextStep(current_status_on_cloud,expected_status,current_status_on_bridge,device){
-			//console.log("getStatus()",current_status_on_cloud,expected_status,current_status_on_bridge)
+		console.log("choseNextStep()")
 		current_status_on_cloud = parseInt(current_status_on_cloud,10)
 		expected_status = parseInt(expected_status,10)
 		current_status_on_bridge = parseInt(current_status_on_bridge,10)
@@ -1166,11 +1178,13 @@ class SetupCentral extends Component{
 	}
 
 	clearRunTime(){
+		console.log("clearRunTime()")
 		WRITE_COMMAND(this.device.id,[COMMAND_RESET_RUN_TIME])
 		.then(response => {	
-			setTimeout(() => this.getWarrantyInformation(),2000)
+			
 		})
 		.catch(error => console.log("Error on resetBoard()",error))		
+		setTimeout(() => this.getRunTime(),2000)
 	}
 
 	getLastPackageTime(){
@@ -1423,27 +1437,12 @@ class SetupCentral extends Component{
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
 			saveOnCloudLog = { (bytes,type) => this.saveOnCloudLog(bytes,type)}
-			showModalToResetDemoUnits = {() => this.showModalToResetDemoUnits() }
+			goToPayMentOptions = {() => this.goToPayMentOptions() }
 			unPair = {() => this.unPair()}
 		/>
 	}
 
-	showModalToResetDemoUnits(){
-		this.goToPayMentOptions()
-		/*console.log("showModalToResetDemoUnits")
-
-		this.props.navigator.showLightBox({
-			screen: "DemoUnitKeyModal",
-			style: {
-				flex:1,
-				backgroundColor: "none",
-				backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)' "
-			},
-			passProps: {
-				updateDemoUnitTime : (values) => this.updateDemoUnitTime(values)
-			}
-		})*/
-	}
+	
 
 	goToPayMentOptions(){
 		console.log("goToPaymentOptions() (dad)")
@@ -1452,19 +1451,11 @@ class SetupCentral extends Component{
 			title: "Activate Product",
 			animated: false,
 			passProps: {
+				getDemoModeTime: () => this.getDemoModeTime(),
 				paymentResponse: (values) => this.paymentResponse(values),
-				setDemoTimeTo0: () => this.setDemoTimeTo0()
+				setDemoModeTime: (number_of_days) => this.setDemoModeTime(number_of_days)
 			}
 		})
-	}
-
-
-	setDemoTimeTo0(){
-		WRITE_COMMAND(this.device.id,[COMMAND_SET_DEMO_TIME,0])
-	    .then(response => {		    		
-	    })
-	    .catch(error => console.log("error",error))						
-	    resetBoard()
 	}
 
 	renderNotification(show_notification,indicator_number){
@@ -1527,6 +1518,16 @@ class SetupCentral extends Component{
 	}
 
 	goToFirmwareUpdate(){
+		Alert.alert(
+			"Warning",
+			"In order to do a firmware update, you must be instructed by a support call",
+			[
+				{text:"Continue",style:"Cancel"}
+			]
+		)
+	}
+
+	doGoToFirmwareUpdate(){
 		this.removeHandleCharacteristic()
 		this.activateHandleDisconnectedPeripheral()
 
@@ -1834,14 +1835,14 @@ class SetupCentral extends Component{
 	}
 
 
-	updateWarrantyInformation(values){
-		console.log("updateWarrantyInformation()",values)
+	updateRunTime(values){
+		console.log("updateRunTime()",values)
 		if(values){
 			if(values.length){
 				var hex_values =  BYTES_TO_HEX(values)
-				console.log("hex_values",hex_values)
 				var decimal_values = parseInt(hex_values,16)
 				this.props.dispatch({type: "SET_WARRANTY_INFORMATION",warranty_information:decimal_values})
+
 			}else{
 				console.log("the array on updateWarranty() its empty")
 			}
@@ -1850,8 +1851,31 @@ class SetupCentral extends Component{
 		}
 	}
 
-	updateDemoUnitTime(values){
-		console.log("updateDemoUnitTime",values);
+	/*
+	* The run time comes as a the number of seconds
+	* demo_time comes as the number of days
+	*/
+	checkDemoTimeVSRunTime(run_time_on_seconds,demo_time_on_days){
+		console.log("checkDemoTimeVSRunTime",run_time_on_seconds,demo_time_on_days)
+		var demo_time_on_seconds = 86400  * demo_time_on_days[0]
+		
+		console.log("demo_time_on_seconds",demo_time_on_seconds)
+
+		if(demo_time_on_seconds == 0){ // the device has been activated
+			this.props.dispatch({
+				type:"SET_SHOW_TO_ACTIVATE_OPTION",
+				show_activate_option: false
+			})	 
+		}else{
+			this.props.dispatch({
+				type:"SET_SHOW_TO_ACTIVATE_OPTION",
+				show_activate_option: true
+			})	 
+		}
+	}
+
+	updateDemoModeTime(values){
+		console.log("updateDemoModeTime",values);
 		this.props.dispatch({type: "SET_DEMO_UNIT_TIME",demo_unit_time:values})
 	}
 
@@ -2034,12 +2058,17 @@ class SetupCentral extends Component{
 
 	
 
-	getWarrantyInformation(){
+	getRunTime(){
+		console.log("getRunTime()")
 		WRITE_COMMAND(this.device.id,[COMMAND_GET_RUN_TIME]) // should return 0x28
 		.then(response => {
 
 		})
-		.catch(error => console.log("Error on getWarrantyInformation()"))
+		.catch(error => console.log("Error on getRunTime()"))
+	}
+
+	setRunTime(){
+		WRITE_COMMAND(this.device.id,[])
 	}
 
 	getAllVersion(){
@@ -2050,7 +2079,7 @@ class SetupCentral extends Component{
 	}
 
 	getDemoModeTime(){
-		console.log("getDemoModeTime");
+		console.log("getDemoModeTime()");
 		WRITE_COMMAND(this.device.id,[COMMAND_GET_DEMO_TIME])
 		.then(response => {
 
@@ -2068,8 +2097,7 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- End commands Seccion ---------------------------------------------------------------*/	
 
 	handleCharacteristicNotification(data){
-		console.log("handleCharacteristicNotification",data)
-		//console.log("handleCharacteristicNotification()")
+		//console.log("handleCharacteristicNotification",data)
 		if(data.characteristic.toUpperCase() == SUREFI_CMD_READ_UUID.toUpperCase()){
 			var values = data.value;
 			var value = values[0]
@@ -2086,6 +2114,20 @@ class SetupCentral extends Component{
 			switch(value){
 				
 				/* --------------------------------------------------------------  --------------------------------------------------------------  --------------------------------------------------------------*/				
+				case 0x2C:
+					console.log("get 0x2C getDemoModeTime")
+					this.updateDemoModeTime(values)
+					this.getRunTime()
+					break
+
+				case 0x28:
+					console.log("get 0x28 run time",)
+					this.updateRunTime(values)
+					setTimeout(() => this.checkDemoTimeVSRunTime(this.props.warranty_information,this.props.demo_unit_time),3000)
+					this.getFirmwareVersion()	
+					
+				break
+
 				case 0x01 : //app firmware version
 						//this.clearGeneralInterval()
 						console.log("get 0x01 app firmware_version")
@@ -2155,26 +2197,13 @@ class SetupCentral extends Component{
 						//this.clearGeneralInterval()
 						console.log("get 0x1B debug mode status")
 						this.updateDebugModeStatus(values)
-						this.getWarrantyInformation()
+						this.getAllVersion()
 					break
 
-				case 0x28:
-					console.log("get 0x28 warranty_information",)
-					this.updateWarrantyInformation(values)
-					this.getAllVersion()
-				break
 				case 0x1E: // all versions
 					console.log("get 0x1E all versions")
 					this.saveOnCloudLog(values,"FIRMWAREVERSIONS")
 					this.getBootloaderInfo()
-					break
-
-				case 0x2C:
-					console.log("get 0x2C getDemoModeTime")
-					console.log(values)
-					this.updateDemoUnitTime(values)
-					this.getFirmwareVersion()	
-					
 					break
 
 				case 0x07: //Bootloader info
@@ -2324,7 +2353,7 @@ class SetupCentral extends Component{
 		let state = device.manufactured_data.device_state.slice(-2)
 
 		if(state == "03" || state == "04"){
-			this.createSecondInterval()
+			//this.createSecondInterval()
 		}
 	}
 

@@ -3,6 +3,11 @@ var md5 = require('md5');
 export const BASE_URL = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/"
 export const FIRMWARE_CENTRAL_ROUTE = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/firmware/get_available_firmware"
 export const API_REGISTERING_LINK = BASE_URL +   "systems/register_bridge_system"
+export const GET_PRICE_URL = BASE_URL + "systems/get_system_from_serial"
+
+export const COMPLETE_DIRECT_UNIT_PURCHASE = "https://admin.sure-fi.com/stripe_api/complete_purchase"
+export const CHECK_STATUS = "https://admin.sure-fi.com/stripe_api/check_status"
+
 export const UPLOAD_IMAGE_LINK = "https://admin.sure-fi.com/mobile_api/upload_system_images"
 export const UNPAIR_LINK = BASE_URL + "systems/unpair_bridge_system"
 export const DEVICE_REGISTRATION_LINK = BASE_URL + "sessions/check_device_registration"
@@ -108,7 +113,8 @@ export const ADV_DATA_CHAR_SHORT_UUID = "E8BF000E-0EC5-2536-2143-2D155783CE78"
 
 export const MODULE_SERVICE_SHORT_UUID = "01"
 export const REMOTE_HARDWARE_TYPE = "02"
-
+export const EQUIPMENT_TYPE = "04"
+export const THERMOSTAT_TYPE = "03"
 export const CENTRAL_SERIAL_HARDWARE_TYPE = "05"
 export const REMOTE_SERIAL_HARDWARE_TYPE = "06"
 
@@ -172,11 +178,47 @@ export const FOUR_BYTES_TO = (byte_1,byte_2,byte_3,byte_4) =>{
 	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 16) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
 }
 
+export const FOUR_BYTES_ARRAY_TO_DECIMAL = (four_bytes_array) => {
+	var result = false
+	if(four_bytes_array){
+		if(Array.isArray(four_bytes_array)){
+			if(four_bytes_array.length == 4){
+				return ((four_bytes_array[0] & 0xff) << 32) | ([1] & 0xff << 16) | (four_bytes_array[2] & 0xff << 8) | (four_bytes_array[3] && 0xff ); 				
+			}
+		}
+	}
+
+	return result
+}
+
+export const FOUR_BYTES_ARRAY_TO_DECIMAL_BIG_ENDIAN = (four_bytes_array) => {
+	var result = false
+	if(four_bytes_array){
+		if(Array.isArray(four_bytes_array)){
+			if(four_bytes_array.length == 4){
+				return ((four_bytes_array[3] & 0xff) << 32) | ([2] & 0xff << 16) | (four_bytes_array[1] & 0xff << 8) | (four_bytes_array[0] && 0xff ); 				
+			}
+		}
+	}
+
+	return result
+}
+
+
+
 export const BYTES_TO_INT = array => { //big endian
 	var result = ((array[array.length - 1]) | 
               (array[array.length - 2] << 8) | 
               (array[array.length - 3] << 16) | 
               (array[array.length - 4] << 24));
+	return result
+}
+
+export const BYTES_TO_INT_LITTLE_ENDIANG = array => { //big endian
+	var result = ((array[array.length - 4]) | 
+              (array[array.length - 3] << 8) | 
+              (array[array.length - 2] << 16) | 
+              (array[array.length - 1] << 24));
 	return result
 }
 
@@ -466,7 +508,12 @@ export const PRETY_VERSION = version => {
 			return "v1.0"
 		if (version > 1){
 			var version_split = version.toString().split(".")
-			return ("v" + version_split[0] +  ".0" + version_split[1]  )
+			if(version_split[1] != null && version_split != undefined){
+				return ("v" + version_split[0] +  ".0" + version_split[1])	
+			}else{
+				return ("v" + version_split[0] +  ".0")	
+			}
+			
 		}
 
 		return ("v" + version.toString())
@@ -474,6 +521,26 @@ export const PRETY_VERSION = version => {
 		return ""
 	}
 
+}
+
+export const prettyBytesToHex = bytes => {
+	var string_bytes = bytesToHex(bytes)
+	var final_string = ""
+	for(var i = 0; i < string_bytes.length -1; i = i + 2){
+		var j = i + 1
+		if(j < string_bytes.length){
+			final_string = final_string + " | " + string_bytes.charAt(i) + string_bytes.charAt(i + 1) + " , "
+		}
+	}
+	return final_string;
+}
+
+export const bytesToHex = bytes => {
+    for (var hex = [], i = 0; i < bytes.length; i++) {
+        hex.push((bytes[i] >>> 4).toString(16));
+        hex.push((bytes[i] & 0xF).toString(16));
+    }
+    return hex.join("");
 }
 
 export const MAKE_ID = () => {
