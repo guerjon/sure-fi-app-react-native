@@ -75,7 +75,6 @@ class PaymentOptions extends Component {
 		})
 	}
 
-
     getPrice(){
     	var price = 0
 		fetch(GET_PRICE_URL,{
@@ -210,7 +209,7 @@ class PaymentOptions extends Component {
 			show_activate_option: false
 		})	 
 
-		this.props.setDemoModeTime(0);
+		this.props.setDemoModeTime([0,0,0,0]);
 		setTimeout(() => this.props.getDemoModeTime(),1000)
 		
 		this.props.navigator.pop()

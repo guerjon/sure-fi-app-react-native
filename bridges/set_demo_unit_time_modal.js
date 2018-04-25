@@ -12,7 +12,7 @@ import {
   	Alert
 } from 'react-native'
 import { connect } from 'react-redux';
-import {GET_USERS_FROM_PIN} from '../constants'
+import {GET_USERS_FROM_PIN,INT_TO_BYTE_ARRAY} from '../constants'
 
 
 const option_blue = "#5AB0E3"
@@ -63,7 +63,10 @@ class SetDemoUnitTimeModal extends Component{
 		if(this.text.length){
 			//this.fetchResults(this.text)
 			var number_of_days = parseInt(this.text) 
-			this.props.setDemoModeTime(number_of_days)
+			var numer_seconds = number_of_days * 86400
+			var number_seconds_bytes = INT_TO_BYTE_ARRAY(numer_seconds)
+
+			this.props.setDemoModeTime(number_seconds_bytes)
 			setTimeout(() => this.props.getDemoModeTime(),2000)
 			this.closeModal()
 

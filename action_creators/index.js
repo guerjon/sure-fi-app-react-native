@@ -334,7 +334,7 @@ export const parseSecondsToHumanReadable = (number_seconds) => {
 
 	}else if(number_seconds >= 86400){ //more than a day
 		var days = number_seconds / 86400
-		time = parseInt(days) + " days "
+		time = parseInt(days) + " days"
 	}
 
 	return time

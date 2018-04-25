@@ -15,6 +15,7 @@ import UpdateFirmwareCentral from '../bridges/bridges_configuration/update_firmw
 import SelectFirmwareCentral from '../bridges/bridges_configuration/select_firmware_central'
 import FirmwareUpdate from '../bridges/firmware_update'
 import ConfigureRadio from '../bridges/configure_radio'
+
 import DeviceControlPanel from '../bridges/device_control_panel'
 import HVACDeviceControlPanel from '../bridges/hvac_device_control_panel'
 import SetupCentralExamples from '../bridges/setup_central_examples'
@@ -43,6 +44,7 @@ import RSSettings from '../bridges/rs_settings'
 import PaymentOptions from '../bridges/payment/payment_options'
 import HVACPair from '../bridges/hvac/pair'
 import HVACOperatingValues from '../bridges/hvac/operating_values'
+import HVACConfigureRadio from '../bridges/hvac/configure_radio'
 
 const screens =
 [
@@ -85,7 +87,9 @@ const screens =
 	['PaymentOptions',PaymentOptions],
 	["HVACPair",HVACPair],
 	["HVACOperatingValues",HVACOperatingValues],
-	["SetRuntimeModal",SetRuntimeModal]
+	["SetRuntimeModal",SetRuntimeModal],
+	["HVACConfigureRadio",HVACConfigureRadio]
+
 ];
 
 export function registerScreens(store,Provider){

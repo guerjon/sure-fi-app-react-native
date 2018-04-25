@@ -487,6 +487,7 @@ class Options extends Component{
 							{this.getInstructionalVideos()}
 							{this.getDocumentationOption()}
 							{this.getOperatingValuesOption()}
+							{this.getConfigureRadioOption()}
 						</View>
 					)
 				}
@@ -500,6 +501,7 @@ class Options extends Component{
 						{this.getOperatingValuesOption()}	
 						{this.getUpdateFirwmareOption()}
 						{this.getRelayDefaults()}
+						{this.getConfigureRadioOption()}
 					</View>
 				)
 			}else{ //undefined status

@@ -37,7 +37,8 @@ const initialState = {
   last_package_time: [],
   last_package_time_thermostat : [],
   run_time : [],
-  activated : true
+  activated : true,
+  demo_mode_time : []
 }
 
 
@@ -246,6 +247,11 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         activated: action.activated
+      }
+    case "SET_DEMO_MODE_TIME":
+      return{
+        ...state,
+        demo_mode_time: action.demo_mode_time
       }
     default:
       return state
