@@ -238,7 +238,7 @@ class Options extends Component{
     }
 
     getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay_dark.imageset/menu_relay.png')} name="Default Settings" />
+    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
    	}
 
    	getSureFiChat(){

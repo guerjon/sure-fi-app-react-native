@@ -14,49 +14,35 @@ import {
 
 class Button extends Component{
 	render(){	
-		var big_button_style ={
-			borderWidth: 0.3,
-			width:80,
-			height: 40,
+		let width = this.props.width ? this.props.width : 80
+		let height = this.props.height ? this.props.height : 40
+		let marginHorizontal = this.props.marginHorizontal ? this.props.marginHorizontal : 5
+		let basic_style = {
+			width:width,
+			height: height,
 			alignItems: "center",
 			justifyContent:"center",
 			borderRadius: 10,
-			marginHorizontal: 5
+			marginHorizontal: marginHorizontal,
+			borderWidth: 0.3,
+			backgroundColor: "white"
 		}
-		var big_button_text_style = {
+
+		let basic_text_style = {
 			fontSize: 16,
 			color:"black"
 		}
 
-		var active_button_style = {
-			width:80,
-			height: 40,
-			alignItems: "center",
-			justifyContent:"center",
-			borderRadius: 10,
-			marginHorizontal: 5,
-			backgroundColor: option_blue
-		}
 
-		var active_button_text_style = {
-			fontSize: 16,
-			color:"white"
-		}
-		
 		if(this.props.active){
-			return (
-				<TouchableHighlight style={active_button_style} >
-					<Text style={active_button_text_style}>
-						{this.props.text}
-					</Text>
-				</TouchableHighlight>
-			)
-
+			basic_style.backgroundColor = option_blue
+			basic_text_style.fontSize = 16
+			basic_text_style.color = "white"
 		}
 
-		return (
-			<TouchableHighlight style={big_button_style} onPress={() => this.props.handleTouchButton(this.props.text)}>
-				<Text style={big_button_text_style}>
+		return(
+			<TouchableHighlight style={basic_style} onPress={() => this.props.handleTouchButton(this.props.text)}>
+				<Text style={basic_text_style}>
 					{this.props.text}
 				</Text>
 			</TouchableHighlight>

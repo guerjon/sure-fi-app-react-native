@@ -159,7 +159,8 @@ import {
 	PhoneRsp_Activated,
 	PhoneCmd_SetActivated,
 	PhoneCmd_SetDemoModeTime,
-	PhoneCmd_Unpair
+	PhoneCmd_Unpair,
+	PhoneRsp_RadioSettings
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -1242,80 +1243,7 @@ class SetupCentral extends Component{
 	}
 
 	setBoardVersion(setAppBoardVersion){
-	  	/*let app_board_version = this.props.app_board_version.split(" ")
-	  	console.log("app_board_version",app_board_version)
-		fetch(
-			TEcNG_RESULTS_ROUTE,
-			{
-				method: "POST",
-				headers: HEADERS_FOR_POST,
-				body : JSON.stringify({
-					test_key :  setAppBoardVersion
-				})
-			}
-		).then(
-			response => {
-				var data = JSON.parse(response._bodyInit) 
-				if(data.status == "success"){
-					
-					Alert.alert("App Board Test Log",data.data.log.test_log_content)
-				}else{
-					Alert.alert("App Board Test Log","No text Log found")
-				}
-			}
-		).catch(
-			error => {
-				console.log(error)
-			}
-		)*/
 		Alert.alert("Needs API Call, setBoardVersion()")
-	}
-
-	selectHoppingTable(selectedDeviceHoppingTable,normal_hopping_table){
-        let tableIndex = parseInt(selectedDeviceHoppingTable,16) % 72 
-
-        var option = tableIndex % 3
-
-        if (selectedDeviceHoppingTable >= 72) {
-
-            option += 1
-
-        }
-
-        if (selectedDeviceHoppingTable >= 144) {
-
-            option += 1
-
-        }
-
-        switch (option) {
-
-        case 0:
-
-            selectedDeviceSF = "SF10"
-
-            selectedDeviceBandwidth = "250kHz"
-
-            break
-
-        case 1:
-
-            selectedDeviceSF = "SF9"
-
-            selectedDeviceBandwidth = "125kHz"
-
-            break
-
-        default:
-
-            selectedDeviceSF = "SF8"
-            selectedDeviceBandwidth = "62.5kHz"
-            break
-        }
-
-        this.props.dispatch({type: "UPDATE_HOPPING_TABLE",hopping_table:normal_hopping_table})
-        this.props.dispatch({type: "UPDATE_SPREADING_FACTOR",spreading_factor:selectedDeviceSF})
-        this.props.dispatch({type: "UPDATE_BAND_WIDTH",band_width:selectedDeviceBandwidth})
 	}
 
 	isThermostat(){
@@ -1454,7 +1382,6 @@ class SetupCentral extends Component{
 			goToForcePair={() => this.goToForcePair()}
 			goToInstructionalVideos = {() => this.goToInstructionalVideos()}
 			goToOperationValues = {(activate_operating_values_wait) => this.goToOperationValues(activate_operating_values_wait)}
-			goToRsSettings = {() => this.goToRsSettings()}
 			device_status = {this.props.central_device_status}
 			fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 			getCloudStatus = {(device) => this.getCloudStatus(device)}
@@ -1467,27 +1394,9 @@ class SetupCentral extends Component{
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
 			saveOnCloudLog = { (bytes,type) => this.saveOnCloudLog(bytes,type)}
-			showModalToResetDemoUnits = {() => this.showModalToResetDemoUnits() }
+			showModalToResetDemoUnits = {() => this.goToPayMentOptions() }
 			unPair = {() => this.unPair()}
 		/>
-	}
-
-	showModalToResetDemoUnits(){
-		/*console.log("showModalToResetDemoUnits")
-
-		this.props.navigator.showLightBox({
-			screen: "DemoUnitKeyModal",
-			style: {
-				flex:1,
-				backgroundColor: "none",
-				backgroundColor: "backgroundColor: 'rgba(10,10,10,0.7)' "
-			},
-			passProps: {
-				updateDemoUnitTime : (values) => this.updateDemoUnitTime(values),
-				goToPayMentOptions : () => this.goToPayMentOptions()
-			}
-		})*/
-		this.goToPayMentOptions()
 	}
 
 	goToPayMentOptions(){
@@ -1664,19 +1573,33 @@ class SetupCentral extends Component{
 	}
 
 	goToConfigureRadio(){
-		this.removeHandleCharacteristic()
+		console.log("goToConfigureRadio()");
+		this.props.dispatch({type: "UPDATE_PAGE_STATUS",page_status:"loading"})
+		this.getRadioSettings()
+
 		this.props.navigator.push(
 			{
 				screen:"HVACConfigureRadio",
 				title: "Configure Radio",
 				passProps: {
 					saveOnCloudLog : (data,type)  => this.saveOnCloudLog(data,type),
-					selectHoppingTable : (hopping_table,data) => this.selectHoppingTable(hopping_table,data)
-				}
+					selectHoppingTable : (hopping_table,data) => this.selectHoppingTable(hopping_table,data),
+					getHoppingTable:  () => this.getHoppingTable(),
+					getRadioSettings: () => this.getRadioSettings()
+				},
+				navigatorButtons : {
+					rightButtons: [
+					  {
+					    title: 'Update',
+					    id: 'update',
+					    color:"red",
+					    buttonColor: "blue"
+					  }
+					]
+				}				
 			}
 		)
 	}
-
 
 
 	goToRelay(){
@@ -1684,7 +1607,7 @@ class SetupCentral extends Component{
 		
 		this.props.navigator.push({
 			screen: "Relay",
-			title: "Default Settings",
+			title: "Configuration",
 			animated: false,
 			passProps: {
 				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
@@ -1818,26 +1741,7 @@ class SetupCentral extends Component{
 		})
 	}
 
-	goToRsSettings(){
-        console.log("goToRsSettings()");
-		this.removeHandleCharacteristic()
-        this.props.navigator.push({
-        	screen: "RSSettings",
-        	title: "RS-485 Settings",
-        	passProps:{
-        		activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
-        		saveOnCloudLog : (data,type)  => this.saveOnCloudLog(data,type),
-        	},
-			navigatorButtons: {
-				righButtons: [
-					{
-						id: "update",
-						title: "UPDATE"
-					}
-				]
-			}
-        })
-    }
+	
 
 	
 	/* --------------------------------------------------------------------------------------------------- End Go To Seccion ---------------------------------------------------------------*/	
@@ -1929,25 +1833,11 @@ class SetupCentral extends Component{
 	}
 
 	updateRadioSettings(values){
-		this.saveOnCloudLog(values,"RADIOSETTINGS")
-
-		let spreading_factor = spreadingFactor.get(values[0]) 
-		let band_width = bandWidth.get(values[1])
-		let power = powerOptions.get(values[2])
-		let hopping_table = values[6]
-		
-		let retry_count = values[3]
-		let heartbeat_period = heartbeatPeriod.get(values[4]) 
-		let acknowledments =  values[5] ? "Enabled" : "Disabled"
-		
-
+		console.log("updateRadioSettings()",values)
 		this.props.dispatch(
 			{
-				type: "UPDATE_RADIO_SETTINGS",
-				power : power,
-				retry_count : retry_count,
-				heartbeat_period: heartbeat_period,
-				acknowledments : acknowledments,
+				type: "SET_RADIO_SETTINGS_HVAC",
+				radio_settings: values
 			}
 		)		
 	}
@@ -2004,14 +1894,8 @@ class SetupCentral extends Component{
 	}
 
 	updateHoppingTable(values){
-		console.log("updateHoppingTable()")
-		var selectedDeviceHoppingTable = values[0]
-		selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
-		
-		this.saveOnCloudLog(values,"HOPPINGTABLE")
-
-		this.selectHoppingTable(selectedDeviceHoppingTable,values[0])
-
+		console.log("updateHoppingTable()",values)
+		this.props.dispatch({"type" : "SET_HOPPING_TABLE",hopping_table: values})
 	}
 
 	updateDebugModeStatus(values){
@@ -2022,7 +1906,6 @@ class SetupCentral extends Component{
 			this.props.dispatch({type: "SET_DEBUG_MODE_STATUS",debug_mode_status: false})
 		}		
 	}
-
 
 	updateRunTime(values){
 		console.log("updateRunTime()",values)
@@ -2223,7 +2106,9 @@ class SetupCentral extends Component{
 			operating_values,
 			power_on_time,
 			power_voltage,
-			radio_version
+			radio_version,
+			hopping_table,
+			radio_settings
 		} = this.props
 		var commands = []
 
@@ -2254,6 +2139,14 @@ class SetupCentral extends Component{
 
 		if(power_on_time.length == 0){
 			commands.push(PhoneCmd_GetPowerOnTime)
+		}
+
+		if(hopping_table.length == 0){
+			commands.push(PhoneCmd_GetHoppingTable)
+		}
+
+		if(radio_settings.length == 0){
+			commands.push(PhoneCmd_GetRadioSettings)
 		}
 
 		console.log("commands",prettyBytesToHex(commands) ,"MAX_NUMBER_OF_RETRIES",MAX_NUMBER_OF_RETRIES)
@@ -2335,6 +2228,13 @@ class SetupCentral extends Component{
 			break
 			case PhoneRsp_DemoModeTime:
 				this.updateDemoModeTime(data)
+			break
+			case PhoneRsp_RadioSettings:
+				this.updateRadioSettings(data)
+				this.props.dispatch({type: "UPDATE_PAGE_STATUS",page_status:"loaded"})
+			break
+			case PhoneRsp_HoppingTable:
+				this.updateHoppingTable(data)
 			break
 			case PhoneRsp_UartTimeout: //0x82
 				Alert.alert("Failure", "PhoneRsp_UartTimeout (" + command.toString(16) + ") data: ( " + prettyBytesToHex(data) + ")")
@@ -2681,7 +2581,6 @@ class SetupCentral extends Component{
 	render(){
 		//console.log("datos aca",this.props.central_device_status,this.props.indicator_number,this.props.power_voltage)
 		
-		
 		console.log("this.props --------------------------");
 		
 		console.log(
@@ -2794,6 +2693,7 @@ const mapStateToProps = state => ({
 	handleConnected : state.setupCentralReducer.handleConnected,
 	handleCharacteristic : state.setupCentralReducer.handleCharacteristic,
 	getAllCommands: state.setupCentralReducer.getAllCommands,
+	radio_settings : state.setupCentralReducer.radio_settings,
 	commands : state.bluetoothDebugLog.commands,
 	warranty_information : state.scanCentralReducer.warranty_information,
 	demo_unit_time : state.scanCentralReducer.demo_unit_time,
@@ -2804,7 +2704,8 @@ const mapStateToProps = state => ({
 	last_package_time_thermostat : state.scanCentralReducer.last_package_time_thermostat,
 	run_time: state.scanCentralReducer.run_time,
 	activated : state.scanCentralReducer.activated,
-	demo_mode_time: state.scanCentralReducer.demo_mode_time
+	demo_mode_time: state.scanCentralReducer.demo_mode_time,
+	
 });
 
 

@@ -14,7 +14,7 @@ const initialState = {
   is_editing: false,
   device_name : "",
   remote_device_name : "",
-  hopping_table : 0,
+  hopping_table : [],
   write_pair_result : false,
   write_unpair_result: false,
   hardware_status : null,
@@ -76,12 +76,22 @@ export default function setupCentralReducer (state = initialState, action) {
         heartbeat_period: action.heartbeat_period,
         acknowledments : action.acknowledments,
       }
+    case "SET_RADIO_SETTINGS_HVAC":
+      return{
+        ...state,
+        radio_settings: action.radio_settings
+      }
     case "UPDATE_HOPPING_TABLE":
       return {
         ...state,
         hopping_table: action.hopping_table
       }
 
+    case "SET_HOPPING_TABLE":
+      return{
+        ...state,
+        hopping_table: action.hopping_table
+      }
     case "UPDATE_SPREADING_FACTOR":
       return {
         ...state,

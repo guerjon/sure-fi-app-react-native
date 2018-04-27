@@ -243,7 +243,7 @@ class Options extends Component{
     }
 
     getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Default Settings" />
+    	return <Option callback={() => this.props.goToRelay()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
    	}
 
    	getSureFiChat(){
@@ -462,8 +462,8 @@ class Options extends Component{
 		var sales_dist = ["SALES","DIST"]		
 		var indicator = this.props.indicatorNumber
 
-		if(admin_options.lastIndexOf(user_type) !== -1){
-		//if(true){
+		//if(admin_options.lastIndexOf(user_type) !== -1){
+		if(true){
 			return this.getAdminOptions(indicator)
 
 		}else if(sales_dist.lastIndexOf(user_type) !== -1){

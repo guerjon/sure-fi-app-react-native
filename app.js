@@ -23,7 +23,6 @@ Navigation.startSingleScreenApp({
     navigatorStyle : {
       navBarHidden : true,
     },
-    navigatorButtons: {},
     passProps: {},
     animationType: 'slide-down',
   },
