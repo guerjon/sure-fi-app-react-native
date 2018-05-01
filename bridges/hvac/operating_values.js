@@ -34,6 +34,7 @@ import {
 	parseSecondsToHumanReadable
 	} from '../../action_creators'
 import Background from '../../helpers/background'
+import SWITCH from '../../helpers/switch'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const check = (<Icon name="check" size={25} color={success_green} />)
@@ -68,24 +69,7 @@ function doPrettyZeros(number){
 	}
 }
 
-var SWITCH = params => {
-	if(params.isActivated)
-		return (
-			<TouchableHighlight style={{backgroundColor:success_green,width:30,height:30,marginHorizontal:2,alignItems:"center",borderRadius:50}}>
-				<Text style={{color:"white",marginTop:5}}>
-					On
-				</Text>
-			</TouchableHighlight>
-		)
 
-	return (
-		<TouchableHighlight style={{backgroundColor:"red",width:30,height:30,marginHorizontal:2,borderRadius:50,alignItems:"center"}}>
-			<Text style={{color:"white",marginTop:5}}>
-				Off
-			</Text>
-		</TouchableHighlight>
-	)
-}
 
 var TIME = params => {
 	var value = ""
@@ -143,16 +127,16 @@ var RELAY_STATE = params => {
 		return (
 			<View style={backgroundStyle}>
 				<View style={{flexDirection:"row",marginVertical:5}}>
-					<SWITCH isActivated={relay_states[0]} />
-					<SWITCH isActivated={relay_states[1]} />
-					<SWITCH isActivated={relay_states[2]} />
-					<SWITCH isActivated={relay_states[3]} />
+					<SWITCH isActivated={relay_states[0]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[1]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[2]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[3]} onPress={() => console.log("switch pressend")}/>
 				</View>
 				<View style={{flexDirection:"row",marginVertical:5}}>
-					<SWITCH isActivated={relay_states[4]} />
-					<SWITCH isActivated={relay_states[5]} />
-					<SWITCH isActivated={relay_states[6]} />
-					<SWITCH isActivated={relay_states[7]} />
+					<SWITCH isActivated={relay_states[4]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[5]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[6]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[7]} onPress={() => console.log("switch pressend")}/>
 				</View>
 				<View style={{alignItems:"center",flexDirection:"row"}}>
 

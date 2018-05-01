@@ -242,8 +242,8 @@ class Options extends Component{
     	)
     }
 
-    getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
+    getConfiguration(){
+    	return <Option callback={() => this.props.goToConfiguration()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
    	}
 
    	getSureFiChat(){
@@ -500,7 +500,7 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getOperatingValuesOption()}	
 						{this.getUpdateFirwmareOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 						{this.getConfigureRadioOption()}
 					</View>
 				)
@@ -544,7 +544,7 @@ class Options extends Component{
 							{this.getUnPairBridgeOption()}
 							{this.getOperatingValuesOption()}
 							{this.getConfigureRadioOption()}
-							{this.getRelayDefaults()}
+							{this.getConfiguration()}
 						</View>
 					)
 				break
@@ -558,7 +558,7 @@ class Options extends Component{
 							{this.getUnPairBridgeOption()}
 							{this.getOperatingValuesOption()}
 							{this.getConfigureRadioOption()}
-							{this.getRelayDefaults()}
+							{this.getConfiguration()}
 						</View>
 					)
 				case 0xE0:
@@ -607,7 +607,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 					</View>
 				)
 			break
@@ -621,7 +621,7 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 					</View>
 				)
 			break
@@ -635,7 +635,7 @@ class Options extends Component{
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 					</View>
 				)
 			break
@@ -673,7 +673,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
-						{this.getRelayDefaults()}	
+						{this.getConfiguration()}	
 					</View>
 				)
 
@@ -685,7 +685,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 					</View>
 				)
 			
@@ -697,7 +697,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
-						{this.getRelayDefaults()}
+						{this.getConfiguration()}
 					</View>
 				)
 			case 0xE0:

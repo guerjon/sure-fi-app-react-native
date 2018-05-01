@@ -45,6 +45,8 @@ import PaymentOptions from '../bridges/payment/payment_options'
 import HVACPair from '../bridges/hvac/pair'
 import HVACOperatingValues from '../bridges/hvac/operating_values'
 import HVACConfigureRadio from '../bridges/hvac/configure_radio'
+import Configuration from '../bridges/hvac/configuration'
+
 
 const screens =
 [
@@ -88,7 +90,8 @@ const screens =
 	["HVACPair",HVACPair],
 	["HVACOperatingValues",HVACOperatingValues],
 	["SetRuntimeModal",SetRuntimeModal],
-	["HVACConfigureRadio",HVACConfigureRadio]
+	["HVACConfigureRadio",HVACConfigureRadio],
+	["Configuration",Configuration]
 
 ];
 

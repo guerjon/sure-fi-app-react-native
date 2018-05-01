@@ -116,6 +116,7 @@ import {
 	PhoneRsp_LastPacketTime,
 	PhoneRsp_RadioUpdateStatus,
 	PhoneRsp_HoppingTable,
+	PhoneRsp_LedsEnabled,
 	PhoneRsp_RunTime,
 	PhoneCmd_GetOperatingValues,
 	PhoneCmd_GetResetCauses,
@@ -160,7 +161,10 @@ import {
 	PhoneCmd_SetActivated,
 	PhoneCmd_SetDemoModeTime,
 	PhoneCmd_Unpair,
-	PhoneRsp_RadioSettings
+	PhoneRsp_RadioSettings,
+	PhoneCmd_SetLedsEnabled,
+	PhoneRsp_FailSafeOption,
+	PhoneCmd_SetFailSafeOption
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -1344,10 +1348,11 @@ class SetupCentral extends Component{
 	}
 
 	getOtherCommands(user_type){
-		var name = "Set Demo Time (" + parseSecondsToHumanReadable(this.props.demo_mode_time)+ ")";
-		var run_time_name = "Set Run Time (" + parseSecondsToHumanReadable(this.props.run_time)+ ")"; 
-		var activated_name = this.props.activated[0] ? "Deactivate" : "Activate"
-		var activated_value = this.props.activated[0] ? 0 : 1
+		let name = "Set Demo Time (" + parseSecondsToHumanReadable(this.props.demo_mode_time)+ ")";
+		let run_time_name = "Set Run Time (" + parseSecondsToHumanReadable(this.props.run_time)+ ")"; 
+		let activated_name = this.props.activated[0] ? "Deactivate" : "Activate"
+		let activated_value = this.props.activated[0] ? 0 : 1
+
 		if(user_type){
 			return (
 				<View>
@@ -1358,7 +1363,6 @@ class SetupCentral extends Component{
 					<WhiteRowLink name={name} callback={() => this.showDemoUnitTimeModal()}/>
 					<WhiteRowLink name={run_time_name} callback={() => this.showRunTimeModal()}/>
 					<WhiteRowLink name={activated_name} callback={() => this.setActivate(activated_value)}/>
-
 				</View>
 			)
 		}else{
@@ -1385,7 +1389,7 @@ class SetupCentral extends Component{
 			device_status = {this.props.central_device_status}
 			fastTryToConnect = {(device) => this.fastTryToConnect(device)}
 			getCloudStatus = {(device) => this.getCloudStatus(device)}
-			goToRelay = {() => this.goToRelay()}
+			goToConfiguration = {() => this.goToConfiguration()}
 			goToChat={() => this.goToChat()}
 			goToDocumentation = {() => this.goToDocumentation()}
 			activateHandleCharacteristic = {() => this.activateHandleCharacteristic()}
@@ -1420,6 +1424,30 @@ class SetupCentral extends Component{
 	setDemoModeTime(value){
 		var data = [PhoneCmd_SetDemoModeTime].concat(value)
 		this.write(data)
+	}
+
+	setActivateLed(value){
+		var data = [PhoneCmd_SetLedsEnabled].concat(value)
+		this.write(data)
+		setTimeout(() => this.getActivatedLed(),2000)
+	}
+
+
+	setFailSafeOption(value){
+		var data = [PhoneCmd_SetFailSafeOption].concat(value)
+		this.write(data)
+		setTimeout(() => this.getFailSafeOption())
+	}
+
+
+	getFailSafeOption(){
+		console.log("getFailSafeOption()")
+		this.write([PhoneCmd_GetFailSafeOption])
+	}
+
+	getActivatedLed(){
+		console.log("getActivatedLed()")
+		this.write([PhoneCmd_GetLedsEnabled])
 	}
 
 	write(data){
@@ -1585,7 +1613,9 @@ class SetupCentral extends Component{
 					saveOnCloudLog : (data,type)  => this.saveOnCloudLog(data,type),
 					selectHoppingTable : (hopping_table,data) => this.selectHoppingTable(hopping_table,data),
 					getHoppingTable:  () => this.getHoppingTable(),
-					getRadioSettings: () => this.getRadioSettings()
+					getRadioSettings: () => this.getRadioSettings(),
+					setFailSafeOption: values => this.setFailSafeOption(values),
+					setActivateLed: values => this.setActivateLed(values)
 				},
 				navigatorButtons : {
 					rightButtons: [
@@ -1602,16 +1632,31 @@ class SetupCentral extends Component{
 	}
 
 
-	goToRelay(){
-		console.log("goToRelay()");
-		
+	updateSliderValue(){
+		let fail_safe_option = this.props.fail_safe_option.slice(0,4)
+		console.log("updateSliderValue",fail_safe_option)
+		let minutes_slider_value = parseInt( BYTES_TO_INT_LITTLE_ENDIANG(fail_safe_option) / 60 )
+		console.log("updateSliderValue",fail_safe_option)
+		this.props.dispatch({type: "SET_HEART_BEAT_SLIDER_VALUE",heart_beat_slider_value: minutes_slider_value})		
+	}
+
+	goToConfiguration(){
+		console.log("goToConfiguration()");
+		this.getActivatedLed()
+		this.getFailSafeOption()
+		this.updateSliderValue()
+
 		this.props.navigator.push({
-			screen: "Relay",
+			screen: "Configuration",
 			title: "Configuration",
 			animated: false,
 			passProps: {
-				activateHandleCharacteristic: () => this.activateHandleCharacteristic(),
-				saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type)
+				saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
+				updateLedsEnabled: values => this.updateLedsEnabled(values),
+				updateFailSafeOption: values => this.updateFailSafeOption(values),
+				updateSliderValue: () => this.updateSliderValue(),
+				setFailSafeOption: (value) => this.setFailSafeOption(value),
+				write: values => this.write(values)
 			},
 			navigatorButtons: {
 				rightButtons: [
@@ -1898,6 +1943,16 @@ class SetupCentral extends Component{
 		this.props.dispatch({"type" : "SET_HOPPING_TABLE",hopping_table: values})
 	}
 
+	updateLedsEnabled(values){
+		console.log("updateLedsEnabled()",values)
+		this.props.dispatch({type: "SET_ACTIVATED_LED",activated_led: values})
+	}
+
+	updateFailSafeOption(values){
+		console.log("updateFailSafeOption()",values)
+		this.props.dispatch({type: "SET_FAIL_SAFE_OPTION",fail_safe_option: values})
+	}
+
 	updateDebugModeStatus(values){
 		console.log("updateDebugModeStatus()")
 		if(values[0]){
@@ -2108,7 +2163,9 @@ class SetupCentral extends Component{
 			power_voltage,
 			radio_version,
 			hopping_table,
-			radio_settings
+			radio_settings,
+			activated_led,
+			fail_safe_option
 		} = this.props
 		var commands = []
 
@@ -2147,6 +2204,14 @@ class SetupCentral extends Component{
 
 		if(radio_settings.length == 0){
 			commands.push(PhoneCmd_GetRadioSettings)
+		}
+
+		if(activated_led.length == 0){
+			commands.push(PhoneCmd_GetLedsEnabled)
+		}
+
+		if(fail_safe_option.length == 0){
+			commands.push(PhoneCmd_GetFailSafeOption)
 		}
 
 		console.log("commands",prettyBytesToHex(commands) ,"MAX_NUMBER_OF_RETRIES",MAX_NUMBER_OF_RETRIES)
@@ -2235,6 +2300,12 @@ class SetupCentral extends Component{
 			break
 			case PhoneRsp_HoppingTable:
 				this.updateHoppingTable(data)
+			break
+			case PhoneRsp_LedsEnabled:
+				this.updateLedsEnabled(data)
+			break
+			case PhoneRsp_FailSafeOption:
+				this.updateFailSafeOption(data)
 			break
 			case PhoneRsp_UartTimeout: //0x82
 				Alert.alert("Failure", "PhoneRsp_UartTimeout (" + command.toString(16) + ") data: ( " + prettyBytesToHex(data) + ")")
@@ -2590,9 +2661,8 @@ class SetupCentral extends Component{
 			" Bluetooth Version: "+ this.props.bluetooth_version +
 			" Pairing Info: " + this.props.pairing_info +
 			" Last Package time " + this.props.last_package_time +  
-			" Registration: "+this.props.registration_info +" } ");
+			" Registration: "+this.props.registration_info + " } ");
 		
-		console.log("Operating values:" + this.props.operating_values)
 		console.log("this.props --------------------------");
 		
 
@@ -2705,7 +2775,8 @@ const mapStateToProps = state => ({
 	run_time: state.scanCentralReducer.run_time,
 	activated : state.scanCentralReducer.activated,
 	demo_mode_time: state.scanCentralReducer.demo_mode_time,
-	
+	activated_led: state.scanCentralReducer.activated_led,
+	fail_safe_option : state.scanCentralReducer.fail_safe_option
 });
 
 

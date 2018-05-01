@@ -45,6 +45,13 @@ const check = (<Icon name="check" size={25} color={success_green} />)
 class HVACConfigureRadio extends Component {
 
 
+    static navigatorStyle = {
+        navBarBackgroundColor : first_color,
+        navBarTextColor : "white",
+        navBarButtonColor: "white",
+        orientation: 'portrait',
+        navBarTitleTextCentered: true, 
+    }
 
 
     onNavigatorEvent(event){
@@ -71,11 +78,7 @@ class HVACConfigureRadio extends Component {
 		HVAC_WRITE_COMMAND(this.device.id,[0x09])
 	}
 
-	didMount(){
-		this.props.navigator.setStyle({
-		  navBarBackgroundColor: 'blue'
-		});
-	}
+
 
 
 	update(){

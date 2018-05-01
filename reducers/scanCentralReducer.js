@@ -38,7 +38,9 @@ const initialState = {
   last_package_time_thermostat : [],
   run_time : [],
   activated : true,
-  demo_mode_time : []
+  demo_mode_time : [],
+  activated_led: [],
+  heart_beat_slider_value: 1
 }
 
 
@@ -252,6 +254,21 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         demo_mode_time: action.demo_mode_time
+      }
+    case "SET_ACTIVATED_LED":
+      return{
+        ...state,
+        activated_led: action.activated_led
+      }
+    case "SET_FAIL_SAFE_OPTION":
+      return{
+        ...state,
+        fail_safe_option: action.fail_safe_option
+      }
+    case "SET_HEART_BEAT_SLIDER_VALUE":
+      return {
+        ...state,
+        heart_beat_slider_value: action.heart_beat_slider_value
       }
     default:
       return state

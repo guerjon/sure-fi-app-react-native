@@ -312,6 +312,9 @@ function calculateSeconds(number_seconds,minutes){
 	return number_seconds - (minutes * 60)
 }
 
+/*
+	number_seconds must be a four bytes array
+*/
 export const parseSecondsToHumanReadable = (number_seconds) => {
 	number_seconds = BYTES_TO_INT_LITTLE_ENDIANG(number_seconds)
 	var time = ""
@@ -341,4 +344,9 @@ export const parseSecondsToHumanReadable = (number_seconds) => {
 }
 
 
-
+export const COMBINEJSONS = (json1,json2) => {
+	for (var key in json2){
+		json1[key] = json2[key]
+	}
+	return json1
+}
