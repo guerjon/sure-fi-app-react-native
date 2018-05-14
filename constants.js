@@ -2,30 +2,39 @@ var md5 = require('md5');
 
 export const BASE_URL = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/"
 export const FIRMWARE_CENTRAL_ROUTE = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/firmware/get_available_firmware"
-export const API_REGISTERING_LINK = BASE_URL +   "systems/register_bridge_system"
-export const GET_PRICE_URL = BASE_URL + "systems/get_system_from_serial"
+
 
 export const COMPLETE_DIRECT_UNIT_PURCHASE = "https://admin.sure-fi.com/stripe_api/complete_purchase"
 export const CHECK_STATUS = "https://admin.sure-fi.com/stripe_api/check_status"
-
 export const UPLOAD_IMAGE_LINK = "https://admin.sure-fi.com/mobile_api/upload_system_images"
+
+
 export const UNPAIR_LINK = BASE_URL + "systems/unpair_bridge_system"
+export const GET_PRICE_URL = BASE_URL + "systems/get_system_from_serial"
+export const API_REGISTERING_LINK = BASE_URL +   "systems/register_bridge_system"
+
 export const DEVICE_REGISTRATION_LINK = BASE_URL + "sessions/check_device_registration"
 export const DEVICE_REGISTRATE_LINK = BASE_URL + "sessions/register_device"
-export const CHECK_USER_EXITS = BASE_URL + "users/check_exists"
-export const USER_LOGIN = BASE_URL + "users/login"
 export const SESSION_START = BASE_URL + "sessions/start"
 export const FINISH_USER_REGISTRATION = BASE_URL + "sessions/confirm_device_registration"
+
+export const CHECK_USER_EXITS = BASE_URL + "users/check_exists"
+export const USER_LOGIN = BASE_URL + "users/login"
+export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
+export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
+
+
 export const PUSH_CLOUD_STATUS_ROUTE = BASE_URL + "hardware/update_status"
 export const GET_STATUS_CLOUD_ROUTE = BASE_URL + "hardware/get_status"
 export const GET_MESSAGES_CLOUD_ROUTE = BASE_URL  + "hardware/get_messages"
 export const GET_DEVICE_NAME_ROUTE = BASE_URL + "hardware/get_name"
 export const UPDATE_DEVICE_NAME_ROUTE = BASE_URL + "hardware/update_name"
-export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
-export const GET_USERS_FROM_PIN  = BASE_URL  + "users/get_user_from_pin"
-export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
-export const GET_USER_VIDEOS = BASE_URL + "users/get_videos"
 export const WRITE_HARDWARE_LOG = BASE_URL + "hardware/write_hardware_log"
+export const GET_CONFIGURATION_LOG_URL = BASE_URL + "hardware/get_log"
+
+export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
+export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
+
 export const HVAC_TYPE = 4
 export const COMMAND = 0
 export const NOTIFICATION = 1
@@ -34,6 +43,9 @@ export const CONNECTED = 3
 export const DISCONNECTED = 4
 export const LOOKED  = 5
 
+export const SUCCESS_STATUS = 200
+
+export const NO_ACTIVITY = "NO_ACTIVITY"
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
 
@@ -174,6 +186,8 @@ export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{
 	return ((byte_1 & 0xff) << 8) | (byte_2 & 0xff); 
 }
 
+
+
 export const FOUR_BYTES_TO = (byte_1,byte_2,byte_3,byte_4) =>{
 	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 16) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
 }
@@ -256,6 +270,17 @@ export const longToByteArray = (long) => {
 	}
 
 	return byteArray;
+}
+
+export const DECIMAL_TO_FOUR_BYTES = decimal => {
+	var byteArray = [0,0,0,0]
+	for (var index = 0; index < byteArray.length; index++) {
+		var byte = decimal & 0xff;
+		byteArray[index] = byte;
+		decimal = (decimal - byte) / 256;
+	}
+
+	return byteArray;	
 }
 
 export const byteArrayToLong = (byteArray) => {
@@ -466,7 +491,7 @@ export const INCREMENT_PROGRAM_NUMBER = programNumber => {
 	return byte_program_number
 }
 
-const LONG_TO_BYTE_ARRAY = long => {
+export const LONG_TO_BYTE_ARRAY = long => {  //BIG INIDIAN
     // we want to represent the input as a 8-bytes array
     var byteArray = [0, 0];
 

@@ -7,7 +7,9 @@ import {
   SCANNED_CENTRAL_UNITS,
   BLUETOOTH_ERROR,
   ADD_NEW_BRIDGE,
-
+  NO_ACTIVITY,
+  LOADING,
+  LOADED
 } from '../constants'
 
 const initialState = {
@@ -40,9 +42,15 @@ const initialState = {
   activated : true,
   demo_mode_time : [],
   activated_led: [],
-  heart_beat_slider_value: 1
+  fail_safe_option: [],
+  configuration_data_state: NO_ACTIVITY,
+  heart_beat: [],
+  cloud_heart_beat : [],
+  cloud_equipment_fail_safe_options: [],
+  equipments_paired_with: [],
+  radio_update_status: [],
+  app_firmware_update_on_course: false
 }
-
 
 export default function scanCentralReducer (state = initialState, action) {
   switch (action.type) {
@@ -61,7 +69,21 @@ export default function scanCentralReducer (state = initialState, action) {
         manual_disconnect : false,
         interval : 0 ,
         show_device_not_matched: false,
-        demo_unit_price: 0
+        demo_unit_price: 0,
+        show_activate_option : false,
+        partners: [],
+        pairing_info: [],
+        last_package_time: [],
+        last_package_time_thermostat : [],
+        run_time : [],
+        activated : true,
+        demo_mode_time : [],
+        activated_led: [],
+        fail_safe_option: [],
+        configuration_data_state: NO_ACTIVITY,
+        heart_beat: [],
+        cloud_heart_beat : [],
+        cloud_equipment_fail_safe_options: []        
       }
     case "SET_DEMO_UNIT_PRICE": 
     {
@@ -265,10 +287,40 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         fail_safe_option: action.fail_safe_option
       }
-    case "SET_HEART_BEAT_SLIDER_VALUE":
+    case "SET_CONFIGURATION_DATA_STATE":
+    return {
+      ...state,
+      configuration_data_state: action.configuration_data_state
+    }
+    case "SET_HEART_BEAT":
+      return{
+        ...state,
+        heart_beat: action.heart_beat
+      }
+    case "SET_CLOUD_HEART_BEAT":
       return {
         ...state,
-        heart_beat_slider_value: action.heart_beat_slider_value
+        cloud_heart_beat: action.cloud_heart_beat
+      }
+    case "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS":
+      return{
+        ...state,
+        cloud_equipment_fail_safe_options: action.cloud_equipment_fail_safe_options
+      }
+    case "SET_EQUIPMENTS_PAIRED_WITH":
+      return{
+        ...state,
+        equipments_paired_with: action.equipments_paired_with
+      }
+    case "SET_RADIO_UPDATE_STATUS":
+      return{
+        ...state,
+        radio_update_status: action.radio_update_status
+      }
+    case "SET_APP_FIRMWARE_UPDATE_ON_COURSE":
+      return{
+        ...state,
+        app_firmware_update_on_course: action.app_firmware_update_on_course
       }
     default:
       return state

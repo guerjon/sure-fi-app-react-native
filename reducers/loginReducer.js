@@ -4,7 +4,11 @@ const initialState = {
   user_login_status:"logout",
   user_data : null,
   fetching_data : false,
-  device_found:false
+  device_found:false,
+  documentation_info : {
+    document_title: "Download documentation"
+  },
+  loaded_documentation_state: "no_activity"
 }
 
 export default function loginReducer (state = initialState, action) {
@@ -33,6 +37,16 @@ export default function loginReducer (state = initialState, action) {
       return{
         ...state,
         device_found : action.device_found
+      }
+    case "SET_DOCUMENTATION_INFO":
+      return{
+        ...state,
+        documentation_info: action.documentation_info
+      }
+    case  "SET_LOADED_DOCUMENTATION_STATE":
+      return{
+        ...state,
+        loaded_documentation_state: action.loaded_documentation_state
       }
     default:
       return state

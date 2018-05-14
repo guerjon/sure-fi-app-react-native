@@ -86,7 +86,7 @@ class StatusBox extends Component{
 						}}>
 							<Text style={{color: "#FFA500",padding: 2,fontSize:18}}>
 								Status:
-							</Text >
+							</Text>
 							<Text style={{color: "#FFA500",padding: 2,fontSize:18}}> 
 								Connecting
 							</Text>
@@ -104,7 +104,7 @@ class StatusBox extends Component{
 					<View style={{flexDirection:"row"}}>
 						<Text style={{padding: 10,margin:5}}>
 							Status
-						</Text >
+						</Text>
 						<Text style={{color: "red",padding: 10,margin: 5}}>
 							"Disconnected"
 						</Text>
@@ -112,18 +112,6 @@ class StatusBox extends Component{
 				</View>
 			</View>
 		)
-/*
-	<View style={{flex:1}}>
-		<TouchableHighlight 
-			style={{backgroundColor:"#00DD00",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-			onPress={()=> this.props.manualConnect(this.props.device)}
-		>
-			<Text style={styles.bigGreenButtonText}>
-				Connect
-			</Text>
-		</TouchableHighlight>
-	</View>							
-*/
 
 	}
 
@@ -148,7 +136,7 @@ class StatusBox extends Component{
 								}}>
 									<Text style={{color: "#009900",padding: 2,fontSize:18}}>
 										Status:
-									</Text >
+									</Text>
 									<Text style={{color: "#009900",padding: 2,fontSize:18}}> 
 										Connected
 									</Text>
@@ -160,21 +148,6 @@ class StatusBox extends Component{
 	        default:
 	        	return <Text>Error</Text>
     	}
-
-		/*
-			<View style={{flex:1}}>
-				<TouchableHighlight 
-					style={{backgroundColor:"gray",alignItems:"center",justifyContent:"center",padding:7,margin:5,alignSelf:"flex-end",borderRadius:10}}
-					onPress={() => this.props.manualDisconnect()}
-				>
-					<Text style={styles.bigGreenButtonText}>
-						Disconnect
-					</Text>
-				</TouchableHighlight>
-			</View>
-
-		*/
-
     }
 	
     updateName(save_param){

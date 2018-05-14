@@ -55,6 +55,7 @@ export const PhoneCmd_SetQuietMode = 0x85;
 export const PhoneCmd_SetWiegandLedMode = 0x86;
 export const PhoneCmd_SetDemoModeTime = 0x87;
 export const PhoneCmd_SetHeartbeatTime = 0x88;
+export const PhoneCmd_SetWiegandEnabled = 0x89;
 // +==============================+
 // |             Get              |
 // +==============================+
@@ -67,6 +68,8 @@ export const PhoneCmd_GetQuietMode = 0xA5;
 export const PhoneCmd_GetWiegandLedMode = 0xA6;
 export const PhoneCmd_GetDemoModeTime = 0xA7;
 export const PhoneCmd_GetHeartbeatTime = 0xA8
+export const PhoneCmd_GetWiegandEnabled = 0xA9
+
 
 // +============================================================+
 // |         				Responses          					|
@@ -84,11 +87,13 @@ export const PhoneRsp_VoltageLevels = 0x25;
 export const PhoneRsp_OperatingValues = 0x26;
 export const PhoneRsp_ResetCauses = 0x27;
 export const PhoneRsp_LastPacketTime = 0x28;
-export const PhoneRsp_RadioUpdateStatus = 0x20;
+export const PhoneRsp_RadioUpdateStatus = 0x29;
 export const PhoneRsp_HoppingTable = 0x2A;
 export const PhoneRsp_RunTime = 0x2B;
 export const PhoneRsp_PairingInfo = 0x2C;
 export const PhoneRsp_PowerOnTime = 0x2D;
+export const PhoneRsp_WiegandEnabled = 0xA9;
+
 
 // +==============================+
 // |           Run-Time           |
@@ -170,5 +175,70 @@ export const error_codes = [
 	[PhoneError_AlreadyStarted,"PhoneError_AlreadyStarted"],
 	[PhoneError_NotStarted,"PhoneError_NotStarted"],
 	[PhoneError_Security,"PhoneError_Security"],
-	[PhoneError_TooMany,"PhoneError_TooMany"]
+	[PhoneError_TooMany,"PhoneError_TooMany"],
+	[PhoneCmd_RadioEndRow, "PhoneCmd_RadioEndRow"]
 ]
+
+
+export const  bridgeResponseStrings =  new Map([
+	[0x20,"BridgeRsp_RadioVersion"],
+	[0x21,"BridgeRsp_AppVersion"],
+	[0x22,"BridgeRsp_BluetoothVersion"],
+	[0x23,"BridgeRsp_BootloaderInfo"],
+	[0x24,"BridgeRsp_Registration"],
+	[0x25,"BridgeRsp_VoltageLevels"],
+	[0x26,"BridgeRsp_OperatingValues"],
+	[0x27,"BridgeRsp_ResetCauses"],
+	[0x28,"BridgeRsp_LastPacketTime"],
+	[0x29,"BridgeRsp_RadioUpdateStatus"],
+	[0x2A,"BridgeRsp_HoppingTable"],
+	[0x2B,"BridgeRsp_RunTime"],
+	[0x2C,"BridgeRsp_PairingInfo"],
+	[0x2D,"BridgeRsp_PowerOnTime"],
+	[0x45,"BridgeRsp_PairResult"],
+	[0x47,"BridgeRsp_UnpairResult"],
+	[0x80,"BridgeRsp_Success"],
+	[0x81,"BridgeRsp_Failure"],
+	[0x82,"BridgeRsp_UartTimeout"],
+	[0xA0,"BridgeRsp_Activated"],
+	[0xA1,"BridgeRsp_RadioSettings"],
+	[0xA2,"BridgeRsp_LedsEnabled"],
+	[0xA3,"BridgeRsp_FailSafeOption"],
+	[0xA4,"BridgeRsp_DebugModeEnabled"],
+	[0xA5,"BridgeRsp_QuietMode"],
+	[0xA6,"BridgeRsp_WiegandLedMode"],
+	[0xA7,"BridgeRsp_DemoModeTime"],
+	[0xA8,"BridgeRsp_HeartbeatTime"],
+	[0x01,"BridgeError_ValueTooLow"],
+	[0x02,"BridgeError_ValueTooHigh"],
+	[0x03,"BridgeError_InvalidValue"],
+	[0x04,"BridgeError_PayloadTooLarge"],
+	[0x05,"BridgeError_PayloadTooSmall"],
+	[0x06,"BridgeError_Busy"],
+	[0x07,"BridgeError_InvalidSettings"],
+	[0x08,"BridgeError_NotFccApproved"],
+	[0x09,"BridgeError_AlreadyStarted"],
+	[0x0A,"BridgeError_Unsupported"],
+	[0x0B,"BridgeError_NotStarted"],
+	[0x0C,"BridgeError_Security"],
+	[0x0D,"BridgeError_TooMany"],
+	[0x0E,"BridgeError_DontHave"],
+	[0x0F,"BridgeError_InvalidCrc"],
+	[0x10,"BridgeError_Timeout"],
+	[0x11,"BridgeError_FwUpdating"],
+	[0x12,"BridgeError_GotFailures"]
+])
+
+
+
+export const successMessages = new Map([
+	[0x80,"PhoneCmd_SetActivated"],
+	[0x81,"PhoneCmd_SetRadioSettings"],
+	[0x82,"PhoneCmd_SetLedsEnabled"],
+	[0x83,"PhoneCmd_SetFailSafeOption"],
+	[0x84,"PhoneCmd_SetDebugModeEnabled"],
+	[0x85,"PhoneCmd_SetQuietMode"],
+	[0x86,"PhoneCmd_SetWiegandLedMode"],
+	[0x87,"PhoneCmd_SetDemoModeTime"],
+	[0x88,"PhoneCmd_SetHeartbeatTime"],
+])

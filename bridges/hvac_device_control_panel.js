@@ -5,6 +5,8 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
 import ProgressBar from 'react-native-progress/Bar';
 import moment from 'moment'
+import RNFetchBlob from 'react-native-fetch-blob'
+
 import {
   	Text,
   	View,
@@ -54,7 +56,11 @@ import {
 	prettyBytesToHex,
 	EQUIPMENT_TYPE,
 	THERMOSTAT_TYPE,
-	BYTES_TO_INT_LITTLE_ENDIANG
+	BYTES_TO_INT_LITTLE_ENDIANG,
+	INT_TO_BYTE_ARRAY,
+	CRC16,
+	LONG_TO_BYTE_ARRAY,
+	FIRMWARE_CENTRAL_ROUTE,
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -79,7 +85,10 @@ import {
 	READ_TX,
 	WRITE_UNPAIR,
 	LOG_INFO,
-	parseSecondsToHumanReadable
+	parseSecondsToHumanReadable,
+	HVAC_WRITE_COMMAND_WRITE_OUT_RESPONSE,
+	INIT_PERIPHERIAL
+
 } from '../action_creators'
 import Notification from '../helpers/notification'
 import {
@@ -164,7 +173,23 @@ import {
 	PhoneRsp_RadioSettings,
 	PhoneCmd_SetLedsEnabled,
 	PhoneRsp_FailSafeOption,
-	PhoneCmd_SetFailSafeOption
+	PhoneCmd_SetFailSafeOption,
+	PhoneCmd_RadioStartFirmwareUpdate,
+	PhoneCmd_RadioStartRow,
+	PhoneCmd_RadioRowPiece,
+	PhoneCmd_RadioEndRow,
+	PhoneCmd_RadioFinishFirmwareUpdate,
+	PhoneCmd_AppStartFirmwareUpdate,
+	PhoneCmd_AppStartRow,
+	PhoneCmd_AppRowPiece,
+	bridgeResponseStrings,
+	PhoneRsp_HeartbeatTime,
+	PhoneCmd_SetHeartbeatTime,
+	PhoneCmd_GetHeartbeatTime,
+	PhoneCmd_StartBleBootloader,
+	PhoneCmd_AppEndRow,
+	PhoneCmd_AppFinishFirmwareUpdate
+
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -175,19 +200,21 @@ import {
 	retryCount
 } from "../radio_values"
 import {WhiteRow} from './white_row'
-import BleManager from 'react-native-ble-manager'
-import { BleManager as FastBleManager} from 'react-native-ble-plx';
+
+import {BleManager as FastBleManager} from 'react-native-ble-plx';
 import {WhiteRowLink,WhiteRowInfoLink} from '../helpers/white_row_link'
 import {PIC_VERSIONS} from './pic_versions'
 
 
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+const BluetoothModule = NativeModules.BluetoothModule
 const MAX_NUMBER_OF_RETRIES = 5
 var interval = 0;
 var second_interval = 0;
 var general_interval = 0;
 var getAllEventActivate = false;
+var scanning_status_interval = 0
 /*var app_firmware_version_interval = 0
 var radio_firmware_version_interval = 0
 var bluetooth_firmware_version_interval = 0
@@ -200,6 +227,13 @@ var radio_pic_version = 0
 var hopping_table_interval = 0
 var debug_mode_status_interval = 0
 */
+const APPLICATION_TYPE = 1
+const RADIO_TYPE = 2
+const BLUETOOTH_TYPE = 3
+var get_update_radio_status_inteval = 0
+var get_app_version_interval = 0
+const NUMBER_OF_ROW_RETRIES = 5
+
 class SetupCentral extends Component{
 	
     static navigatorStyle = {
@@ -216,50 +250,65 @@ class SetupCentral extends Component{
 		super(props);
 		
 		this.device = props.device
-	
-		//console.log("props.device",props.device)
 		this.hardware_type = props.device.manufactured_data.hardware_type
 		this.manufactured_device_id = props.device.manufactured_data
-
-		//console.log("props wtf-------------------------------	",props.device)
-	
-		/*
-			console.log("id",this.device.id);
-			console.log("name",this.device.name);
-			console.log("address",this.device.manufactured_data.address);
-			console.log("device_id",this.manufactured_device_id);
-			console.log("device_state",this.device.manufactured_data.device_state);
-			console.log("firmware_version",this.device.manufactured_data.firmware_version);
-			console.log("tx",this.device.manufactured_data.tx);
-			console.log("hardware_type",this.device.manufactured_data.hardware_type);
-			console.log("security_string",this.device.manufactured_data.security_string);
-		*/
 		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.getAllCommandsEvent = this.getAllCommandsEvent.bind(this)
 		this.handleConnectedDevice = this.handleConnectedDevice.bind(this)
 		this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
+        this.handleDiscoverPeripheral = this.handleDiscoverPeripheral.bind(this)
+        this.dfuCompletedEvent = this.dfuCompletedEvent.bind(this);
+        this.updateGraph = this.updateGraph.bind(this)		
+        this.handleOnDFUAborted = this.handleOnDFUAborted(this)
+        this.handleOnDFUError =	this.handleOnDFUError(this)
 		this.fast_manager = new FastBleManager()
-
 		this.devices_found = []
 		this.is_in = false
 		this.changing_time = false
-		this.allow_go_to_operation_values = true
-		this.something = 0
-
+		this.page_count = 0 // firmware update page count
+		this.bytes_arrays = []
+		this.current_page = []
 	}
 
-	checkDeviceState(device){
-		
-		var state = device.manufactured_data.device_state.slice(-2)
-		console.log("checkDeviceState()",state)
+    updateGraph(data){
+        var {dispatch} = this.props;
+        dispatch({type: "CHANGE_PROGRESS", new_progress: (data.percent * 0.01)})
+    }
 
-		if(state != "04"){
+    dfuCompletedEvent(data){
+    	if(this.props.radio_and_bluetooth_firmware_update){
+    		Alert.alert("Update Complete","The firmware  update has been completed");	
+    		this.props.dispatch({type: "SET_RADIO_AND_BLUETOOTH_FIRMWARE_UPDATE",radio_and_bluetooth_firmware_update: false})
+    	}else if(this.props.complete_firmware_update_on_course){
+    		Alert.alert("Update Complete","The firmware  update has been completed");	
+    		this.props.dispatch({type: "SET_COMPLETE_FIRMWARE_UPDATE_ON_COURSE",complete_firmware_update_on_course:false})
+
+    	}else if(this.props.application_and_bluetooth_firmware_update){
+    		Alert.alert("Update Complete","The application and the bluetooth  update has been completed");	
+    		this.props.dispatch({type: "SET_APPLICATION_AND_BLUETOOTH_FIRMWARE_UPDATE",application_and_bluetooth_firmware_update:true})
+    	}else{
+    		Alert.alert("Update Complete","The bluetooth firmware  update has been completed");
+    	}
+        this.deleteScanningInterval()
+        
+        setTimeout(() => this.fastTryToConnect(this.device),2000)
+    }   
+
+	checkDeviceState(device){
+		var state = parseInt(device.manufactured_data.device_state.slice(-2)) 
+		console.log("checkDeviceState()",state)
+		if(this.isThermostat()){
 			this.renderNormalConnecting()
 			this.fastTryToConnect(device)
 		}else{
-			this.renderConnectingStatus()
-			this.deployConnection(device,0)
+			if(state != 4){
+				this.renderNormalConnecting()
+				this.fastTryToConnect(device)
+			}else{
+				this.renderConnectingStatus()
+				this.deployConnection(device,0)
+			}			
 		}
 	}
 
@@ -280,9 +329,8 @@ class SetupCentral extends Component{
 				this.changing_time = true
 				this.props.navigator.pop()
 				this.disconnect() // don't chante this order (disconnect() and removeListeners()) or the device won't disconnect
-				
-				setTimeout(() => this.removeListeners(),3000)
-				
+				this.props.createScanInterval(),
+				setTimeout(() => this.removeListeners(),1000)
             break
             default:
             break
@@ -297,9 +345,8 @@ class SetupCentral extends Component{
 		this.props.dispatch({type: "CONNECTING_CENTRAL_DEVICE"})
 	
 		this.activateListeners()
-		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())  
+		this.fetchDeviceName(this.device.manufactured_data.device_id.toUpperCase(),this.device.manufactured_data.tx.toUpperCase())
 		this.checkDeviceState(this.device) //enter point for all the connections    
-
     }
 
     componentWillUnmount() {
@@ -309,7 +356,7 @@ class SetupCentral extends Component{
 		this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
 		this.props.dispatch({type:"HIDE_DEVICES_LIST"})
 		this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
-		//this.destroyFastManager()
+		this.props.showCamera()
     }
 
     destroyFastManager(){
@@ -328,13 +375,18 @@ class SetupCentral extends Component{
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 	}
 
-
 	activateListeners(){
 		console.log("activateListeners()");
 		this.activateHandleDisconnectedPeripheral()		
 		this.activateHandleConnectDevice()
 		this.activateHandleCharacteristic()
 		this.activateGetAllCommandsListener()
+		
+		this.discoverPeripheral = bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', this.handleDiscoverPeripheral);
+        this.completedEvent = bleManagerEmitter.addListener("DFUCompletedEvent",this.dfuCompletedEvent)
+        this.uGraph = bleManagerEmitter.addListener("DFUUpdateGraph",this.updateGraph)
+        this.onDFUAborted = bleManagerEmitter.addListener("DFUOnDfuAborted",this.handleOnDFUAborted)
+        this.onDFUError = bleManagerEmitter.addListener("DFUOnError",this.handleOnDFUError)
 	}
 
 	removeListeners(){
@@ -343,6 +395,9 @@ class SetupCentral extends Component{
 		this.removeHandleConnectDevice()
 		this.removeHandleDisconnectedPeripheral()
 		this.removeGetAllCommandsListener()
+        this.discoverPeripheral.remove()
+        this.completedEvent.remove()
+        this.uGraph.remove()		
 	}
 
 	disconnect(){
@@ -375,12 +430,6 @@ class SetupCentral extends Component{
 
 		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
 
-		/*POST_LOG({
-			log_type : "UNPAIR",
-			device_id : this.device.id, 
-			log_value: " ",
-			hardware_serial : this.device.manufactured_data.device_id.toUpperCase()
-		})*/
 		var hardware_type = this.device.manufactured_data.hardware_type
 		
 		console.log("hardware_type",hardware_type)
@@ -450,7 +499,6 @@ class SetupCentral extends Component{
             	getRunTime: (value) => this.getRunTime(value)
             }
         });
-
 	}
 
 	hideRightButton(){
@@ -532,8 +580,7 @@ class SetupCentral extends Component{
 		}else{
 			this.props.dispatch({type:"SET_HANDLE_DISCONNECT",handleDisconnected:true})
 			this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
-		}
-		
+		}	
 	}
 	
 	removeHandleDisconnectedPeripheral(){
@@ -550,27 +597,45 @@ class SetupCentral extends Component{
 		console.log("fastTryToConnect()")
 	    
 	    var device = device ? device : this.device
+	    let status = parseInt(this.props.device.manufactured_data.device_state.slice(-2))
 
-		if(this.props.device.manufactured_data.device_state.slice(-2) == "04"){
-			this.renderConnectingStatus()
-			this.deployConnection(device,0)
-		}else{
-			this.renderNormalConnecting()
+	    if(this.isThermostat()){
+	    	if(status >= 1){
+				this.renderConnectingStatus()
+				this.deployConnection(device,0)
+	    	}else{
+				this.renderNormalConnecting()
 
-			IS_CONNECTED(device.id)
-			.then(response => {
-				if(!response){
-					/*SlowBleManager.connect(device.id)
-					.then(response => {})
-					.catch(error => console.log("Error on fastTryToConnect()",error))*/
-					this.deployConnection(device,0)
-				}else{
-					this.startOperationsAfterConnect(device)
-				}
-			})
-			.catch(error => console.log("Error on fastTryToConnect()",error))
-			//setTimeout(() => this.checkConnectionStatus(device),3000) // sometimes the fastConnection fails, if this happen, on 2 seconds it will try to connect again
-		}
+				IS_CONNECTED(device.id)
+				.then(response => {
+					if(!response){
+						this.deployConnection(device,0)
+					}else{
+						this.startOperationsAfterConnect(device)
+					}
+				})
+				.catch(error => console.log("Error on fastTryToConnect()",error))
+			}	    	
+
+	    }else{
+	    	console.log("entra aqui 2")
+			if(status == 4){
+				this.renderConnectingStatus()
+				this.deployConnection(device,0)
+			}else{
+				this.renderNormalConnecting()
+
+				IS_CONNECTED(device.id)
+				.then(response => {
+					if(!response){
+						this.deployConnection(device,0)
+					}else{
+						this.startOperationsAfterConnect(device)
+					}
+				})
+				.catch(error => console.log("Error on fastTryToConnect()",error))
+			}
+	    }
 	}
 
 	checkConnectionStatus(device){
@@ -607,7 +672,6 @@ class SetupCentral extends Component{
 			clearInterval(interval)
 			this.renderConnectedStatus()
 		} )
-
 	}
 
 	connect(device){
@@ -668,7 +732,6 @@ class SetupCentral extends Component{
 	}
 
     handleConnectedDevice(data){
-    	console.log("handleConnectedDevice()",data)
     	LOG_INFO([0xA1],CONNECTED,this.device.manufactured_data.device_id) // 0xA1 ITS DEFINED ON commands.js
     	SlowBleManager.startHVACNotifications(this.device.id);
     	this.status_on_bridge = parseInt(data.device_status)
@@ -710,7 +773,7 @@ class SetupCentral extends Component{
 		if(this.props.setConnectionEstablished){
 	        	this.setConnectionEstablished(device)
 		}else{
-		    BleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
+		    SlowBleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
 	        	this.setConnectionEstablished()
 	        }).catch(error => {
 	        	console.log("Error",error)
@@ -748,13 +811,16 @@ class SetupCentral extends Component{
 
 
     	this.changing_time = false
-    	this.readStatusOnDevice(this.device)	
+    	if(this.isThermostat()){
+    		this.getAllInfo()
+    	}else{
+    		this.readStatusOnDevice(this.device)	
+    	}
     }
 
-
 	readStatusOnDevice(device){
-		//console.log("readStatusOnDevice()",device.id);
-		BleManager.getHVACDeviceStatus(device.id).then(response => {
+		console.log("readStatusOnDevice()",device.id);
+		SlowBleManager.getHVACDeviceStatus(device.id).then(response => {
 			
 			 //this is the internal status on the bridge
 			if(this.status_on_bridge == 2){
@@ -769,7 +835,7 @@ class SetupCentral extends Component{
 
 	readCharacteristic(device){
 		//console.log("readCharacteristic()")
-		BleManager.read(this.device.id,HVAC_SUREFI_THERMOSTAT_SERVICE,RX_DATA_CHAR_SHORT_UUID).then(response => {
+		SlowBleManager.read(this.device.id,HVAC_SUREFI_THERMOSTAT_SERVICE,RX_DATA_CHAR_SHORT_UUID).then(response => {
 			//console.log("response",response)
 			var data = Array.from(response)
 			var attention_character = data.shift()
@@ -847,10 +913,10 @@ class SetupCentral extends Component{
 		}
 
     	this.clearGeneralInterval()
-    	this.getAllInfo(device)
+    	this.getAllInfo()
     }
 
-    handleDisconnectedPeripheral(info){		
+    handleDisconnectedPeripheral(info){
     	//console.log("handleDisconnectedPeripheral",info)
     	console.log("handleDisconnectedPeripheral()",
     		this.props.pair_disconnect,
@@ -896,9 +962,10 @@ class SetupCentral extends Component{
      		})
 
 		}else if(this.props.deploy_disconnect){
+			
 			console.log("entra aqui 4 - deploy");
-    	}
-    	else if(this.props.switch_disconnect){
+
+    	}else if(this.props.switch_disconnect){
     		console.log("entra aqui - 5");
     		this.renderConnectingStatus()
     		
@@ -1085,11 +1152,6 @@ class SetupCentral extends Component{
 
 	    return value;
 	};
-	
-	saveOnCloudLog(value,log_type){
-		var body = LOG_CREATOR(value,this.device.manufactured_data.device_id,this.device.id,log_type)
-		POST_LOG(body)
-	}
 
 	setDebugModeStatus(){
 		if(this.props.debug_mode_status){ // debug mode is enabled
@@ -1112,14 +1174,16 @@ class SetupCentral extends Component{
 	}
 
 	getCorrectHexVersion(values){
-		var current_version = [values[0],values[1],values[2],values[3]]
-		current_version = BYTES_TO_HEX(current_version).toString().toUpperCase()
+		var current_version = BYTES_TO_HEX([values[3],values[2],values[1],values[0]]).toString().toUpperCase()
+		console.log("current_version()",current_version)
 		return current_version
 	}
 
 	getCorrectStringVerison(current_version){
+		console.log("getCorrectStringVerison()",current_version)
 		var versions = new Map(PIC_VERSIONS) 
 		var app_board_version = versions.get(current_version)
+		console.log("app_board_version()",app_board_version)
 		return app_board_version
 	}
 
@@ -1179,7 +1243,6 @@ class SetupCentral extends Component{
 		
 		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect : true})
 		this.simpleDisconnect()
-
 	}
 
 	simpleDisconnect(id,type){
@@ -1251,6 +1314,7 @@ class SetupCentral extends Component{
 	}
 
 	isThermostat(){
+		console.log("isThermostat()")
 		if(this.hardware_type == THERMOSTAT_TYPE || this.hardware_type == parseInt(THERMOSTAT_TYPE))
 			return true
 
@@ -1258,6 +1322,7 @@ class SetupCentral extends Component{
 	}
 
 	isEquipment(){
+		console.log("isEquipment()")
 		if(this.hardware_type == EQUIPMENT_TYPE || this.hardware_type == parseInt(EQUIPMENT_TYPE))
 			return true
 		return false
@@ -1427,22 +1492,47 @@ class SetupCentral extends Component{
 	}
 
 	setActivateLed(value){
+		console.log("setActivateLed()",value)
 		var data = [PhoneCmd_SetLedsEnabled].concat(value)
 		this.write(data)
 		setTimeout(() => this.getActivatedLed(),2000)
 	}
 
-
 	setFailSafeOption(value){
-		var data = [PhoneCmd_SetFailSafeOption].concat(value)
-		this.write(data)
-		setTimeout(() => this.getFailSafeOption())
+		console.log("setFailSafeOption()",value)
+		if(value){
+			var data = [PhoneCmd_SetFailSafeOption].concat(value)
+			this.write(data)
+			setTimeout(() => this.getFailSafeOption(),1000)			
+		}else{
+			console.log("Error","The value on setFailSafeOption is null.")
+		}
 	}
 
+	setHeartbeat(value){
+		console.log("setHeartbeat",value)
+		if(value){
+			var data = [PhoneCmd_SetHeartbeatTime].concat(value)
+			this.write(data)
+			setTimeout(() => this.getHeartBeatTime(),1000)
+		}else{
+			Alert.alert("Error","The Heartbeat value")
+		}
+	}
+
+	getHeartBeatTime(){
+		console.log("getHeartBeatTime()")
+		this.write([PhoneCmd_GetHeartbeatTime])
+	}
 
 	getFailSafeOption(){
 		console.log("getFailSafeOption()")
 		this.write([PhoneCmd_GetFailSafeOption])
+	}
+
+	getRadioUpdateStatus(){
+		console.log("getRadioUpdateStatus()")
+		this.write([PhoneCmd_GetRadioUpdateStatus])
 	}
 
 	getActivatedLed(){
@@ -1451,7 +1541,7 @@ class SetupCentral extends Component{
 	}
 
 	write(data){
-		console.log("write()",data)
+		console.log("write()",prettyBytesToHex(data))
 		HVAC_WRITE_COMMAND(this.device.id,data)
 		.then(response => {
 
@@ -1476,13 +1566,10 @@ class SetupCentral extends Component{
 					indicatorNumber={indicator_number}
 				/>
 			)
-
 		}
 		return null
 	}
 
-
-	
 	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
 
 	goToPair(){
@@ -1499,6 +1586,8 @@ class SetupCentral extends Component{
 					getCloudStatus : (device) => this.getCloudStatus(device),
 					searchPairedUnit : (device) => this.searchPairedUnit(device),
 					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
+					isThermostat: () => this.isThermostat(),
+					isEquipment: () => this.isEquipment()
 				},
 				rightButtons: [
 		            {
@@ -1554,19 +1643,15 @@ class SetupCentral extends Component{
 	}
 
 	doGoToFirmwareUpdate(){
-		this.removeHandleCharacteristic()
-		this.activateHandleDisconnectedPeripheral()
-
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
 		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 
-		this.eraseSecondInterval()
 
 		if(admin_options.lastIndexOf(user_type) !== -1){
 		//if(true){
 			this.props.navigator.push({
-				screen: "FirmwareUpdate",
+				screen: "HVACFirmwareUpdate",
 				title : "Firmware Update",
 				rightButtons: [
 		            {
@@ -1575,10 +1660,7 @@ class SetupCentral extends Component{
 		            },
 		        ],
 		        passProps: {
-		        	fastTryToConnect: (device) => this.fastTryToConnect(device),
-		        	saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
-		        	activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
-		        	activateHandleDisconnectedPeripheral : () => this.activateHandleDisconnectedPeripheral(),
+		        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
 		        	animated: false,
 		        	admin : true
 		        	//device : this.device
@@ -1586,15 +1668,11 @@ class SetupCentral extends Component{
 			})			
 		}else{
 			this.props.navigator.push({
-				screen: "FirmwareUpdate",
+				screen: "HVACFirmwareUpdate",
 				title : "Firmware Update",
 				animated: false,
 				passProps: {
-					fastTryToConnect: (device) => this.fastTryToConnect(device),
-					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
-					activateHandleCharacteristic : () => this.activateHandleCharacteristic(),
-					activateHandleDisconnectedPeripheral : () => this.activateHandleDisconnectedPeripheral(),
-					//device : this.device
+		        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
 				}
 			})			
 		}
@@ -1614,8 +1692,8 @@ class SetupCentral extends Component{
 					selectHoppingTable : (hopping_table,data) => this.selectHoppingTable(hopping_table,data),
 					getHoppingTable:  () => this.getHoppingTable(),
 					getRadioSettings: () => this.getRadioSettings(),
-					setFailSafeOption: values => this.setFailSafeOption(values),
-					setActivateLed: values => this.setActivateLed(values)
+					setFailSafeOption: (values) => this.setFailSafeOption(values),
+					setActivateLed: (values) => this.setActivateLed(values)
 				},
 				navigatorButtons : {
 					rightButtons: [
@@ -1631,20 +1709,12 @@ class SetupCentral extends Component{
 		)
 	}
 
-
-	updateSliderValue(){
-		let fail_safe_option = this.props.fail_safe_option.slice(0,4)
-		console.log("updateSliderValue",fail_safe_option)
-		let minutes_slider_value = parseInt( BYTES_TO_INT_LITTLE_ENDIANG(fail_safe_option) / 60 )
-		console.log("updateSliderValue",fail_safe_option)
-		this.props.dispatch({type: "SET_HEART_BEAT_SLIDER_VALUE",heart_beat_slider_value: minutes_slider_value})		
-	}
-
 	goToConfiguration(){
 		console.log("goToConfiguration()");
 		this.getActivatedLed()
-		this.getFailSafeOption()
-		this.updateSliderValue()
+		if(this.isEquipment()){
+			setTimeout(() => this.getFailSafeOption(),1000)	
+		}
 
 		this.props.navigator.push({
 			screen: "Configuration",
@@ -1656,7 +1726,12 @@ class SetupCentral extends Component{
 				updateFailSafeOption: values => this.updateFailSafeOption(values),
 				updateSliderValue: () => this.updateSliderValue(),
 				setFailSafeOption: (value) => this.setFailSafeOption(value),
-				write: values => this.write(values)
+				write: values => this.write(values),
+				isEquipment : () => this.isEquipment(),
+				isThermostat : () => this.isThermostat(),
+				setActivateLed: (values) => this.setActivateLed(values),
+				setHeartbeat: (values) => this.setHeartbeat(values),
+				updateHeartBeat: (values) => this.updateHeartBeat(values)
 			},
 			navigatorButtons: {
 				rightButtons: [
@@ -1728,12 +1803,10 @@ class SetupCentral extends Component{
 	}
 
 	getLastPackageTime(){
-		console.log("getLastPackageTime()")
+		//console.log("getLastPackageTime()")
 		if(this.isEquipment()){
-			
 			var data = [PhoneCmd_GetLastPacketTime]
 			this.write(data)
-
 		}else if(this.isThermostat()){
 			if(this.props.pairing_info.length > 0){				
 				console.log("this.props.pairing_info.length",this.props.pairing_info)
@@ -1742,26 +1815,37 @@ class SetupCentral extends Component{
 				var pair_status = pair_info.slice(0,1)
 				var number_pairs = pair_info.slice(1,2)
 				var equipment_pairs = pair_info.slice(2,pair_info.length - 1)
+				let equipments_ids = []
 
 				for(let i = 0; i < number_pairs; i++){
 					var first = i * 3
 					var second = (i * 3) + 1
 					var third = (i * 3) + 2
 					var id = [equipment_pairs[first],equipment_pairs[second],equipment_pairs[third]]
-					
+
 					this.props.dispatch({
 						type:"SET_LAST_PACKAGE_TIME_THERMOSTAT",
 						last_package_time_thermostat: []
 					})	 
-						
-					this.writeLastPackageTimeCommand(id)
+					equipments_ids.push(id)
+
 				}
+				
+				this.props.dispatch({type: "SET_EQUIPMENTS_PAIRED_WITH",equipments_paired_with: equipments_ids})
+
+				let time = 0
+				equipments_ids.map(id => {
+					setTimeout(() => this.writeLastPackageTimeCommand(id),time * 1000) 
+					time++
+				})
+
+				console.log("equipments_ids",equipments_ids)
 
 			}else{
-				console.error("Error","Can't get last packet time to the termostat because there are not pairing_info")
+				console.log("Error","Can't get last packet time to the termostat because there are not pairing_info")
 			}
 		}else{
-			console.error("Error","Error on getLastaPackageTime")
+			console.log("Error","Error on getLastaPackageTime")
 		}
 	}
 
@@ -1787,8 +1871,6 @@ class SetupCentral extends Component{
 	}
 
 	
-
-	
 	/* --------------------------------------------------------------------------------------------------- End Go To Seccion ---------------------------------------------------------------*/	
 
 
@@ -1796,21 +1878,64 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- update commands Seccion ---------------------------------------------------------------*/	
 
 	updateAppVersion(values){
-		console.log("updateAppVersion()")
-		this.saveOnCloudLog(values,"APPFIRMWARE")
-		if(values.length > 1)
+		//this.saveOnCloudLog(values,"APPFIRMWARE")
+		if(values.length > 1){
 			this.props.dispatch({type: "UPDATE_APP_VERSION",version : parseFloat(values[0].toString() +"." + values[1].toString())  })
+			this.updateAppPicVersion(values.slice(6,10))
+
+			if(this.props.app_firmware_update_on_course){
+				this.props.dispatch({type: "SET_APP_FIRMWARE_UPDATE_ON_COURSE",app_firmware_update_on_course: false})
+				this.deleteGetAppVersionInterval()
+				if(this.props.complete_firmware_update_on_course){
+					this.startFirmwareUpdate(BLUETOOTH_TYPE)
+
+				}else if(this.props.application_and_bluetooth_firmware_update){
+					
+					this.startFirmwareUpdate(BLUETOOTH_TYPE)
+
+				}else if(this.props.radio_and_aplication_firmware_update){
+					Alert.alert("Radio and App update finished.")	
+				}else{
+					Alert.alert("App update finished.")	
+				}
+			}
+		}
 	}
 
 	updateRadioVersion(values){
-		this.saveOnCloudLog(values,"RADIOFIRMWARE")
-		if(values.length > 1)
-			this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(values[0].toString() +"." + values[1].toString())  })		
+		console.log("updateRadioVersion()",values)
+		//this.saveOnCloudLog(values,"RADIOFIRMWARE")
+		if(values.length > 1){
+			this.props.dispatch({type: "UPDATE_RADIO_VERSION",version : parseFloat(values[0].toString() +"." + values[1].toString())})
+			this.updateRadioPicVersion(values.slice(6,10))
+		}
+	}
+
+	updateAppPicVersion(values){
+		console.log("updateAppPicVersion()",values)
+		if(values.length > 3){					
+			this.app_hex_board_version = this.getCorrectHexVersion(values)
+			this.props.dispatch({type: "SET_APP_BOARD",app_board_version: this.app_hex_board_version})
+		}else{
+			Alert.alert("Error","Something is wrong with the app pic version values.")
+		}		
+	}
+
+	updateRadioPicVersion(values){
+		console.log("updateRadioPicVersion()",values)
+		if(values.length > 3){
+			
+			this.radio_hex_board_version = this.getCorrectHexVersion(values)
+			this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: this.radio_hex_board_version})
+
+		}else{
+			Alert.alert("Error","Something is wrong with the radio pic version values.")
+		}		
 	}
 
 	updateBluetoothVersion(values){
 		console.log("updateBluetoothVersion()",values)
-		this.saveOnCloudLog(values,"BLUETOOTHFIRMWARE")
+		//this.saveOnCloudLog(values,"BLUETOOTHFIRMWARE")
 		var bluetooth_version = parseFloat(values[0].toString() + "." + values[1].toString())
 		this.props.dispatch({type: "UPDATE_BLUETOOTH_VERSION",version : bluetooth_version })
 	}
@@ -1829,7 +1954,7 @@ class SetupCentral extends Component{
 			this.updateRegisterBoard2(register_board_2_values)
 
 		}else{
-			console.error("Error!","Update registration can't be finished, the format isn't correct.")
+			console.log("Error!","Update registration can't be finished, the format isn't correct.")
 		}
 	}
 
@@ -1845,7 +1970,7 @@ class SetupCentral extends Component{
 			var id = values.slice(0,3)
 			var time = values.slice(3,7)
 			last_package_time_thermostat.push([id,time])
-			console.log("last_package_time_thermostat__	",last_package_time_thermostat)
+
 			this.props.dispatch({
 				type:"SET_LAST_PACKAGE_TIME_THERMOSTAT",
 				last_package_time_thermostat: last_package_time_thermostat
@@ -1854,7 +1979,7 @@ class SetupCentral extends Component{
 	}
 
 	updateOperatingValues(values){
-		console.log("updateOperatingValues()")	
+		//console.log("updateOperatingValues()")	
 		this.props.dispatch({
 			type:"SET_OPERATING_VALUES",
 			operating_values : values
@@ -1889,7 +2014,7 @@ class SetupCentral extends Component{
 
 	updateVoltage(values){
 		console.log("updateVoltage()")
-		this.saveOnCloudLog(values,"POWERLEVELS")
+		//this.saveOnCloudLog(values,"POWERLEVELS")
 		let v1 = ((values[0] & 0xff) << 8) | (values[1] & 0xff);  
 		let v2 = ((values[2] & 0xff) << 8) | (values[3] & 0xff);
 		let power_voltage = CALCULATE_VOLTAGE(v1).toFixed(2)
@@ -1899,43 +2024,17 @@ class SetupCentral extends Component{
 	}
 
 	updateRegisterBoard1(values){
-		console.log("updateRegisterBoard1()")
+		//console.log("updateRegisterBoard1()")
 		let register_board_1 = stringFromUTF8Array(values) 
-		console.log("register_board_1",register_board_1);
+		
 
 		this.props.dispatch({type: "SET_REGISTER_BOARD_1",register_board_1: register_board_1})		
 	}
 
 	updateRegisterBoard2(values){
-		console.log("updateRegisterBoard2()")
+		//console.log("updateRegisterBoard2()")
 		let register_board_2 = stringFromUTF8Array(values) 
 		this.props.dispatch({type: "SET_REGISTER_BOARD_2",register_board_2: register_board_2})		
-	}
-
-	updateAppPicVersion(values){
-		console.log("updateAppPicVersion()")
-		if(values.length > 3){					
-			
-			this.app_hex_board_version = this.getCorrectHexVersion(values)
-			let app_board_version = this.getCorrectStringVerison(this.app_hex_board_version)
-			this.props.dispatch({type: "SET_APP_BOARD",app_board_version: app_board_version})
-
-		}else{
-			Alert.alert("Error","Something is wrong with the app pic version values.")
-		}		
-	}
-
-	updateRadioPicVersion(values){
-		console.log("updateRadioPicVersion()")
-		if(values.length > 3){
-			
-			this.radio_hex_board_version = this.getCorrectHexVersion(values)
-			let radio_board_version = this.getCorrectStringVerison(this.radio_hex_board_version)
-			this.props.dispatch({type: "SET_RADIO_BOARD",radio_board_version: radio_board_version})
-
-		}else{
-			Alert.alert("Error","Something is wrong with the radio pic version values.")
-		}		
 	}
 
 	updateHoppingTable(values){
@@ -1949,8 +2048,13 @@ class SetupCentral extends Component{
 	}
 
 	updateFailSafeOption(values){
-		console.log("updateFailSafeOption()",values)
+		//console.log("updateFailSafeOption()",values)
 		this.props.dispatch({type: "SET_FAIL_SAFE_OPTION",fail_safe_option: values})
+	}
+
+	updateHeartBeat(values){
+		console.log("updateHeartBeat()",values)
+		this.props.dispatch({type: "SET_HEART_BEAT",heart_beat: values})	
 	}
 
 	updateDebugModeStatus(values){
@@ -1963,7 +2067,6 @@ class SetupCentral extends Component{
 	}
 
 	updateRunTime(values){
-		console.log("updateRunTime()",values)
 		if(values){
 			if(values.length){
 				this.props.dispatch({type: "SET_RUN_TIME",run_time:values})
@@ -1983,6 +2086,242 @@ class SetupCentral extends Component{
 	updateActivated(values){
 		console.log("updateActivated()",values)
 		this.props.dispatch({type: "SET_ACTIVATED",activated:values})	
+	}
+
+	updateRadioUpdateStatus(values){
+		console.log("updateRadioUpdateStatus()",values)
+
+		this.props.dispatch({type: "SET_RADIO_UPDATE_STATUS",radio_update_status: values})
+
+		if(values.length > 7){
+			let current_progress = BYTES_TO_INT_LITTLE_ENDIANG(values.slice(0,4))
+			let total_progress = BYTES_TO_INT_LITTLE_ENDIANG(values.slice(4,8))
+			if(current_progress == 0 && total_progress == 0){
+				this.deleteGetUpdateRadioStatusInterval()
+				console.log("this.props.complete_firmware_update_on_course",this.props.complete_firmware_update_on_course)
+				if(this.props.complete_firmware_update_on_course){
+					this.startFirmwareUpdate(APPLICATION_TYPE)
+				}
+				if(this.props.radio_and_aplication_firmware_update){
+					this.startFirmwareUpdate(APPLICATION_TYPE)
+				}
+				if(this.props.radio_and_bluetooth_firmware_update){
+					this.startFirmwareUpdate(BLUETOOTH_TYPE)	
+				}
+			}
+		}
+	}
+
+    async getFirmwareFile(firmware_type){
+    	let body = {}
+    	
+    	if(this.isThermostat()){
+    		body.hardware_type_key = "cc8a24bf-960f-443d-acb9-a764fc6618d4"
+
+    	}else if(this.isEquipment()){
+    		body.hardware_type_key = "f91b9afb-6922-4347-8f43-b5ad5d37c36f"
+
+    	}else{
+    		Alert.alert("Error","Hardware Type is Undefinded.")
+    		return
+    	}
+
+    	if(firmware_type == APPLICATION_TYPE){
+    		body.firmware_type = "application"
+    		body.chipset = this.props.app_board_version
+    	}else if(firmware_type == RADIO_TYPE){
+    		body.firmware_type = "radio"
+    		body.chipset = this.props.radio_board_version
+    	}else if(firmware_type == BLUETOOTH_TYPE){
+    		body.firmware_type = "bluetooth"
+    	}else{
+    		Alert.alert("Error","Hardware Type is Undefinded.")
+    		return
+    	}
+        
+        console.log(body)
+
+    	let response = await fetch(FIRMWARE_CENTRAL_ROUTE, {
+    		headers: HEADERS_FOR_POST,
+    		method: 'POST',
+    		body : JSON.stringify(body)
+    	})
+
+    	let files_array = JSON.parse(response._bodyInit).data.files
+    	let firmware_path = files_array[0].firmware_path
+    	
+    	let firmware_file_response = await  RNFetchBlob.fetch('GET', firmware_path,GET_HEADERS)
+
+    	let firmware_file_data =  firmware_file_response.text()
+    	return new Promise.resolve(firmware_file_data) 
+    }
+
+    async startFirmwareUpdate(type){
+        if(type == BLUETOOTH_TYPE){
+            this.fetchFirmwareUpdate()
+        }else{
+        	const byteCharacters = await this.getFirmwareFile(type)
+            var bytes_arrays = [];	  	
+    	  	var sliceSize = 2048
+    	  	var total_bytes = 0
+    	  	
+    		for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    		    const slice = byteCharacters.slice(offset, offset + sliceSize);
+    		    
+    		    const byteNumbers = new Array(slice.length);
+
+    		    for (let i = 0; i < slice.length; i++) {
+    		      byteNumbers[i] = slice.charCodeAt(i);
+    		      total_bytes++
+    		    }
+    		    
+    		    bytes_arrays.push(byteNumbers);
+    		}	
+
+            this.initFirmwareUpdate(total_bytes,bytes_arrays,type)
+         }
+    }
+
+    async fetchFirmwareUpdate(){
+        let body = {
+            firmware_type: "bluetooth"
+        }
+        
+        if(this.isThermostat()){
+            body.hardware_type_key = "cc8a24bf-960f-443d-acb9-a764fc6618d4"
+
+        }else if(this.isEquipment()){
+            body.hardware_type_key = "f91b9afb-6922-4347-8f43-b5ad5d37c36f"
+
+        }else{
+            Alert.alert("Error","Hardware Type is Undefinded.")
+            return
+        }
+        
+        let response = await fetch(FIRMWARE_CENTRAL_ROUTE, {
+            headers: HEADERS_FOR_POST,
+            method: 'POST',
+            body : JSON.stringify(body)
+        })
+
+        let files_array = JSON.parse(response._bodyInit).data.files
+        
+        console.log(response)
+
+        let path = files_array[0].firmware_path
+
+        if(path){
+            RNFetchBlob.config({
+                // add this option that makes response data to be stored as a file,
+                // this is much more performant.
+                fileCache : true,
+            })
+            .fetch('GET', path,GET_HEADERS)
+            .then((res) => {
+                this.filePath = res.path()
+                this.props.dispatch({type:"SET_DEPLOY_DISCONNECT",deploy_disconnect:true})   
+
+                console.log("Connected device UUID:" + this.device.id)
+                console.log("Connected device id:" + this.device.device_id)
+                console.log("Connected device name" + this.device.name)
+                this.initBluetoothUpdate()
+            })
+            .catch((errorMessage, statusCode) => {
+                console.log("ERROR",errorMessage)
+                //dispatch({"FIRMWARE_UPDATE_ERROR",error : })
+                // error handling 
+            })
+
+        }else{
+            Alert.alert("File not found","The file firmware was not found.")
+        }   
+    }           
+
+    initBluetoothUpdate(byteCharacters){
+        this.props.dispatch({type:"SET_DEPLOY_DISCONNECT",deploy_disconnect:true})               
+        this.writeDFUCommand()
+        this.searchDevices()        
+    }
+
+    searchDevices(){
+        this.createScanningInterval()
+        setTimeout(() => {
+            this.scanning_status = "stopped"
+            this.deleteScanningInterval()
+        },60000)
+    }
+
+    createScanningInterval(){
+        console.log("createScanningInterval()")
+        if(scanning_status_interval == 0){
+            this.scanning_status = "scanning"
+            scanning_status_interval = setInterval(() => {
+                this.scan()              
+            } , 5000)  
+
+        }else{
+            console.log("Error","The scanning_status_interval is already set.")
+        }
+    }
+
+    deleteScanningInterval(){
+        clearInterval(scanning_status_interval)
+        scanning_status_interval = 0
+    }    
+
+    scan(){
+        console.log("scan()")
+        SlowBleManager.scan([], 3, true).then(() => {
+        })        
+    }
+
+    handleDiscoverPeripheral(device){
+
+        this.dfu_device = device;
+        if(device.name){
+            if (device.name.toUpperCase().indexOf("DFUTA") !== -1){
+        		
+                let short_id = this.device.manufactured_data.device_id.substring(2,6)
+                //console.log("this.device",this.device)
+                if(this.isThermostat()){
+                	this.DFUDeviceFound(device)
+                }else{
+	                if(device.new_representation.indexOf(short_id) !== -1){
+	                	this.DFUDeviceFound(device)
+	                }
+                }
+            }
+        }
+    }
+
+    DFUDeviceFound(device){
+        if(scanning_status_interval){
+            
+            console.log("this.scanning_status",this.scanning_status)
+
+            if(this.scanning_status != "stopped"){
+                this.scanning_status = "stopped"; //just should be in one time
+                
+                this.deleteScanningInterval()
+                
+                this.props.dispatch({type:"SET_DEPLOY_DISCONNECT",deploy_disconnect:false})
+                this.props.dispatch({type: "START_UPDATE"})
+                
+                console.log("Founded Device  ID ",device.id)
+                console.log("Founded Device  Name ",device.name.toUpperCase())
+                SlowBleManager.stopScan()
+                setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),4000)
+            }
+        }
+    }
+
+	handleOnDFUAborted(data){
+		console.log("handleOnDFUAborted",data)
+	}   
+
+	handleOnDFUError(data){
+		console.log("handleOnDFUError()",data)
+
 	}
 
 	clearGeneralInterval(){
@@ -2007,6 +2346,47 @@ class SetupCentral extends Component{
 			}*/			
 		}
 	}
+
+	createGetUpdateRadioStatusInterval(){
+		if(get_update_radio_status_inteval == 0){
+			get_update_radio_status_inteval = setInterval(() => this.getRadioUpdateStatus(),2000);
+		}else{
+			console.log("Error","get_update_radio_status_inteval was set before")
+		}
+	}
+
+	deleteGetUpdateRadioStatusInterval(){
+		console.log("deleteGetUpdateRadioStatusInterval()")
+		clearInterval(get_update_radio_status_inteval)
+		if(get_update_radio_status_inteval != 0){
+			clearInterval(get_update_radio_status_inteval)
+			get_update_radio_status_inteval = 0
+		}else{
+			console.log("Error","get_update_radio_status_interval was delete before")
+		}
+	}
+
+	createGetAppVersionInterval(){
+		if(get_app_version_interval == 0){
+			this.props.dispatch({type: "SET_APP_FIRMWARE_UPDATE_ON_COURSE",app_firmware_update_on_course: true})
+			get_app_version_interval = setInterval(() => this.getFirmwareVersion(),2000);
+		}else{
+			console.log("Error","get_app_version_interval was set before")
+		}
+	}
+
+	deleteGetAppVersionInterval(){
+		console.log("deleteGetUpdateRadioStatusInterval()")
+		clearInterval(get_app_version_interval)
+		if(get_app_version_interval != 0){
+			clearInterval(get_app_version_interval)
+			get_app_version_interval = 0
+		}else{
+			console.log("Error","get_app_version_inteval was delete before")
+		}
+	}
+
+
 
 	/* --------------------------------------------------------------------------------------------------- END update commands Seccion ---------------------------------------------------------------*/	
 
@@ -2036,7 +2416,7 @@ class SetupCentral extends Component{
 
 	/* --------------------------------------------------------------------------------------------------- get commands Seccion ---------------------------------------------------------------*/	
 
-	getAllInfo(device){
+	getAllInfo(){
 		console.log("getAllInfo()")
 		SlowBleManager.getAllInfo(this.props.device.id)
 	}
@@ -2139,12 +2519,11 @@ class SetupCentral extends Component{
 
 
 	getAllCommandsEvent(data){
-		//console.log("getAllCommandsEvent()",data)
+		console.log("getAllCommandsEvent()",data)
 		var hardware_type = data.hardware_type
 		setTimeout(() => {
 			if(hardware_type == 3){
 				this.checkInitValues()
-				this.getLastPackageTime()
 			}else if(hardware_type == 4){
 				this.checkInitValues()
 			}else{
@@ -2165,12 +2544,11 @@ class SetupCentral extends Component{
 			hopping_table,
 			radio_settings,
 			activated_led,
-			fail_safe_option
+			fail_safe_option,
+			heart_beat
 		} = this.props
 		var commands = []
 
-		//console.log("checkEquipmentInitValues()",app_version,bluetooth_version,registration_info,operating_values,power_on_time)
-		console.log("checkEquipmentInitValues()")
 
 		if(app_version == 0){
 			commands.push(PhoneCmd_GetAppVersion)
@@ -2178,12 +2556,6 @@ class SetupCentral extends Component{
 
 		if(bluetooth_version == 0){
 			commands.push(PhoneCmd_GetBluetoothVersion)
-		}
-
-		if(this.isEquipment()){
-			if(radio_version == 0){
-				commands.push(PhoneCmd_GetRadioVersion)
-			}			
 		}
 
 		if(registration_info.length == 0){
@@ -2208,10 +2580,21 @@ class SetupCentral extends Component{
 
 		if(activated_led.length == 0){
 			commands.push(PhoneCmd_GetLedsEnabled)
+		}		
+
+		if(this.isEquipment()){ // the thermostat isn't support this commands, so we need filter for equiment
+			if(radio_version == 0){
+				commands.push(PhoneRsp_RadioVersion)
+			}		
+			if(fail_safe_option.length == 0){
+				commands.push(PhoneRsp_FailSafeOption)
+			}				
 		}
 
-		if(fail_safe_option.length == 0){
-			commands.push(PhoneCmd_GetFailSafeOption)
+		if(this.isThermostat()){ // The equipment is not support it this commands so we need filter for thermostat
+			if(heart_beat.length == 0){
+				commands.push(PhoneRsp_HeartbeatTime)
+			}
 		}
 
 		console.log("commands",prettyBytesToHex(commands) ,"MAX_NUMBER_OF_RETRIES",MAX_NUMBER_OF_RETRIES)
@@ -2219,7 +2602,7 @@ class SetupCentral extends Component{
 		if(commands.length > 0 && MAX_NUMBER_OF_RETRIES > 0){
 			MAX_NUMBER_OF_RETRIES--;
 			SlowBleManager.getSomeInfo(this.props.device.id,commands)
-		}	
+		}
 	}
 
 
@@ -2232,11 +2615,12 @@ class SetupCentral extends Component{
 			var command = value.shift()
 			var length = value.shift()
 			if(length != value.length){
-
 				this.readCharacteristic()
 			}else{
 				//handle the other cases
+
 				this.handleResponse(command,value)
+				this.logCommandToCloud(command,value)
 			}
 		}else{
 			Alert.alert("Error","Error getting the value on the notification the notification length is less than 2.")
@@ -2244,8 +2628,20 @@ class SetupCentral extends Component{
 	}
 
 
+	logCommandToCloud(command,value){
+		let command_name = bridgeResponseStrings.get(command)
+
+		if(command_name){
+			var body = LOG_CREATOR(value,this.device.manufactured_data.device_id,this.device.id,command_name)
+			POST_LOG(body)
+		}else{
+			console.log("Error","No name found for the command : 0x" + command.toString(16).toUpperCase())
+		}
+	}
+
 	handleResponse(command,data){
-		console.log("handleResponse()","0x" + command.toString(16) ,prettyBytesToHex(data))
+		//console.log("handleResponse()","Command  0x" + command.toString(16) ,"Data : " + prettyBytesToHex(data))
+
 		switch(command){
 			case PhoneRsp_AppVersion: //0x21
 				this.updateAppVersion(data)
@@ -2259,15 +2655,7 @@ class SetupCentral extends Component{
 			case PhoneRsp_Registration: //0x24
 				this.updateRegistration(data)
 			break
-			case PhoneRsp_Success: //0x80
-				console.log("Success",data)
-				//Alert.alert("Success");
-			break
-			case PhoneRsp_Failure: //0x81
-				var writed_command = data[0]
-				var response_code = data[1]
-				this.handleFailure(writed_command,response_code)
-			break
+
 			case PhoneRsp_OperatingValues: //0x26
 				this.updateOperatingValues(data)
 			break			
@@ -2276,7 +2664,8 @@ class SetupCentral extends Component{
 				this.props.dispatch({type:"LOADING_OPERATION_VALUES",loading_operation_values:false})
 			break
 			case PhoneRsp_PairingInfo: // 2C
-				this.updatePairingInfo(data)			
+				this.updatePairingInfo(data)
+				this.getLastPackageTime()
 			break
 
 			case PhoneRsp_ResetCauses: 
@@ -2310,31 +2699,202 @@ class SetupCentral extends Component{
 			case PhoneRsp_UartTimeout: //0x82
 				Alert.alert("Failure", "PhoneRsp_UartTimeout (" + command.toString(16) + ") data: ( " + prettyBytesToHex(data) + ")")
 			break
+			case PhoneRsp_Success: //0x80
+				console.log("Success",data)
+				if(data == PhoneCmd_RadioStartFirmwareUpdate){
+					this.writePages()
+				}
+				else if(data == PhoneCmd_RadioStartRow){
+					this.writeRows()
+				}
+
+				else if(data == PhoneCmd_RadioEndRow){
+					this.page_count++;
+					this.writePages()
+				}else if(data == PhoneCmd_RadioFinishFirmwareUpdate){ //0x64
+					this.createGetUpdateRadioStatusInterval()
+				}else if(data == PhoneCmd_AppStartFirmwareUpdate){
+					this.writePages()
+				}else if(data == PhoneCmd_AppStartRow){
+					this.writeRows()
+				}else if(data == PhoneCmd_AppEndRow){
+					this.page_count++;
+					this.writePages()
+				}else if(data == PhoneCmd_AppFinishFirmwareUpdate){
+					this.createGetAppVersionInterval()
+				}else{
+					Alert.alert("Success.","All changes are saved correctly.")
+				}
+				
+			break
+			case PhoneRsp_HeartbeatTime:
+				this.updateHeartBeat(data)
+			break
+			case PhoneRsp_Failure: //0x81
+				var writed_command = data[0]
+				var response_code = data[1]
+				this.handleFailure(writed_command,response_code)
+			break
+			case PhoneRsp_RadioUpdateStatus: //0x29
+				this.updateRadioUpdateStatus(data)
+			break
 			default:
 				console.log("No options found to: (" + command.toString(16) + ") with data: (" + prettyBytesToHex(data) + ")");
 			break
 		}
 	}
 
+	writeDFUCommand(){
+		this.write([PhoneCmd_StartBleBootloader])
+	}
+
+	/*
+		total_byte_size is a decimal number
+		bytes_arrays is an array of 20 bytes arrays -> [ [0x1,0x2,...,0x20],....,[0x01,0x2,....,0x20]] 
+	*/
+	initFirmwareUpdate(total_byte_size,bytes_arrays,type){
+		console.log("initFirmwareUpdate()")
+		let bytes = INT_TO_BYTE_ARRAY(total_byte_size)
+		const option_commands = [
+			PhoneCmd_AppStartFirmwareUpdate,
+			PhoneCmd_RadioStartFirmwareUpdate
+		]
+
+		this.firmware_type = type
+		this.bytes_arrays = bytes_arrays
+		this.page_count = 0
+
+		const command = this.chooseCommand(option_commands)
+		
+		if(command){
+			bytes.unshift(command)
+			this.write(bytes)			
+		}else{
+			Alert.alert("Error","Error chossing a command [initFirmwareUpdate()]")
+			return;
+		}
+	}
+
+	/*
+	* writePages, take a page from this.byte_arrays and try to writed unless repeat_pages is true, in this case
+	* try to write the last column.
+	*/
+	writePages(repeat_pages){
+		if(this.bytes_arrays.length > 0){
+			
+			if(!repeat_pages)
+				this.current_page = this.bytes_arrays.shift() // a write fails, repeat_pages is defined only if the handleFailure method is call
+			else
+				NUMBER_OF_ROW_RETRIES = 5 //this means it comes from a success writing
+			
+			const crc = LONG_TO_BYTE_ARRAY(CRC16(this.current_page)) 
+			const page_count = LONG_TO_BYTE_ARRAY(this.page_count)
+			const page_size = LONG_TO_BYTE_ARRAY(this.current_page.length)
+			const command_options = [PhoneCmd_AppStartRow,PhoneCmd_RadioStartRow]
+
+			if(crc.length > 1){
+				let command = this.chooseCommand(command_options) 
+				if(command){
+					const data = [command,page_count[1],page_count[0],page_size[1],page_size[0],crc[1],crc[0]]
+					this.write(data)					
+				}else{
+					Alert.alert("Error","Error chossing a command [initFirmwareUpdate()]")
+					return;
+				}
+			}else{
+				Alert.alert("Error","The crc is incorrect.")
+			}
+		}else{
+			this.endFirmwareUpdate()
+		}				
+	}
+
+	writeRows(){
+		var cut_size = 55
+		INIT_PERIPHERIAL(this.device.id)
+		const command_options = [PhoneCmd_AppRowPiece,PhoneCmd_RadioRowPiece]
+		const command = this.chooseCommand(command_options)
+		if(command_options){
+
+			for(var i = 0;i < this.current_page.length ;i += cut_size){
+				let piece = this.current_page.slice(i,cut_size + i)
+
+				piece.unshift(command)
+				HVAC_WRITE_COMMAND_WRITE_OUT_RESPONSE(piece)
+			}
+
+			setTimeout(() => this.endRow(),200)
+		}else{
+			Alert.alert("Error","Error chossing a command [writeRows()]")
+			return;			
+		}
+	}
+
+	endRow(){
+		const command_options = [PhoneCmd_AppEndRow,PhoneCmd_RadioEndRow]
+		const command = this.chooseCommand(command_options)
+		this.write([command])
+	}
+
+	endFirmwareUpdate(){
+		const command_options = [PhoneCmd_AppFinishFirmwareUpdate,PhoneCmd_RadioFinishFirmwareUpdate]
+		const command = this.chooseCommand(command_options)
+		this.write([command])
+	}	
+
+	chooseCommand(options){
+		const firmware_type = this.firmware_type
+		if(firmware_type){
+			if(options.length == 2){
+				if(firmware_type == APPLICATION_TYPE){
+					return options[0]
+				}else if(firmware_type == RADIO_TYPE){
+					return options[1]
+				}else{
+					Alert.alert("Error","The firmware_type isn't defined.")
+					return false
+				}		
+			}else{
+				Alert.alert("Error","The options aren't incorrect ay chooseCommand() method")
+				return false
+			}
+		}else{
+			Alert.alert("Error","The firmware_type isn't defined.");
+			return false
+		}
+	}
+
 	handleFailure(writed_command,error_code){
-		console.log("handleFailure",writed_command + " " + error_code)
-		var error_name = this.searchName(error_codes,error_code);
-		Alert.alert("Phone Response Failure","Command 0x" +  writed_command.toString(16) + " | " + error_name)
+		const error_name = this.searchName(error_codes,error_code);
+		if(writed_command ==  PhoneCmd_RadioEndRow){
+			this.tryToResendRowTimes(writed_command,error_name)
+		}else{
+			Alert.alert("Phone Response Failure","Command 0x" +  writed_command.toString(16) + " | " + error_name)	
+		}
+	}
+
+
+	tryToResendRowTimes(writed_command,error_name){
+		console.log("tryToResendRowTimes()",NUMBER_OF_ROW_RETRIES)
+		var repeat_pages = true;
+
+		if(NUMBER_OF_ROW_RETRIES > 0){
+			NUMBER_OF_ROW_RETRIES = NUMBER_OF_ROW_RETRIES - 1;	
+			this.writePages(repeat_pages)
+		}else{
+			Alert.alert("Phone Response Failure","Command 0x" +  writed_command.toString(16) + " | Row failed." )		
+		}
 	}
 
 	searchName(array,code){
 		var name = ""
 		array.map((internal_code) => {
-			console.log("code",code)
-			console.log("internal_code",internal_code)
 			if(internal_code[0] == code){
 				name = internal_code[1]
 			}
 		})
 		return name;
 	}
-
-
 
 	searchResponse(command){
 		switch(command){
@@ -2361,7 +2921,6 @@ class SetupCentral extends Component{
 			this.props.dispatch({type: "SET_GETTING_COMMANDS",getting_commands:false})
 
 		this.renderConnectedStatus()
-		
 		this.checkPairOrUnPairResult()
 	}
 
@@ -2536,7 +3095,6 @@ class SetupCentral extends Component{
 	}
 
 	choseNameIfNameNull(name){
-		console.log("choseNameIfNameNull",name)
 		var new_name = "Sure-Fi HVAC"
 		var hardware_type = this.hardware_type
 		if(name == "" || name == " " || name == null){
@@ -2603,7 +3161,7 @@ class SetupCentral extends Component{
 	}
 
 	renderWarrantyInformation(){
-		console.log("run_time",this.props.run_time)
+		//console.log("run_time",this.props.run_time)
 		if(this.props.run_time.length == 0)
 			return null
 
@@ -2652,8 +3210,7 @@ class SetupCentral extends Component{
 	render(){
 		//console.log("datos aca",this.props.central_device_status,this.props.indicator_number,this.props.power_voltage)
 		
-		console.log("this.props --------------------------");
-		
+		/*
 		console.log(
 			"data: ",
 			" { App Version: "+ this.props.app_version + 
@@ -2661,10 +3218,13 @@ class SetupCentral extends Component{
 			" Bluetooth Version: "+ this.props.bluetooth_version +
 			" Pairing Info: " + this.props.pairing_info +
 			" Last Package time " + this.props.last_package_time +  
+			" Fail Safe option" + this.props.fail_safe_option +
+			" Pairing Info: " + this.props.pairing_info +
 			" Registration: "+this.props.registration_info + " } ");
-		
+
+		//console.log("Operating Values:", this.props.operating_values);
 		console.log("this.props --------------------------");
-		
+		*/
 
 		var props = this.props
 		if(!IS_EMPTY(this.device) &&  props.central_device_status == "connected"){
@@ -2706,7 +3266,6 @@ class SetupCentral extends Component{
 							switchUnit={() => this.switchUnit()}
 						/>
 					</View>
-
 					<View>
 						{content}
 					</View>
@@ -2748,7 +3307,6 @@ const mapStateToProps = state => ({
   	write_pair_result : state.setupCentralReducer.write_pair_result,
   	write_unpair_result: state.setupCentralReducer.write_unpair_result,
   	connection_established : state.setupCentralReducer.connection_established,
-
   	manager : state.scanCentralReducer.manager,
   	just_deploy : state.scanCentralReducer.just_deploy,
   	should_connect : state.scanCentralReducer.should_connect,
@@ -2776,7 +3334,15 @@ const mapStateToProps = state => ({
 	activated : state.scanCentralReducer.activated,
 	demo_mode_time: state.scanCentralReducer.demo_mode_time,
 	activated_led: state.scanCentralReducer.activated_led,
-	fail_safe_option : state.scanCentralReducer.fail_safe_option
+	fail_safe_option : state.scanCentralReducer.fail_safe_option,
+	heart_beat : state.scanCentralReducer.heart_beat,
+	equipments_paired_with : state.scanCentralReducer.equipments_paired_with,
+	radio_update_status : state.scanCentralReducer.radio_update_status,
+	app_firmware_update_on_course : state.scanCentralReducer.app_firmware_update_on_course,
+	complete_firmware_update_on_course: state.updateFirmwareCentralReducer.complete_firmware_update_on_course,
+	radio_and_aplication_firmware_update: state.updateFirmwareCentralReducer.radio_and_aplication_firmware_update,
+	radio_and_bluetooth_firmware_update: state.updateFirmwareCentralReducer.radio_and_bluetooth_firmware_update,
+	application_and_bluetooth_firmware_update: state.updateFirmwareCentralReducer.application_and_bluetooth_firmware_update
 });
 
 

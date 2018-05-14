@@ -16,7 +16,12 @@ const initialState = {
       "upperVersionBuild" : "000",
       "upperProgramNumber" : "000",
       "bootingUpperMemory" : "000" 
-  }
+  },
+  complete_firmware_update_on_course: false,
+  radio_and_aplication_firmware_update: false,
+  radio_and_bluetooth_firmware_update: false,
+  application_and_bluetooth_firmware_update: false
+
 }
 
 export default function updateFirmwareCentralReducer (state = initialState, action) {
@@ -48,6 +53,26 @@ export default function updateFirmwareCentralReducer (state = initialState, acti
       return {
         ...state,
         bootloader_info: action.bootloader_info
+      }
+    case "SET_COMPLETE_FIRMWARE_UPDATE_ON_COURSE":
+      return{
+        ...state,
+        complete_firmware_update_on_course: action.complete_firmware_update_on_course
+      }
+    case "SET_RADIO_AND_APLICATION_FIRMWARE_UPDATE":
+      return {
+        ...state,
+        radio_and_aplication_firmware_update: action.radio_and_aplication_firmware_update
+      }
+    case "SET_RADIO_AND_BLUETOOTH_FIRMWARE_UPDATE":
+      return {
+        ...state,
+        radio_and_bluetooth_firmware_update: action.radio_and_bluetooth_firmware_update
+      }
+    case "SET_APPLICATION_AND_BLUETOOTH_FIRMWARE_UPDATE":
+      return {
+        ...state,
+        application_and_bluetooth_firmware_update: action.application_and_bluetooth_firmware_update
       }
     default:
       return state

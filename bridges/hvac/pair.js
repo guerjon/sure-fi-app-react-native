@@ -202,40 +202,40 @@ class HVACPair extends Component{
         let data = [PhoneCmd_Pair,NORMAL_PAIR].concat(remote_id_bytes)
         console.log("data",data)
         HVAC_WRITE_COMMAND(this.central_device.id,data)
-			.then(response => {
-				//PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
-		    	//.then(response => {	
-                    
-                    //console.log("response 0 on pair",response)
+		
+		PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
+    	.then(response => {	
+            
+            console.log("response 0 on pair",response)
 
-		    		//PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
-		    		//.then(response => {
-                        //console.log("response on pair",response)
+    		PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
+    		.then(response => {
+                //console.log("response on pair",response)
 
-						this.central_device.manufactured_data.tx = txUUID
-						this.central_device.manufactured_data.device_state = "0004";
-						this.central_device.writePairResult = true
-                        
-                        this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
-			    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
-                        
-                        this.props.dispatch({
-		                    type: "CENTRAL_DEVICE_MATCHED",
-		                    central_device: this.central_device
-		                });
-                        
-                        if(this.props.debug_mode_status){
-                            this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
-                            setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000)
-                            setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
-                        }
+				this.central_device.manufactured_data.tx = txUUID
+				this.central_device.manufactured_data.device_state = "0004";
+				this.central_device.writePairResult = true
+                
+                this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
+	    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
+                
+                this.props.dispatch({
+                    type: "CENTRAL_DEVICE_MATCHED",
+                    central_device: this.central_device
+                });
+                
+                if(this.props.debug_mode_status){
+                    this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
+                    setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000)
+                    setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
+                }
 
-                        
-		               
-	    			//}).catch(error => console.log(error))
-	    		//}).catch(error => console.log("error",error))
-	    	}).catch(error => {console.log("error",error)})	
-            this.props.navigator.pop();
+                
+               
+			}).catch(error => console.log(error))
+		}).catch(error => console.log("error",error))
+    	
+        this.props.navigator.pop();
     }
 
     getNoMatchedMessage(){
@@ -262,12 +262,18 @@ class HVACPair extends Component{
         console.log("isDeviceOnPairingMode",device)
         if(!device.manufactured_data)
             return false
-        var state = device.manufactured_data.device_state.substring(2,4)
-
-        if(state == "00"){
-            return true
-        }       
-        return false        
+        var state = parseInt(device.manufactured_data.device_state.substring(2,4)) 
+        console.log("state",state)
+        if(this.props.isEquipment()){
+            if(state < 8){
+                return true
+            }else{
+                return false
+            }
+        }else{
+            return false
+        }
+        return false
     }
 
     matchDevice(device_id){

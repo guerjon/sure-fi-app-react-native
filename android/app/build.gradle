@@ -165,7 +165,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile project(':react-native-randombytes')
     compile project(':react-native-keychain')
-    compile project(':react-native-image-to-base64')
+
     compile project(':react-native-vector-icons')
     compile project(':react-native-fetch-blob')
     compile project(':react-native-camera')

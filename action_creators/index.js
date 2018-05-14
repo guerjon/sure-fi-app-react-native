@@ -129,7 +129,7 @@ export const WRITE_COMMAND = (id,data,type) => {
 }
 
 export const HVAC_WRITE_COMMAND = (id,data) => {
-	LOG_INFO(data,COMMAND)
+	//LOG_INFO(data,COMMAND)
 	var command = data[0];
 	data.shift(); //remove the command
 	var new_structure_command = [0x7E,command,data.length].concat(data)
@@ -143,6 +143,23 @@ export const HVAC_WRITE_COMMAND = (id,data) => {
 			reject(error)
 		})
 	})
+}
+
+export const INIT_PERIPHERIAL = (id) => {
+	 BleManager.initPeripheral(id)
+}
+
+export const HVAC_WRITE_COMMAND_WRITE_OUT_RESPONSE = (data) => {
+	if(data){
+		if(data.length > 0){
+			var command = data[0];
+			data.shift(); //remove the command
+			var new_structure_command = [0x7E,command,data.length].concat(data)
+			BleManager.fastWrite(HVAC_SUREFI_THERMOSTAT_SERVICE,TX_DATA_CHAR_SHORT_UUID,new_structure_command)
+		}else{
+			console.log("Error","No data recived to write.")
+		}		
+	}
 }
 
 
@@ -316,37 +333,78 @@ function calculateSeconds(number_seconds,minutes){
 	number_seconds must be a four bytes array
 */
 export const parseSecondsToHumanReadable = (number_seconds) => {
-	number_seconds = BYTES_TO_INT_LITTLE_ENDIANG(number_seconds)
-	var time = ""
-	if(number_seconds < 60 ){ // a min
-		time = number_seconds + " seconds "
-	}else if(number_seconds < 3600){ //an hour
-		
-		let minutes = calculateMinutes(number_seconds)
-		let rest_of_seconds = calculateSeconds(number_seconds,minutes)
+	if(number_seconds){
+		if(number_seconds.length == 4){
+			number_seconds = BYTES_TO_INT_LITTLE_ENDIANG(number_seconds)
+			var time = ""
+			if(number_seconds < 60 ){ // a min
+				time = number_seconds + " seconds "
+			}else if(number_seconds < 3600){ //an hour
+				
+				let minutes = calculateMinutes(number_seconds)
+				let rest_of_seconds = calculateSeconds(number_seconds,minutes)
 
-		time = minutes + "m " + rest_of_seconds + "s " 
-		
-	}else if(number_seconds < 86400){ // a day
+				time = minutes + "m " + rest_of_seconds + "s " 
+				
+			}else if(number_seconds < 86400){ // a day
 
-		let hours = calculateHours(number_seconds)
-		let minutes = calculateMinutes(number_seconds - (3600 * hours))
-		let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
+				let hours = calculateHours(number_seconds)
+				let minutes = calculateMinutes(number_seconds - (3600 * hours))
+				let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
 
-		time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
+				time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
 
-	}else if(number_seconds >= 86400){ //more than a day
-		var days = number_seconds / 86400
-		time = parseInt(days) + " days"
+			}else if(number_seconds >= 86400){ //more than a day
+				var days = number_seconds / 86400
+				time = parseInt(days) + " days"
+			}
+
+			return time		
+		}else{
+			return 0
+		}
+	}else{
+		return 0
 	}
-
-	return time
 }
 
 
-export const COMBINEJSONS = (json1,json2) => {
-	for (var key in json2){
-		json1[key] = json2[key]
-	}
-	return json1
+export const JOIN_JSONS = (json1,json2) => {
+	var result = Object.assign({},json1, json2);
+	return result
 }
+
+
+export const CHECK_GENERIC_RESPONSE = response => {
+	if(response){
+		if(response.status){
+			if(response.status == 200){
+				if(response._bodyInit){
+					let response_json = JSON.parse(response._bodyInit)
+					if(response_json){
+						let internal_status = response_json.status
+						if(internal_status == "success"){
+							let data = response_json.data 
+							
+							return data;
+						}else{
+							Alert.alert("Error",internal_status.msg)
+						}
+					}else{
+						Alert.alert("Error", "The json format in the body isn't correct.")
+					}
+				}else{
+					Alert.alert("Error","The body on the server response is incorrect.")
+				}
+			}else{
+				Alert.alert("Error","Status incorrect : Status (" + response.status + ") URL: " +  response.url)
+			}
+		}else{
+			Alert.alert("Error","The server status isn't on the response.")
+		}
+	}else{
+		Alert.alert("Error","The server response is empty.")
+	}
+	return false
+}
+

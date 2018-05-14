@@ -1520,7 +1520,7 @@ class SetupCentral extends Component{
 	goToFirmwareUpdate(){
 		Alert.alert(
 			"Warning",
-			"In order to do a firmware update, you must be instructed by a support call",
+			"In order to do a firmware update, you must be instructed by a support call.",
 			[
 				{text:"Continue",style:"Cancel"}
 			]

@@ -46,6 +46,7 @@ import HVACPair from '../bridges/hvac/pair'
 import HVACOperatingValues from '../bridges/hvac/operating_values'
 import HVACConfigureRadio from '../bridges/hvac/configure_radio'
 import Configuration from '../bridges/hvac/configuration'
+import HVACFirmwareUpdate from '../bridges/hvac/firmware_update'
 
 
 const screens =
@@ -91,7 +92,8 @@ const screens =
 	["HVACOperatingValues",HVACOperatingValues],
 	["SetRuntimeModal",SetRuntimeModal],
 	["HVACConfigureRadio",HVACConfigureRadio],
-	["Configuration",Configuration]
+	["Configuration",Configuration],
+	["HVACFirmwareUpdate",HVACFirmwareUpdate]
 
 ];
 

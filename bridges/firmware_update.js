@@ -243,16 +243,9 @@ class UpdateFirmwareCentral extends Component {
     componentWillMount() {
         let props = this.props
         let dispatch = this.props.dispatch
-    
-        this.restartReducers()
-        
         dispatch({type: "RESET_FIRMWARE_UPDATE_REDUCER"})
         dispatch({type:"HIDE_FIRMWARE_UPDATE_LIST"})
         
-    }
-
-    restartReducers(){
-
     }
 
     componentDidMount() {

@@ -8,7 +8,8 @@ import {
     ScrollView,
     Linking,
     Alert,
-    TouchableHighlight
+    TouchableHighlight,
+    ActivityIndicator
 } from 'react-native'
 import {
     styles,
@@ -23,15 +24,14 @@ import {
 import {
     LOADING,
     GET_DEVICE_DOCUMENTS,
-    MATCH_DEVICE
+    MATCH_DEVICE,
+    HEADERS_FOR_POST
 } from '../constants'
 import Background from '../helpers/background'
 import {
     WhiteRowLink
 } from '../helpers/white_row_link'
-
-interval = 0
-
+var device_not_matched_interval = 0
 class DeviceNotMatched extends Component {
 
     static navigatorStyle = {
@@ -52,36 +52,14 @@ class DeviceNotMatched extends Component {
     constructor(props) {
         super(props);
         this.path = ""
-        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
         this.devices = this.props.devices
         this.manager = props.manager
-    }
-
-
-    componentDidMount() {
-        //console.log("this.props.navigator",this.props.navigator,this.props.cancel_scan)
-        if(!this.props.cancel_scan){
-            setTimeout(() => this.props.startScanning(this.manager),2000)
-            this.createInterval()            
-        }
-
-    }
-
-    componentWillUnmount() {
-        this.eraseInterval()
-        clearInterval(interval)
-
-        this.props.dispatch({
-            type: "ALLOW_SCANNING",
-            allow_scanning: true
-        })
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
     createInterval() {
-
-        console.log("createInterval()")
-        if (interval == 0) {
-            interval = setInterval(() => this.checkForDevice(), 2000)
+        if (device_not_matched_interval == 0) {
+            device_not_matched_interval = setInterval(() => this.checkForDevice(), 2000)
             console.log("interval created")
         } else {
             console.log("the interval can't be created it was created previosly")
@@ -89,12 +67,12 @@ class DeviceNotMatched extends Component {
     }
 
     eraseInterval(){
-    	console.log("eraseInterval()");
-    	if(interval){
-    		clearInterval(interval)
-    	}else{
-    		console.log("The interval was erase previously");
-    	}
+        if(device_not_matched_interval){
+            clearInterval(device_not_matched_interval)
+            device_not_matched_interval = 0
+        }else{
+            console.log("The interval was erase previously");
+        }
     }
 
     checkForDevice() {
@@ -109,6 +87,7 @@ class DeviceNotMatched extends Component {
                 type: "DEVICE_FOUND",
                 device_found: true
             })
+            this.eraseInterval()
         } else {
             this.props.dispatch({
                 type: "DEVICE_FOUND",
@@ -120,73 +99,73 @@ class DeviceNotMatched extends Component {
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
         console.log("event", event)
         switch (event.id) {
-            case "didDisappear":
-                //if(this.props.showAlert)
-                //this.props.startScanning()
+            case "willDisappear":
+                this.props.showCamera()
                 break
             default:
                 break
         }
-
     }
 
     componentWillMount() {
-        console.log("componentWillMount", this.props.device_id, );
-
+        this.setLoadingDocumentation()
         fetch(GET_DEVICE_DOCUMENTS, {
-            method: "post",
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
+            method: "POST",
+            headers: HEADERS_FOR_POST,
             body: JSON.stringify({
                 hardware_serial: this.props.device_id
             })
-        }).then(response => {
+        }).then(response => {        
             let data = JSON.parse(response._bodyInit).data.documents
 
-            if (data.length > 0) {
-
-                let path = data[0].document_path
-
-                this.path = data[0].document_path
-                this.props.dispatch({
-                    type: "SET_DOCUMENTATION_PATH",
-                    documentation_path: path
-                })
-
-            } else {
-                console.log("error", "the response array on documents its empty");
-            }
-            //let path = data.document.path
-
-        }).catch(error => {
-            Alert.alert("Error", error)
+            this.props.dispatch({
+                type: "SET_DOCUMENTATION_INFO",
+                documentation_info: data[0]
+            })
+            this.setLoadedDocumentation()
         })
+        this.createInterval()
+    }
+
+    componentWillUnmount(){
+        console.log("componentWillUnmount()");
+        this.eraseInterval()
+    }
+
+    setLoadingDocumentation(){
+        this.props.dispatch({type: "SET_LOADED_DOCUMENTATION_STATE",loaded_documentation_state: "loading"})
+    }
+
+    setLoadedDocumentation(){
+        this.props.dispatch({type: "SET_LOADED_DOCUMENTATION_STATE",loaded_documentation_state: "loaded"})
     }
 
     goToAccessControlInstructions() {
-        console.log("goToAccessControlInstructions()", this.props.documentation_path);
-        if (this.path)
-            Linking.openURL(this.path)
-        else
-            Alert.alert("Error", "The link wasn't found.")
+        console.log("goToAccessControlInstructions()");
+        if(this.props.documentation_info){
+            const path = this.props.documentation_info.document_path
+            if (path)
+                Linking.openURL(path)
+            else
+                Alert.alert("Error", "The link wasn't found.")            
+        }else{
+            Alert.alert("Error","No documentation found for this device.")
+        }
     }
 
     renderDeviceNotFound() {
     	console.log("renderDeviceNotFound()");
-    	
 		return (
 			<View style={{backgroundColor:"white",flexDirection:"row"}}>
-			  <View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
-				<Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
-			  </View>
-			  <View style={{margin:20,width: width * .75}}>
-				<Text style={{color:"red"}}>
-				  Sure-Fi was unable to find the Device  {this.props.device_id} via Bluetooth. 
-				  Please make sure you are within range and the device is powered on.
-				</Text>
-			  </View>
+			    <View style={{width:width * .20,alignItems:"center",justifyContent:"center"}}>
+				    <Image source={require('../images/menu_fail.imageset/menu_fail.png')} style={{width:50,height:50,margin:10}}/>
+			    </View>
+			    <View style={{margin:20,width: width * .75}}>
+				    <Text style={{color:"red"}}>
+				        Sure-Fi was unable to find the Device  {this.props.device_id} via Bluetooth. 
+				        Please make sure you are within range and the device is powered on.
+				    </Text>
+			     </View>
 			</View>
 		)
     }
@@ -210,7 +189,6 @@ class DeviceNotMatched extends Component {
     }
 
     handleDeviceSelected(){
-
         if(this.matched_devices){
             if(this.matched_devices.length > 0){
                 var matched_device = this.matched_devices[0]
@@ -225,7 +203,6 @@ class DeviceNotMatched extends Component {
         }
     }
 
-
     renderMessage(){
     	console.log("renderMessage()");
     	if(this.props.showAlert){
@@ -239,6 +216,24 @@ class DeviceNotMatched extends Component {
     }
 
     render() {
+
+        if (this.props.loaded_documentation_state == "loading") {
+            return (
+                <Background>
+                    <View style={{height:height,justifyContent:"center",alignItems:"center"}}>
+                        <ActivityIndicator/>
+                    </View>
+                </Background>
+
+            )
+        }
+        let title = "Download documentation"
+        if(this.props.documentation_info){
+            if(this.props.documentation_info.document_title){
+                title = this.props.documentation_info.document_title 
+            }            
+        }
+
         return (
 	        <Background>
 				<View style={{height:height}}>
@@ -251,7 +246,7 @@ class DeviceNotMatched extends Component {
                             <View style={{padding:15,flexDirection:"row"}}>
                                 <View style={{width:(width * .75),justifyContent:"center"}}>
                                     <Text style={{fontSize:16,color:option_blue}}>
-                                        Access Control Bridge Instructions
+                                        {title}
                                     </Text>
                                 </View>
                                 <View>
@@ -270,6 +265,8 @@ class DeviceNotMatched extends Component {
 
 const mapStateToProps = state => ({
     documentation_path: state.loginReducer.documentation_path,
+    documentation_info : state.loginReducer.documentation_info,
+    loaded_documentation_state: state.loginReducer.loaded_documentation_state,
     device_found: state.loginReducer.device_found,
     devices : state.pairReducer.devices,
     manager : state.scanCentralReducer.manager,

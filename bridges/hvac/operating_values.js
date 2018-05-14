@@ -34,7 +34,7 @@ import {
 	parseSecondsToHumanReadable
 	} from '../../action_creators'
 import Background from '../../helpers/background'
-import SWITCH from '../../helpers/switch'
+import {SWITCH} from '../../helpers/switch'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const check = (<Icon name="check" size={25} color={success_green} />)
@@ -116,27 +116,36 @@ var RELAY_STATE = params => {
 	let relay_time = params.relay_time
 	let backgroundGray = params.backgroundGray
 	let backgroundStyle = {width:160,height:140,padding:8}
+
 	if(backgroundGray){
-		backgroundStyle = combineJSON(backgroundStyle,{backgroundColor:gray_background}) 
+		backgroundStyle.backgroundColor = gray_background
 	}
+
+
+	console.log("relay_states",relay_states)
+	console.log("relay_time",relay_time)
+	console.log("backgroundGray",backgroundGray)
+	console.log("backgroundStyle",backgroundStyle)
+
 	
 	if(relay_time == 255)
 		return null
 
 	if(relay_states.length == 8){
+
 		return (
 			<View style={backgroundStyle}>
 				<View style={{flexDirection:"row",marginVertical:5}}>
-					<SWITCH isActivated={relay_states[0]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[1]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[2]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[3]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[0]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[1]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[2]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[3]} onPress={() => console.log("switch pressend")} />
 				</View>
 				<View style={{flexDirection:"row",marginVertical:5}}>
-					<SWITCH isActivated={relay_states[4]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[5]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[6]} onPress={() => console.log("switch pressend")}/>
-					<SWITCH isActivated={relay_states[7]} onPress={() => console.log("switch pressend")}/>
+					<SWITCH isActivated={relay_states[4]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[5]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[6]} onPress={() => console.log("switch pressend")} />
+					<SWITCH isActivated={relay_states[7]} onPress={() => console.log("switch pressend")} />
 				</View>
 				<View style={{alignItems:"center",flexDirection:"row"}}>
 
@@ -384,7 +393,11 @@ class OperationValues extends Component{
 			}
 			return x
 		})
+
 		relay_states = relay_states.map(x => x.split(""))
+
+		//console.log("relay_states 3",relay_states)
+		//console.log("relay_times 3",relay_times)
 
 		return (
 			<ScrollView style={{backgroundColor:"white",flexDirection:"row"}} horizontal={true}> 
@@ -426,7 +439,7 @@ class OperationValues extends Component{
 	}
 
 	renderTransmit(transmit_info_1,transmit_info_2,transmit_info_3){
-		//console.log("renderTransmit(transmit_info_1,transmit_info_2,transmit_info_3,receive_info_1,receive_info_2,receive_info_3)",transmit_info_1,transmit_info_2,transmit_info_3)
+		console.log("renderTransmit(transmit_info_1,transmit_info_2,transmit_info_3,receive_info_1,receive_info_2,receive_info_3)",transmit_info_1,transmit_info_2,transmit_info_3)
 		transmit_info_1 = this.parseTransmitToAJson(transmit_info_1)
 		transmit_info_2 = this.parseTransmitToAJson(transmit_info_2)
 		transmit_info_3 = this.parseTransmitToAJson(transmit_info_3)
@@ -444,7 +457,7 @@ class OperationValues extends Component{
 	}
 
 	renderReceives(receive_info_1,receive_info_2,receive_info_3){
-		//console.log("renderReceives()",receive_info_1,receive_info_2,receive_info_3)
+		console.log("renderReceives()",receive_info_1,receive_info_2,receive_info_3)
 		receive_info_1 = this.parseReceiveInfoToAJson(receive_info_1)
 		receive_info_2 = this.parseReceiveInfoToAJson(receive_info_2)
 		receive_info_3 = this.parseReceiveInfoToAJson(receive_info_3)				
@@ -458,7 +471,7 @@ class OperationValues extends Component{
 	}
 
 	renderErrorCodes(error_codes){
-		//console.log("renderErrorCodes()",error_codes)
+		console.log("renderErrorCodes()",error_codes)
 		if(error_codes.length > 7)
 		return(
 			<View style={{backgroundColor:"white"}}>
@@ -490,9 +503,9 @@ class OperationValues extends Component{
 
 			)
 		}else if(this.props.isThermostat()){
-			console.log("this.props.pairing_info",)
+			console.log("this.props.pairing_info",this.props.last_package_time_thermostat)
 			if(this.props.last_package_time_thermostat.length > 0){
-
+				
 				return (
 					<View>
 						<FlatList 
@@ -533,7 +546,7 @@ class OperationValues extends Component{
 	}
 	
 	getOperatingValuesAsJson(receive_values){
-		//console.log("getOperatingValuesAsJson()")
+		console.log("getOperatingValuesAsJson()",receive_values)
 		var data = {}
 		
 		if(receive_values.length > 66){
@@ -558,22 +571,26 @@ class OperationValues extends Component{
 	}
 
 	render(){
+		console.log("this.props.loading_operation_values",this.props.loading_operation_values)
 		if(this.props.loading_operation_values)
 			return (
 				<Background> 
 					<View style={{height:height}}>
-						<ActivityIndicator /> 
+						<ActivityIndicator  style={{marginTop:80}}/> 
 					</View>
 				</Background>
 			)
 		var data = this.getOperatingValuesAsJson(this.props.operating_values)
 
 		if(data){
+
 			return(
 				<ScrollView style={styles.pairContainer}>
 					<Background>
 						<View style={{height:(height + 300 + this.flat_list_height)}}>
+							
 							{this.renderStatus(data.demo_unit_status,data.number_of_transmits,data.number_of_failures,this.props.power_on_time)}
+
 							<Text style={styles.device_control_title}>
 								Relays
 							</Text>
@@ -638,7 +655,8 @@ const mapStateToProps = state => ({
 	power_on_time_seconds: state.operationValuesReducer.power_on_time_seconds,
 	pairing_info: state.scanCentralReducer.pairing_info,
 	last_package_time: state.scanCentralReducer.last_package_time,
-	last_package_time_thermostat : state.scanCentralReducer.last_package_time_thermostat
+	last_package_time_thermostat : state.scanCentralReducer.last_package_time_thermostat,
+	
 } );
 
 export default connect(mapStateToProps)(OperationValues);

@@ -298,10 +298,10 @@ class HVACConfigureRadio extends Component {
 					<View>
 						<Title name="Power" type=""/>
 						<View style={styles.row_style}>
-							<Button text="1/8 Watt" active={this.props.radio_settings[2] == 0x16} handleTouchButton={() => this.updateRadioSettings(1,2)} width={(width/4) - 10 } height={30}/>
-							<Button text="1/4 Watt" active={this.props.radio_settings[2] == 0x19} handleTouchButton={() => this.updateRadioSettings(2,2)} width={(width/4) - 10 } height={30}/>
-							<Button text="1/2 Watt" active={this.props.radio_settings[2] == 0x1C} handleTouchButton={() => this.updateRadioSettings(3,2)} width={(width/4) - 10 } height={30}/>
-							<Button text="1 Watt" active={this.props.radio_settings[2] == 0x1F} handleTouchButton={() => this.updateRadioSettings(4,2)} width={(width/4) - 10 } height={30}/>
+							<Button text="1/8 Watt" active={this.props.radio_settings[2] == 1} handleTouchButton={() => this.updateRadioSettings(1,2)} width={(width/4) - 10 } height={30}/>
+							<Button text="1/4 Watt" active={this.props.radio_settings[2] == 2} handleTouchButton={() => this.updateRadioSettings(2,2)} width={(width/4) - 10 } height={30}/>
+							<Button text="1/2 Watt" active={this.props.radio_settings[2] == 3} handleTouchButton={() => this.updateRadioSettings(3,2)} width={(width/4) - 10 } height={30}/>
+							<Button text="1 Watt" active={this.props.radio_settings[2] == 4} handleTouchButton={() => this.updateRadioSettings(4,2)} width={(width/4) - 10 } height={30}/>
 						</View>
 					</View>						
 					<View>

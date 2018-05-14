@@ -29,7 +29,7 @@ import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
 public class BluetoothModule extends ReactContextBaseJavaModule {
 
-
+    public static final String METHOD_TAG = "METHOD";
     /**
      * The progress listener receives events from the DFU Service.
      * If is registered in onCreate() and unregistered in onDestroy() so methods here may also be called
@@ -52,6 +52,8 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
         public void onEnablingDfuMode(final String deviceAddress) {
             Log.d("onEnablingDfuMode()",deviceAddress);
         }
+
+
 
         @Override
         public void onFirmwareValidating(final String deviceAddress) {
@@ -89,6 +91,16 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
         @Override
         public void onDfuAborted(final String deviceAddress) {
             Log.d("onDfuAborted()",deviceAddress);
+            try {
+                JSONObject json = new JSONObject();
+                json.put("error","DFU aborted");
+                Bundle bundle = null;
+                bundle = BundleJSONConverter.convertToBundle(json);
+                WritableMap map = Arguments.fromBundle(bundle);
+                sendEvent("DFUOnDfuAborted",map);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -109,12 +121,23 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
 
         @Override
         public void onError(final String deviceAddress, final int error, final int errorType, final String message) {
-            Log.d("onError()",deviceAddress + " error: " + error + "errorType: " + errorType + " message:" + message);
+            try {
+                JSONObject json = new JSONObject();
+                json.put("error",error);
+                json.put("errorType",errorType);
+                json.put("message",message);
+                Bundle bundle = null;
+                bundle = BundleJSONConverter.convertToBundle(json);
+                WritableMap map = Arguments.fromBundle(bundle);
+                sendEvent("DFUOnError",map);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            Log.d(METHOD_TAG, "OnError() " + deviceAddress + " error: " + error + "errorType: " + errorType + " message:" + message);
         }
     };
 
-    public void sendEvent(String eventName,
-                          @Nullable WritableMap params) {
+    public void sendEvent(String eventName, @Nullable WritableMap params) {
         getReactApplicationContext()
                 .getJSModule(RCTNativeAppEventEmitter.class)
                 .emit(eventName, params);
@@ -131,7 +154,7 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void initService(String address,String name,String path){
-
+        Log.d(METHOD_TAG, "initService() address" + address + " , name: " + name + " path : " + path);
         final DfuServiceInitiator starter = new DfuServiceInitiator(address)
             .setDeviceName(name)
             .setDisableNotification(true);

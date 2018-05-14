@@ -45,7 +45,7 @@ const serialIcon = (<Icon name="keyboard-o" size={40} color="black"/>)
 const cameraIcon = (<Icon name="camera" size={40} color="white" />)
 const fab_buttons_background = 'white'
 
-var data_interval = 0
+var bluetooth_activated_interval = 0
 
 class Bridges extends Component{
     
@@ -63,25 +63,36 @@ class Bridges extends Component{
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
-    onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
-        //console.log("event",event)
-        //console.log("events on bridges",event)
-         // this is the event type for button presses
+    onNavigatorEvent(event) {
         switch(event.id){
             case "devices":
                 var { dispatch } = this.props;
                 dispatch({type:"HIDE_SERIAL_INPUT"})
                 this.toggleShowDeviceList()
             break
-            case "didAppear":
-                this.requestMultiplePermissions()
-            break
-            case "didDisappear":
-                this.hideCamera()
-                this.stopScan()
-            break
             default:
             break
+        }
+    }
+
+    createScanInterval(){
+        console.log("createScanInterval()")
+        if(bluetooth_activated_interval == 0){
+            bluetooth_activated_interval = setInterval(() => {
+                this.startScanning(this.manager)
+                setTimeout(() => this.stopScan(),1000)
+            },2000)            
+        }else{
+            console.log("Error","The interval is already active.")
+        }
+    }
+
+    deleteScanInterval(){
+        if(bluetooth_activated_interval != 0){
+            clearInterval(bluetooth_activated_interval)
+            bluetooth_activated_interval = 0
+        }else{
+            console.log("Error","The device was previously deleted.")
         }
     }
 
@@ -94,25 +105,9 @@ class Bridges extends Component{
     }
 
     componentDidMount() {
-      this.startAll()
-    }
-
-    startAll(){
-        console.log("startAll()")
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})   
         this.checkMultiplePermissions() 
-    }
-
-    deleteScan(){
-        console.log("deleteScan()")
-        if(this.manager != null){
-            this.stopScan()
-            this.manager.destroy()
-            this.manager = null;                        
-        }else{
-            console.log("Delete scan can't delete the scan because it is null.")
-        }
     }
 
     checkMultiplePermissions(){
@@ -120,7 +115,6 @@ class Bridges extends Component{
         let permissions = PermissionsAndroid.PERMISSIONS
         var { dispatch } = this.props;
         
-
         PermissionsAndroid.check('android.permission.READ_EXTERNAL_STORAGE')
         .then(response => {
             if(response){
@@ -149,6 +143,7 @@ class Bridges extends Component{
 
 
     stopScan(){
+        console.log("stopScan()")
         if(this.manager){
             this.manager.stopDeviceScan()
         }else{
@@ -161,15 +156,11 @@ class Bridges extends Component{
         if(!this.manager){
             this.manager = new BleManager();
             this.props.dispatch({type: "SAVE_BLE_MANAGER",manager: this.manager})
-            this.startScanning(this.manager)
+            this.createScanInterval()
         }else{
             console.log("createScan can't create a new scan previous exits")
-            this.startScanning(this.props.manager)
+            this.createScanInterval()
         }
-    }
-
-    stopWithoutDestroy(){
-        this.manager.stopDeviceScan()
     }
     
     toggleShowDeviceList(){
@@ -295,6 +286,10 @@ class Bridges extends Component{
             title : "Device Details",
             appStyle: {
               orientation: 'portrait',
+            },
+            passProps: {
+                createScanInterval: () => this.createScanInterval(),
+                showCamera: () => this.showCamera()
             }
         }
 
@@ -309,6 +304,8 @@ class Bridges extends Component{
                 ],
             }
         }   
+        this.deleteScanInterval()
+        this.hideCamera()
         this.props.navigator.push(data)        
     }
 
@@ -328,13 +325,11 @@ class Bridges extends Component{
 
 
     startScanning(manager){
-        console.log("startScanning(1)")
+        console.log("startScanning()")
         var devices = this.props.devices
-        
         if(manager){
             try{
                 manager.startDeviceScan([],null,(error,device) => {
-                    
                     if(error){
                         if(error.message == "Bluetooth location services are disabled"){
                             Alert.alert("Location Services Disabled.","In order to connect to the Sure-Fi Device you should turn on the location services.")
@@ -346,21 +341,13 @@ class Bridges extends Component{
                     
                     if(device.name != null){
                         if((device.name.indexOf("Sure-Fi") != -1) || (device.name.indexOf("SF Bridge") != -1)){
-                            
-                        //if (device.name == "Sure-Fi Brid" || device.name == "SF Bridge") {
-                            //console.log("device",device.id);
-
-                            if (!FIND_ID(devices, device.id)) {
-                                
+                            if (!FIND_ID(devices, device.id)) {        
                                 var data = this.getManufacturedData(device)
-                                //LOG_INFO([0xA3],LOOKED,data.manufactured_data.device_id) // 0xA3 its defined on commands
-
                                 devices.push(data)
-
                                 this.devices = devices
                                 this.remote_devices = this.filterRemoteDevices(devices)
                                 this.props.dispatch({type: "UPDATE_DEVICES",devices: this.devices,remote_devices: this.remote_devices})
-                            }                
+                            }
                         }
                     }
                 })           
@@ -368,29 +355,10 @@ class Bridges extends Component{
             catch(error){
                 console.log("error",error)
             }
-
         }else{
             console.log("startScanning() can't start the scann the scan object its empty")
         }
     }    
-
-    deleteClearDataInterval(){
-        if(data_interval != 0){
-            clearInterval(data_interval)
-            data_interval = 0
-        }else{
-            console.log("The data interval was cleaned before")
-        }
-    }
-
-    createDataInterval(){
-        console.log("createDataInterval()")
-        if(data_interval == 0){
-            data_interval = setInterval(() => this.clearData(),10000)
-        }else{
-            console.log("The data interval was previosly created")
-        }
-    }
 
     clearData(){
         console.log("clearData()")
@@ -408,6 +376,7 @@ class Bridges extends Component{
     }
 
     requestMultiplePermissions(){
+        console.log("requestMultiplePermissions()")
         let permissions = PermissionsAndroid.PERMISSIONS
         this.props.dispatch({type: "HIDE_PERMISSIONS_MODAL"})
 
@@ -600,7 +569,10 @@ class Bridges extends Component{
             passProps: {
                 device_id : device_id,
                 showAlert: true,
-                startScanning: (manager) => this.startScanning(manager),
+                createScanInterval: () => this.createScanInterval(),
+                deleteScanInterval: () => this.deleteScanInterval(),
+                showCamera : () => this.showCamera(),
+                hideCamera: () => this.hideCamera(),
                 checkDeviceType : (matched_device) => {
                     console.log("matched_device on index",matched_device)
                     this.checkDeviceType(matched_device)
