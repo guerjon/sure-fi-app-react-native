@@ -1,30 +1,30 @@
 import React, {Component} from 'react'
 import {
   	Text,
-  	TouchableHighlight,
+  	TouchableOpacity,
 } from 'react-native'
 
 export const SWITCH = params => {
 	if(params.isActivated)
 		return (
-			<TouchableHighlight 
-				style={{backgroundColor:"#00DD00",width:30,height:30,marginHorizontal:2,alignItems:"center",borderRadius:50}}
+			<TouchableOpacity 
+				style={{backgroundColor:"#02AF02",width:50,height:40,marginRight:20,alignItems:"center",borderRadius:10,justifyContent:"center"}}
 				onPress={() => params.onPress(1)}
 			>
-				<Text style={{color:"white",marginTop:5}}>
+				<Text style={{color:"white",fontSize:18}}>
 					On
 				</Text>
-			</TouchableHighlight> 
+			</TouchableOpacity> 
 		)
 
 	return (
-		<TouchableHighlight 
-			style={{backgroundColor:"red",width:30,height:30,marginHorizontal:2,borderRadius:50,alignItems:"center"}}
+		<TouchableOpacity 
+			style={{backgroundColor:"#E2E2E2",width:50,height:40,marginRight:20,borderRadius:10,alignItems:"center",justifyContent:"center"}}
 			onPress={() => params.onPress(0)}
 		>
-			<Text style={{color:"white",marginTop:5}}>
+			<Text style={{color:"white",fontSize:18}}>
 				Off
 			</Text>
-		</TouchableHighlight>
+		</TouchableOpacity>
 	)
 }

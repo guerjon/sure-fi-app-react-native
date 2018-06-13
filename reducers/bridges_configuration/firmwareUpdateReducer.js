@@ -13,7 +13,8 @@ const initialState = {
   show_firmware_update_list : false,
   selected_version : 0,
   selected_files : {},
-  radio_text: "Updating Radio"
+  radio_text: "Updating Radio",
+  firmware_update_logs: []
 }
 
 export default function firmwareUpdateReducer (state = initialState, action) {
@@ -120,6 +121,11 @@ export default function firmwareUpdateReducer (state = initialState, action) {
       return {
         ...state,
         radio_text: action.radio_text
+      }
+    case "SET_FIRMWARE_UPDATE_LOGS":
+      return{
+        ...state,
+        firmware_update_logs : action.firmware_update_logs
       }
 
     default:

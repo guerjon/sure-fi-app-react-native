@@ -97,8 +97,8 @@ android {
         applicationId "com.surefi"
         minSdkVersion 18
         targetSdkVersion 23
-        versionCode 36
-        versionName "1.36"
+        versionCode 38
+        versionName "1.38"
         ndk {   
             abiFilters "armeabi-v7a", "x86"
         }
@@ -151,15 +151,12 @@ android {
 }
 
 dependencies {
+    
     compile project(':tipsi-stripe')
     
-    compile(project(':react-native-maps')) {
-      exclude group: 'com.google.android.gms', module: 'play-services-base'
-      exclude group: 'com.google.android.gms', module: 'play-services-maps'
-    }
         
     compile 'com.google.android.gms:play-services-base:11.0.0'
-    compile 'com.google.android.gms:play-services-maps:11.0.0'
+    
     compile 'com.google.android.gms:play-services-wallet:11.0.0'
     compile project(':react-native-youtube')
     compile fileTree(include: ['*.jar'], dir: 'libs')

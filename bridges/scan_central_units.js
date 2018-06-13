@@ -65,10 +65,11 @@ class ScanCentralUnits extends Component {
 
 
     onSuccess(scan_result) {
-
         if(this.props.allow_scanning){
            
             this.props.dispatch({type: "ALLOW_SCANNING",allow_scanning:false})
+            this.props.dispatch({type: "SET_DEVICE_SCAN_LINK",device_scan_link:scan_result.data})
+
             var device_id = scan_result.data.substr(-6).toUpperCase();
             
             this.scan_result_id = device_id
@@ -85,7 +86,6 @@ class ScanCentralUnits extends Component {
                     //matched_devices = constants.GET_CENTRAL_DEVICES(matched_devices)
 
                     if(matched_devices.length > 0){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a central _device
-                
                         
                         if(matched_devices.length > 0){
                 
@@ -94,7 +94,7 @@ class ScanCentralUnits extends Component {
                                 type: "CENTRAL_DEVICE_MATCHED",
                                 central_device: matched_device
                             });
-                            this.props.checkDeviceType(matched_device)
+                            this.props.goToDocumentation(matched_device)
                         }else{
                         
                             dispatch({
@@ -107,11 +107,9 @@ class ScanCentralUnits extends Component {
                         dispatch({
                             type : "IS_NOT_CENTRAL_DEVICE"
                         })
-
                     }
                 }else{      
-                    
-                    this.props.goToDeviceNotMatched(device_id)
+                    this.props.goToDocumentation(device_id)
                 }
             }   
         }       
@@ -162,7 +160,6 @@ class ScanCentralUnits extends Component {
     renderImage(message,button){
         
         var {photo_data} = this.props
-        //console.log("photo_data",photo_data)
         return (
             <View style={{marginVertical:10}}>
                 <View style={{width: width -20 , height: height-450,backgroundColor:"white",alignItems:"center",justifyContent:"center"}}>
@@ -254,8 +251,13 @@ class ScanCentralUnits extends Component {
                 )
                 return this.renderImage(message,clear_button)
             case "device_scanned_and_matched":
-                var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
-                return this.renderCamera(message,confirm_buttons)
+                if(central_device){
+                    if(central_device.manufactured_data){                    
+                        var message = <Text style={{fontSize:16, color:"#00DD00"}}>Device found ({central_device.manufactured_data.device_id.toUpperCase()})</Text>
+                        return this.renderCamera(message,confirm_buttons)
+                    }
+                }
+                return null
             case "device_is_not_on_paring_mode":
                 var message = <Text style={{fontSize:16, color:"red"}}>Device ({scan_result ? scan_result: "ID UNDEFINED"}) is not on pairing mode</Text>
                  return this.renderCamera(message,confirm_buttons)
@@ -284,7 +286,8 @@ const mapStateToProps = state => ({
     scanner : state.pairReducer.scanner,
     photo_data : state.scanCentralReducer.photo_data,
     manager : state.scanCentralReducer.manager,
-    allow_scanning : state.scanCentralReducer.allow_scanning
+    allow_scanning : state.scanCentralReducer.allow_scanning,
+    device_scan_link : state.scanCentralReducer.device_scan_link
 
 })
 

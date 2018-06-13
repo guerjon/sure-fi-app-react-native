@@ -16,15 +16,18 @@ registerScreens(store,Provider);
 // this will start our app
 Navigation.startSingleScreenApp({
   screen: {
-    screen : "MainScreen",
-    title: 'MainScreen',
-    //screen : "DeviceControlPanel",
-    //title: "DeviceControlPanel",
+    screen : "Bridges",
+    title: 'Scan QR Code',
+//    screen : "HelpScreen",
+//    title: "HelpScreen",
+//    screen : "Documentation",
+//    title: 'Documentation',
+
     navigatorStyle : {
       navBarHidden : true,
     },
     passProps: {},
-    animationType: 'slide-down',
+    animationType: 'slide-up',
   },
   appStyle: {
     orientation: 'portrait'

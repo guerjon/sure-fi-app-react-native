@@ -1,15 +1,15 @@
 import { FETCHING_DATA, FETCHING_DATA_SUCCESS, FETCHING_DATA_FAILURE } from '../constants'
 const initialState = {
   device_status : 0, //this status keeps the real status of the bridge [0 => undefined, 1 => unpaired,2 =>pairing, 3 => paired,4 => deployed ],
-  app_version : 0,
-  radio_version : 0,
-  bluetooth_version : 0,
+  app_info : [],
+  radio_info : [],
+  bluetooth_info : [],
   radio_settings : [],
   spreading_factor : 0,
   band_width : 0,
   power : 0,
-  power_voltage : 0,
-  battery_voltage :0,
+  power_voltage : null,
+  battery_voltage :null,
   show_modal : false,
   is_editing: false,
   device_name : "",
@@ -20,7 +20,7 @@ const initialState = {
   hardware_status : null,
   options_loaded : false,
   app_board_version : "",
-  radio_board_version : "",
+  radio_board_version : false,
   register_board_1 : "",
   register_board_1 : "",
   show_switch_button : false,
@@ -28,7 +28,7 @@ const initialState = {
   pair_disconnect : false,
   unpair_disconnect : false,
   deploy_disconnect: false,
-  switch_disconnect : false,
+  firmware_update_disconnect : false,
   show_status_box : true,
   original_name: "",
   show_disconnect_notification : true,
@@ -40,33 +40,34 @@ const initialState = {
   handleCharacteristic : false,
   getAllCommands: false,
   show_disconnecting_modal : false,
-  registration_info : []
+  registration_info : [],
+  show_going_back_screen: false,
+  on_back_disconnect: false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
   switch (action.type) {
     case "RESET_SETUP_CENTRAL_REDUCER":
-      console.log("RESET_SETUP_CENTRAL_REDUCER")
       return initialState
     case "UPDATE_OPTIONS":
       return {
         ...state,
         device_status : action.device_status
       }
-    case "UPDATE_APP_VERSION":
+    case "SET_APP_INFO":
       return {
         ...state,
-        app_version : action.version
+        app_info : action.app_info
       }
-    case "UPDATE_RADIO_VERSION":
+    case "SET_RADIO_INFO":
       return {
         ...state,
-        radio_version : action.version
+        radio_info : action.radio_info
       }
-    case "UPDATE_BLUETOOTH_VERSION":
+    case "SET_BLUETOOTH_INFO":
       return{
         ...state,
-        bluetooth_version : action.version
+        bluetooth_info : action.bluetooth_info
       }
     case "UPDATE_RADIO_SETTINGS":
       return{
@@ -218,10 +219,10 @@ export default function setupCentralReducer (state = initialState, action) {
         manual_disconnect : action.manual_disconnect,
         
     }      
-    case "SET_SWITCH_DISCONNECT":
+    case "SET_FIRMWARE_UPDATE_DISCONNECT":
       return {
         ...state,
-        switch_disconnect : action.switch_disconnect
+        firmware_update_disconnect : action.firmware_update_disconnect
       }
     case "SHOW_STATUS_BOX":
       return{
@@ -278,6 +279,16 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         registration_info : action.registration_info
+      }
+    case "SHOW_GOING_BACK_SCREEN":
+      return{
+        ...state,
+        show_going_back_screen: action.show_going_back_screen
+      }
+    case "SET_ON_BACK_DISCONNECT":
+      return {
+        ...state,
+        on_back_disconnect: action.on_back_disconnect
       }
     default:
       return state

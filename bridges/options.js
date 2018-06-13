@@ -6,7 +6,8 @@ import {
   	TouchableHighlight,
   	Alert,
   	TouchableNativeFeedback,
-  	TouchableWithoutFeedback
+  	TouchableWithoutFeedback,
+  	TouchableOpacity
 } from 'react-native'
 
 import {
@@ -35,9 +36,10 @@ import {COMMAND_MAKE_DEPLOY} from '../commands'
 const next_step = <Text style={styles.device_control_title_container}>NEXT STEP</Text>
 
 const Option = params => {
+
 	return (
 		<View  style={{width:width,backgroundColor:"white"}}>
-			<TouchableWithoutFeedback onPress={() => params.callback()}>
+			<TouchableOpacity onPress={() => params.callback()}>
 				<View style={{flexDirection:"row"}}>
 					<View style={{width:70}}>
 						<Image source={params.image} style={{width:60,height:60,margin:5}}/>
@@ -53,7 +55,7 @@ const Option = params => {
 						</Text>
 					</View>
 				</View>
-			</TouchableWithoutFeedback>
+			</TouchableOpacity>
 		</View>
 	)    		
 }
@@ -110,7 +112,7 @@ class Options extends Component{
                     central_device: device
                 });
 				
-				this.props.dispatch({type: "SET_INDICATOR_NUMBER",indicator_number: 1})
+				this.props.dispatch({type: "SET_BRIDGE_STATUS",set_bridge_status: 1})
 	    		this.props.setConnectionEstablished()
 	    		
 			})
@@ -241,20 +243,12 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
    	}
 
-   	getSureFiChat(){
-   		return <Option callback={() => this.props.goToChat()} image={require('../images/menu_chat_dark.imageset/menu_chat.png')} name="Sure-Fi Chat" />
-   	}
-
     getUnPairBridgeOption(){
     	return <Option callback={() => this.showAlertUnpair()} image={require('../images/menu_unpair_dark.imageset/menu_unpair.png')} name="Unpair Bridge"/>
     }
 
-    getRsSettings(){
-    	return <Option callback={() => this.props.goToRsSettings()} image={require('../images/menu_serial_settings.imageset/menu_serial_settings.png')} name="RS-485 Settings"/>
-    }
-
     getResetDemoOption(){
-    	console.log("getResetDemoOption()",this.props.warranty_information,this.props.demo_unit_time)
+    	//console.log("getResetDemoOption()",this.props.warranty_information,this.props.demo_unit_time)
     	var run_time = this.props.warranty_information
     	var demo_time = this.props.demo_unit_time[0] * 86400 
 
@@ -295,6 +289,7 @@ class Options extends Component{
     }
 
     getPairBridgeOption(){
+
 		return (
 			<View style={{marginBottom:20}}>
 				<View style={styles.device_control_title_container}>
@@ -312,7 +307,7 @@ class Options extends Component{
 							<Image source={require('../images/menu_pair_dark.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
 						</View>
 						<View style={styles.white_touchable_text_container}>
-							<Text style={styles.white_touchable_text}>
+							<Text style={{color:"black",fontSize:28}}>
 								Pair Bridge
 							</Text>
 						</View>
@@ -328,10 +323,6 @@ class Options extends Component{
 
     getConfigureRadioOption(){
     	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../images/menu_radio_settings_dark.imageset/menu_radio_settings.png')} name="Configure Radio" />
-    }
-
-    getDocumentationOption(){
-    	return <Option callback={() => this.props.goToDocumentation()} image={require('../images/menu_docs_dark.imageset/menu_documents.png')} name="Documentation"/>
     }
 
     getDeployCentralUnitOption(){
@@ -435,25 +426,6 @@ class Options extends Component{
 		)   
 	}
 
-	getAdditionalOptions(){
-		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		//console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data,this.props.user_data);
-		
-		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
-		var sales_dist = ["SALES","DIST"]		
-		var indicator = parseInt(this.props.indicatorNumber) 
-
-		if(admin_options.lastIndexOf(user_type) !== -1){
-		//if(true){
-			return this.getAdminOptions(indicator)
-
-		}else if(sales_dist.lastIndexOf(user_type) !== -1){
-			return this.getNormalOptions(indicator)
-
-		}else{
-			return this.getDefaultOptions(indicator)
-		}
-	}
 
 	getAdminOptions(bridge_status){
 		//console.log("getAdminOptions()",bridge_status);
@@ -465,9 +437,7 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getConfigureRadioOption()}
-						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -476,14 +446,11 @@ class Options extends Component{
 					<View>
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
 					</View>
 				)
 			break
@@ -492,14 +459,12 @@ class Options extends Component{
 					<View>
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
 						{this.getRelayDefaults()}
-						{this.getRsSettings()}
+						
 					</View>
 				)
 			case 0xE0:
@@ -547,7 +512,6 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}
 					</View>
 				)
@@ -558,9 +522,7 @@ class Options extends Component{
 						
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
@@ -573,9 +535,7 @@ class Options extends Component{
 						
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
@@ -615,7 +575,6 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getRelayDefaults()}	
 					</View>
 				)
@@ -626,7 +585,6 @@ class Options extends Component{
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
 					</View>
@@ -638,7 +596,6 @@ class Options extends Component{
 						{this.getResetDemoOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getRelayDefaults()}
 					</View>
@@ -669,13 +626,25 @@ class Options extends Component{
 	}
 
 	render(){	
-		return (
-			<View style={{marginVertical:20}}>
-				<View>
-					{this.getAdditionalOptions()}
-				</View>
-			</View>
-		)
+		
+		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
+		//console.log("render()",this.props.bridge_status);
+		
+		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
+		var sales_dist = ["SALES","DIST"]		
+		var bridge_status = parseInt(this.props.bridge_status) 
+
+		if(admin_options.lastIndexOf(user_type) !== -1){
+		//if(true){
+
+			return this.getAdminOptions(bridge_status)
+
+		}else if(sales_dist.lastIndexOf(user_type) !== -1){
+			return this.getNormalOptions(bridge_status)
+
+		}else{
+			return this.getDefaultOptions(bridge_status)
+		}
 	}
 }
 
@@ -688,6 +657,7 @@ const mapStateToProps = state => ({
 	demo_unit_time : state.scanCentralReducer.demo_unit_time,
 	show_activate_option : state.scanCentralReducer.show_activate_option,
 	warranty_information : state.scanCentralReducer.warranty_information,
+	bridge_status : state.scanCentralReducer.bridge_status,
 });
 
 export default connect(mapStateToProps)(Options);

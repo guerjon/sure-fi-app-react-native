@@ -9,6 +9,7 @@ import {
   	ActivityIndicator,
   	Alert,
   	TouchableHighlight,
+  	TouchableOpacity,
   	FlatList
 } from 'react-native'
 import {styles,first_color,width,height} from '../../styles/index.js'
@@ -34,7 +35,7 @@ import {
 	parseSecondsToHumanReadable
 	} from '../../action_creators'
 import Background from '../../helpers/background'
-import {SWITCH} from '../../helpers/switch'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const check = (<Icon name="check" size={25} color={success_green} />)
@@ -69,7 +70,30 @@ function doPrettyZeros(number){
 	}
 }
 
+var SWITCH = params => {
+	if(true)
+		return (
+			<TouchableOpacity 
+				style={{backgroundColor:"#02AF02",width:30,height:30,marginRight:10,alignItems:"center",borderRadius:30,justifyContent:"center"}}
+				onPress={() => params.onPress(1)}
+			>
+				<Text style={{color:"white",fontSize:16}}>
+					On
+				</Text>
+			</TouchableOpacity> 
+		)
 
+	return (
+		<TouchableOpacity 
+			style={{backgroundColor:"#E2E2E2",width:30,height:30,marginRight:10,borderRadius:30,alignItems:"center",justifyContent:"center"}}
+			onPress={() => params.onPress(0)}
+		>
+			<Text style={{color:"white",fontSize:16}}>
+				Off
+			</Text>
+		</TouchableOpacity>
+	)	
+}
 
 var TIME = params => {
 	var value = ""
@@ -210,7 +234,7 @@ var TRANSMIT = params => {
 	var transmit_info = params.transmit_info
 	var success_text = transmit_info.success == 1 ? "SUCCESS" : "FAILURE";
 	var success_color = transmit_info.success == 1 ? success_green : "red";
-	var num_retrays = transmit_info.numRetries + " retrays"
+	var num_retries = transmit_info.numRetries + "retries"
 	var rssi = "RSSI: "  + TWO_BYTES_TO_INT(transmit_info[0],transmit_info[1])
 	var snr = "SNR: " + transmit_info.snr
 	var ack_data = transmit_info.ackDataLength + " Byte ACK" 
@@ -224,7 +248,7 @@ var TRANSMIT = params => {
 			</View>
 			<View>
 				<Text>
-					{num_retrays}
+					{num_retries}
 				</Text>
 			</View>
 			<View style={{flexDirection:"row"}}>

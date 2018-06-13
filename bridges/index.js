@@ -12,7 +12,8 @@ import {
     TextInput,
     PermissionsAndroid,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    AppState
     } from 'react-native';
 
 import {styles,first_color,width,option_blue,height} from '../styles/index.js'
@@ -63,6 +64,14 @@ class Bridges extends Component{
         this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
+
+
+    componentWillUnmount(){
+        console.log("componentWillUnmount()")
+        this.props.dispatch({type:"HIDE_SERIAL_INPUT"})
+        AppState.removeEventListener('change',(param) => this.handleAppStateChange(param));
+    }
+
     onNavigatorEvent(event) {
         switch(event.id){
             case "devices":
@@ -73,6 +82,19 @@ class Bridges extends Component{
             default:
             break
         }
+    }
+
+    handleAppStateChange(nextAppState){
+        console.log("handleAppStateChange()",nextAppState)
+        this.props.dispatch({type:"SET_APP_STATE",app_state: nextAppState})
+        if(nextAppState == "background"){
+            this.deleteScanInterval()
+            this.hideCamera()
+        }else if(nextAppState == "active"){
+            this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
+            this.props.dispatch({type: "RESET_PAIR_REDUCER"})   
+            this.checkMultiplePermissions() 
+        }                    
     }
 
     createScanInterval(){
@@ -88,11 +110,12 @@ class Bridges extends Component{
     }
 
     deleteScanInterval(){
+        console.log("deleteScanInterval()")
         if(bluetooth_activated_interval != 0){
             clearInterval(bluetooth_activated_interval)
             bluetooth_activated_interval = 0
         }else{
-            console.log("Error","The device was previously deleted.")
+            console.log("Error","The device scan was previously deleted.")
         }
     }
 
@@ -101,10 +124,16 @@ class Bridges extends Component{
     }
 
     componentWillMount() {
-      this.resetCentralReducer()
+        console.log("componentWillMount()")
+        
+        this.props.dispatch({type: "SET_CURRENT_SCREEN",current_screen : "Bridges"})
+
+        AppState.addEventListener('change',(param) => this.handleAppStateChange(param));
+        this.resetCentralReducer()
     }
 
     componentDidMount() {
+        console.log("componentDidMount()")
         this.props.dispatch({type: "RESET_SCANNED_DEVICE_LIST"})
         this.props.dispatch({type: "RESET_PAIR_REDUCER"})   
         this.checkMultiplePermissions() 
@@ -143,7 +172,6 @@ class Bridges extends Component{
 
 
     stopScan(){
-        console.log("stopScan()")
         if(this.manager){
             this.manager.stopDeviceScan()
         }else{
@@ -263,15 +291,20 @@ class Bridges extends Component{
     }
 
     checkDeviceType(device){
+        console.log("checkDeviceType()",device.manufactured_data)
         if(device){
             this.props.dispatch({
                 type: "CENTRAL_DEVICE_MATCHED",
                 central_device: device
             });
 
-            if(device.manufactured_data.hardware_type == '03' || device.manufactured_data.hardware_type == '04'){
+            const type = device.manufactured_data.hardware_type
+            if(type == '03' || type == '04'){
                 this.goToDeviceControl(device,"HVACDeviceControlPanel")
-            }else{
+            }else if(type == "07" || type == "08"){
+                this.goToDeviceControl(device,"ModuleDeviceControlPanel")
+            }
+            else{
                 this.goToDeviceControl(device,"DeviceControlPanel")
             }            
         }
@@ -306,7 +339,10 @@ class Bridges extends Component{
         }   
         this.deleteScanInterval()
         this.hideCamera()
-        this.props.navigator.push(data)        
+        
+        this.props.dispatch({type: "SET_CURRENT_SCREEN",current_screen : screen})
+
+        this.props.navigator.push(data)
     }
 
     reviewDevices(){
@@ -325,17 +361,21 @@ class Bridges extends Component{
 
 
     startScanning(manager){
-        console.log("startScanning()")
         var devices = this.props.devices
         if(manager){
             try{
                 manager.startDeviceScan([],null,(error,device) => {
                     if(error){
-                        if(error.message == "Bluetooth location services are disabled"){
-                            Alert.alert("Location Services Disabled.","In order to connect to the Sure-Fi Device you should turn on the location services.")
-                        }else{
-                            Alert.alert("Error",error.message)    
-                        }
+                        Alert.alert(
+                            "Bluetooth or Location Services Disabled.",
+                            "In order to connect to the Sure-Fi Device you should turn on the Bluetooth and location services.",
+                            [
+                                {text: "Continue",onPress: () => this.checkMultiplePermissions()},
+                                
+                            ]
+                        )
+
+                        this.deleteScanInterval()
                         return
                     }
                     
@@ -372,6 +412,7 @@ class Bridges extends Component{
     }
 
     hideCamera(){
+        console.log("hideCamera()")
          this.props.dispatch({type: "SHOW_CAMERA",show_camera:false})
     }
 
@@ -493,7 +534,7 @@ class Bridges extends Component{
                         })
                     }
                 }else{
-                    this.goToDeviceNotMatched(device_id)
+                    this.goToDocumentation(device_id)
                 }
             }   
         }   
@@ -535,7 +576,7 @@ class Bridges extends Component{
                         </View>
                         <View style={{marginHorizontal:20,marginVertical:15,height:100,alignItems:"center",justifyContent:"center"}}>
                             <Text style={{fontSize:17}}>
-                                In order to Scan the Qr Code we need access to the camera and pictures. 
+                                In order to Scan the QR Code we need access to the camera, pictures, Bluetooth and location services. 
                             </Text>
                         </View>
                         
@@ -551,7 +592,7 @@ class Bridges extends Component{
                                 borderRadius: 10
                             }}>
                             <Text style={{color:option_blue}}>
-                                ACCEPT
+                                CONTINUE
                             </Text>
                         </TouchableHighlight>
                     </View>
@@ -560,23 +601,20 @@ class Bridges extends Component{
         )
     }
 
-    goToDeviceNotMatched(device_id){
-        console.log("goToDeviceNotMatched()");
-
+    goToDocumentation(device_id){
+        console.log("goToDocumentation()");
+        this.hideCamera()
+        
         this.props.navigator.push({
-            screen: "DeviceNotMatched",
-            title : device_id,
+            screen: "Documentation",
+            title: "Documentation",
             passProps: {
-                device_id : device_id,
                 showAlert: true,
                 createScanInterval: () => this.createScanInterval(),
                 deleteScanInterval: () => this.deleteScanInterval(),
                 showCamera : () => this.showCamera(),
                 hideCamera: () => this.hideCamera(),
-                checkDeviceType : (matched_device) => {
-                    console.log("matched_device on index",matched_device)
-                    this.checkDeviceType(matched_device)
-                } 
+                checkDeviceType: (type) => this.checkDeviceType(type)
             },
             appStyle: {
               orientation: 'portrait',
@@ -607,7 +645,7 @@ class Bridges extends Component{
         
             return(
                 <Background>
-                    <View style={{justifyContent:'space-between',height:height-150}}>
+                    <View style={{justifyContent:'space-between',height:height-250}}>
                         <View style={camera_style}>
                             {this.props.show_camera && ( 
                                 <ScanCentralUnits
@@ -617,7 +655,7 @@ class Bridges extends Component{
                                     manager = {this.manager}
                                     requestMultiplePermissions = {() => this.requestMultiplePermissions()}
                                     stopScan = {() => this.stopScan()}
-                                    goToDeviceNotMatched = {(device_id) => this.goToDeviceNotMatched(device_id)}
+                                    goToDocumentation = {(device_id) => this.goToDocumentation(device_id)}
                                 />
                                 )
                             }
@@ -631,25 +669,23 @@ class Bridges extends Component{
                             </ScrollView>
                         </View>
                     </View>
-                    <View style={{height:150}}>
-                        {this.props.list_status != "showed" &&
-                            <View style={{flexDirection:"row",flex:1,justifyContent: 'space-between',marginHorizontal:10}}>
-                                <View >
-                                    {touchable_icon}
-                                </View>
-                                <View style={{alignItems:"center"}}>
-                                    <Text style={{fontSize:18,fontWeight:"900"}}>
-                                        Scan QR Code
-                                    </Text>
-                                </View>
-                                <View>
-                                    <TouchableHighlight onPress={() => this.showHelpAlert()}>
-                                        <Image source={require('../images/info_icon.imageset/info_icon.png')} />
-                                    </TouchableHighlight>                                
-                                </View>
-                            </View>                    
-                        }
+                    
+                    <View style={{width:width,alignItems:"center",justifyContent:"center"}}>
+                        <Image source={require('../images/scan_qr_code.imageset/scan_qr_code.png')} style={{width:190,height:150}}/>
                     </View>
+
+                    {this.props.list_status != "showed" &&
+                        <View style={{height:100,justifyContent:"center",flexDirection:"row"}}>
+                            <View style={{width:50,justifyContent:"center",marginHorizontal:20}}>
+                                {touchable_icon}
+                            </View>
+                            <View style={{width: width - 140,justifyContent:"center",marginLeft:40}}>
+                                <Text style={{fontSize:24,fontWeight:"900"}}>
+                                    Scan QR Code
+                                </Text>
+                            </View>
+                        </View>
+                    }
                 </Background>
             );  
         }
@@ -665,6 +701,7 @@ const mapStateToProps = state => ({
     user_data : state.loginReducer.user_data,
     show_camera : state.scanCentralReducer.show_camera,
     manager : state.scanCentralReducer.manager,
+    appState: state.scanCentralReducer.appState
 })
 
 export default connect(mapStateToProps)(Bridges)

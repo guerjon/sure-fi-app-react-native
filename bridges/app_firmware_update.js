@@ -160,10 +160,12 @@ class AppFirmwareUpdate extends Component{
 				console.log("BleRsp_BootloaderInfo")
 				data.value.shift()
 
-				this.checkBootloaderInfo(data.value)
 				
 				if(this.just_request)
 					this.writeStartUpdate()
+				else
+					this.checkBootloaderInfo(data.value)
+
 				return	
 
 			case 0xE0:
@@ -243,10 +245,10 @@ class AppFirmwareUpdate extends Component{
 		console.log("checkBootloaderInfo()",bootloader_data)
 
 		if(bootloader_data.lowerReadCrc == "0000" && bootloader_data.upperReadCrc == "0000"){
-			console.log("1")
+		
 			this.write([0x1C])
 		}else{		
-			console.log("2")
+		
 			this.updateBootLoaderInfo(bootloader_data)
 			this.programNumber = this.calculateProgramingNumber(bootloader_data)
 			this.requestBootloaderInfo(true)
@@ -311,11 +313,10 @@ class AppFirmwareUpdate extends Component{
 
 	write(data){
 		let device = this.device;
-
-		BleManagerModule.retrieveServices(device.id,() => {
-			LOG_INFO(data,COMMAND)
-			BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
-		})
+	
+		LOG_INFO(data,COMMAND)
+		BleManagerModule.specialWrite(device.id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
+		
 	}
 
 	writeWithoutResponse(data){
@@ -334,11 +335,13 @@ class AppFirmwareUpdate extends Component{
 	}
 
 	writeStartUpdate(){
+		console.log("writeStartUpdate()")
 		this.props.dispatch({type: "START_UPDATE"})
 		this.write([3]) // should expect a 3 on handleCharacteristic Notification
 	}
 
 	startRow(){
+		console.log("startRow()")
 		if(this.bytes_file){
 			let rows = this.bytes_file
 			new_rows = []

@@ -5,10 +5,13 @@ const initialState = {
   user_data : null,
   fetching_data : false,
   device_found:false,
-  documentation_info : {
-    document_title: "Download documentation"
-  },
-  loaded_documentation_state: "no_activity"
+  videos_info: [],
+  documentation_info : [],
+  loaded_documentation_state: "no_activity",
+  system_hardware_type: 0,
+  show_videos_modal: false,
+  show_documentation_modal: false,
+  show_no_internet_connection : false,
 }
 
 export default function loginReducer (state = initialState, action) {
@@ -43,10 +46,35 @@ export default function loginReducer (state = initialState, action) {
         ...state,
         documentation_info: action.documentation_info
       }
+    case "SET_VIDEOS_INFO":
+      return{
+        ...state,
+        videos_info: action.videos_info
+      }
     case  "SET_LOADED_DOCUMENTATION_STATE":
       return{
         ...state,
         loaded_documentation_state: action.loaded_documentation_state
+      }
+    case "SET_SYSTEM_HARDWARE_TYPE":
+      return{
+        ...state,
+        system_hardware_type: action.system_hardware_type
+      }
+    case "SHOW_DOCUMENTATION_MODAL":
+      return{
+        ...state,
+        show_documentation_modal: action.show_documentation_modal
+      }
+    case "SHOW_VIDEOS_MODAL":
+      return{
+        ...state,
+        show_videos_modal: action.show_videos_modal
+      }
+    case "SHOW_NO_INTERNET_CONNECTION":
+      return{
+        ...state,
+        show_no_internet_connection: action.show_no_internet_connection
       }
     default:
       return state

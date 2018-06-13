@@ -6,7 +6,7 @@ export const height = Dimensions.get('window').height;
 
 const margin = 20
 const title_margin  = 15
-export const success_green = "#00DD00"
+export const success_green = "#02AF02"
 const small_font_size = 12
 const medium_font_size = 18
 const cancel_red = "red"
@@ -15,7 +15,8 @@ export const red_error = "#FF0000"
 export const option_blue = "#5AB0E3"
 export const link_color  = "#000099" 
 export const gray_background = "#E2E2E2"
-
+export const light_gray_background = "#F4F6F6"
+export const hvac_red = "#A40202"
 
 export  const styles = StyleSheet.create({
   	mainContainer: {
@@ -233,7 +234,8 @@ export  const styles = StyleSheet.create({
       color:"white"
     },
     device_control_title_container : {
-      alignItems:"center"
+      alignItems:"center",
+      marginLeft:10
     },
     device_control_title: {
       fontFamily: 'Roboto',

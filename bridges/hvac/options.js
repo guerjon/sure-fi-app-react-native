@@ -6,7 +6,9 @@ import {
   	TouchableHighlight,
   	Alert,
   	TouchableNativeFeedback,
-  	TouchableWithoutFeedback
+  	TouchableOpacity,
+  	TouchableWithoutFeedback,
+  	ActivityLocator
 } from 'react-native'
 
 import {
@@ -18,11 +20,21 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { connect } from 'react-redux';
 import { 
-	IS_EMPTY
+	IS_EMPTY,
+	THERMOSTAT_TYPE,
+	EQUIPMENT_TYPE,
+	MODULE_WIEGAND_CENTRAL,
+	MODULE_WIEGAND_REMOTE,
+	NORMAL_USER,
+	ADMIN_USER,
+	UNPAIR_STATUS,
+	PAIR_STATUS,
+	FORCE_PAIR_STATUS,
+	FORCE_UNPAIR_STATUS
 } from '../../constants'
 import { 
 	PUSH_CLOUD_STATUS,
-	WRITE_UNPAIR,
+	WRITE_UNAIR,
 	WRITE_FORCE_UNPAIR,
 	CONNECT,
 	READ_STATUS,
@@ -35,15 +47,21 @@ import {COMMAND_MAKE_DEPLOY} from '../../commands'
 const next_step = <Text style={styles.device_control_title_container}>NEXT STEP</Text>
 
 const Option = params => {
+	var fontSize = 26
+
+	if(width > 360)
+		fontSize = 28
+
+
 	return (
 		<View  style={{width:width,backgroundColor:"white"}}>
-			<TouchableWithoutFeedback onPress={() => params.callback()}>
+			<TouchableOpacity onPress={() => params.callback()}>
 				<View style={{flexDirection:"row"}}>
 					<View style={{width:70}}>
 						<Image source={params.image} style={{width:60,height:60,margin:5}}/>
 					</View>
-					<View style={{width:width-120,alignItems:"center",justifyContent:"center"}}>
-						<Text style={{color:"black",fontSize:28}}>
+					<View style={{width:width-160,justifyContent:"center",marginLeft:30}}>
+						<Text style={{color:"black",fontSize:fontSize}}>
 							{params.name}
 						</Text>
 					</View>
@@ -53,7 +71,7 @@ const Option = params => {
 						</Text>
 					</View>
 				</View>
-			</TouchableWithoutFeedback>
+			</TouchableOpacity>
 		</View>
 	)    		
 }
@@ -66,14 +84,14 @@ class Options extends Component{
 		super(props);	
 		this.device_status = this.props.device_status
 		this.device = this.props.device
-		this.hardware_type =  parseInt(this.props.device.manufactured_data.hardware_type)
+		this.hardware_type =  this.props.device.manufactured_data.hardware_type
 		this.device_state = parseInt(this.device.manufactured_data.device_state)
 	}
 
 	showAlertUnpair(){
 
 		var {device} = this.props
-		console.log("device_type",device.manufactured_data)
+		
 		let txUUID = IS_EMPTY(this.props.remote_device) ? device.manufactured_data.tx : this.props.remote_device.manufactured_data.device_id.toUpperCase()
 
 		Alert.alert(
@@ -86,7 +104,13 @@ class Options extends Component{
 		)
 	}
 
+	isAdminUser(){
 
+	}
+
+	isNormalUser(){
+
+	}
 
     forceUnPair(){
 
@@ -214,7 +238,7 @@ class Options extends Component{
 					    })	
 		                DISCONNECT(device.id)
 		                .then(() => {
-		                	setTimeout(() => this.props.fastTryToConnect(device),1000) 	
+		                	setTimeout(() => this.props.deployConnection(device),1000) 	
 		                })
 		                .catch(error => console.log("error",error))
 
@@ -246,9 +270,6 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToConfiguration()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
    	}
 
-   	getSureFiChat(){
-   		return <Option callback={() => this.props.goToChat()} image={require('../../images/menu_chat_dark.imageset/menu_chat.png')} name="Sure-Fi Chat" />
-   	}
 
     getUnPairBridgeOption(){
 
@@ -256,34 +277,10 @@ class Options extends Component{
 
     }
 
-    getResetDemoOption(){
-    	if(this.props.demo_unit_time != 0){
-	    	return (
-				<View style={{marginBottom:20}}>		
-					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.showModalToResetDemoUnits()}>
-						<View style={{
-							flexDirection:"row",
-							alignItems:"center",						
-							justifyContent:"center"
-	  					}}>
-							<View style={{alignItems:"center",justifyContent:"center",backgroundColor:"red",padding:10,width:width}}>
-								<Text style={styles.white_touchable_text}>
-									0 hours remaining
-								</Text>
-								<Text style={{fontSize:22,color:"white"}}>
-									Touch to Activate now!
-								</Text>
-							</View>
-						</View>
-					</TouchableHighlight>
-				</View>
-			)   	
-    	}
-    }
 
     getPairBridgeOption(){
-    	console.log("getPairBridgeOption",this.hardware_type)
-    	if(this.hardware_type == 3){
+    	//console.log("getPairBridgeOption",this.hardware_type)
+    	if(this.hardware_type == EQUIPMENT_TYPE){
     		return null
     	}else{
 			return (
@@ -350,9 +347,6 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../../images/menu_radio_settings_dark.imageset/menu_radio_settings.png')} name="Configure Radio" />
     }
 
-    getDocumentationOption(){
-    	return <Option callback={() => this.props.goToDocumentation()} image={require('../../images/menu_docs_dark.imageset/menu_documents.png')} name="Documentation"/>
-    }
 
     getDeployCentralUnitOption(){
     	if(this.props.device){
@@ -453,283 +447,80 @@ class Options extends Component{
 		)   
 	}
 
-	getAdditionalOptions(){
+	renderFirstOption(){
+		//console.log("renderFirstOption()",this.props.bridge_status,this.hardware_type)
+
+		const bridge_status = parseInt(this.props.bridge_status) 
+		const hardware_type = parseInt(this.hardware_type)
 		
-		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		//console.log("getAdditionalOptions()",this.props.indicatorNumber,this.props.user_data);
-		
-		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
-		var sales_dist = ["SALES","DIST"]		
-		var indicator = this.props.indicatorNumber
-
-		//if(admin_options.lastIndexOf(user_type) !== -1){
-		if(true){
-			return this.getAdminOptions(indicator)
-
-		}else if(sales_dist.lastIndexOf(user_type) !== -1){
-			return this.getNormalOptions(indicator)
-
-		}else{
-			return this.getDefaultOptions(indicator)
-		}
-	}
-
-	getAdminOptions(bridge_status){
-		if(this.hardware_type == 3){
-			if(bridge_status == 0){
-				if(false){ //TO DO: check if the device was incorrected paired from equipment
-
-				}else{ //the thermostat isn't paired
-					return(
-						<View>
-							{this.getResetDemoOption()}
-							{this.getPairThermostatOption()}
-							{this.getInstructionalVideos()}
-							{this.getDocumentationOption()}
-							{this.getOperatingValuesOption()}
-							{this.getConfigureRadioOption()}
-						</View>
-					)
-				}
-			}else if(bridge_status > 0){
-
-				return(
-					<View>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getDocumentationOption()}
-						{this.getOperatingValuesOption()}	
-						{this.getUpdateFirwmareOption()}
-						{this.getConfiguration()}
-						{this.getConfigureRadioOption()}
-					</View>
-				)
-			}else{ //undefined status
-				return (
-					<View>
-						<View>
-							<Text style={{padding:5, color:"red"}}>
-								The number of devices isn't correct on the Thermostat.
-							</Text>
-						</View>
-						{this.getInstructionalVideos()}
-						{this.getDocumentationOption()}
-						{this.getOperatingValuesOption()}
-					</View>
-				)
-			}
-
-		}else{
+		if(hardware_type == parseInt(MODULE_WIEGAND_REMOTE) || hardware_type == parseInt(MODULE_WIEGAND_CENTRAL) || hardware_type ==  parseInt(EQUIPMENT_TYPE) ) {
 			switch(bridge_status){
-				case 1:
-					return(
-						<View>
-							{this.getResetDemoOption()}
-							{this.getPairBridgeOption()}
-							{this.getInstructionalVideos()}
-							{this.getUpdateFirwmareOption()}
-							{this.getDocumentationOption()}
-							{this.getConfigureRadioOption()}
-						</View>
-					)
-				break
-				case 3:
-					return (
-						<View>
-							{this.getResetDemoOption()}
-							{this.getInstructionalVideos()}
-							{this.getSureFiChat()}
-							{this.getUpdateFirwmareOption()}
-							{this.getDocumentationOption()}
-							{this.getUnPairBridgeOption()}
-							{this.getOperatingValuesOption()}
-							{this.getConfigureRadioOption()}
-							{this.getConfiguration()}
-						</View>
-					)
-				break
-				case 4:
-					return (
-						<View>
-							{this.getInstructionalVideos()}
-							{this.getSureFiChat()}
-							{this.getUpdateFirwmareOption()}
-							{this.getDocumentationOption()}
-							{this.getUnPairBridgeOption()}
-							{this.getOperatingValuesOption()}
-							{this.getConfigureRadioOption()}
-							{this.getConfiguration()}
-						</View>
-					)
-				case 0xE0:
-					return (
-						<View>
-							{this.renderForcePairOption()}
-						</View>
-					)				
-				case 0xE1:
-					return (
-						<View>
-							{this.renderForcePairOption()}
-						</View>
-					)
-				break
-				case 0xE2:
-					return (
-						<View>
-							{this.renderForceUnpairOption()}
-						</View>
-					)
-				break
-				case 0xEE:
-					return (
-						<View style={{alignItems:"center"}}>
-							<Text>
-								Error loading the options
-							</Text>
-						</View>
-					)
+				case UNPAIR_STATUS:
+				return this.getPairBridgeOption()
+				case PAIR_STATUS: 
+				return this.getUnPairBridgeOption()
+				case FORCE_PAIR_STATUS: 
+				return this.renderForcePairOption()
+				case FORCE_UNPAIR_STATUS:
+				return this.renderForceUnpairOption()
 				default:
-					return null
-				break
+				return null
+			}
+		}else if(hardware_type == parseInt(THERMOSTAT_TYPE)){
+			switch(bridge_status){
+				case FORCE_PAIR_STATUS: 
+				return this.renderForcePairOption()
+				case FORCE_UNPAIR_STATUS:
+				return this.renderForceUnpairOption()
+				default:
+				return null
 			}			
 		}
+
+		return null
 	}
 
-	getNormalOptions(bridge_status){
-		console.log("getNormalOptions()",bridge_status)
-		switch(bridge_status){
-			case 1:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getPairBridgeOption()}
-						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getConfiguration()}
-					</View>
-				)
-			break
-			case 3:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
-						{this.getOperatingValuesOption()}
-						{this.getConfiguration()}
-					</View>
-				)
-			break
-			case 4:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getSureFiChat()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
-						{this.getOperatingValuesOption()}
-						{this.getConfiguration()}
-					</View>
-				)
-			break
-			case 0xE0:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)				
-			case 0xE1:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)
-			break
-			case 0xE2:
-				return (
-					<View>
-						{this.renderForceUnpairOption()}
-					</View>
-				)			
-			default:
-			break
-		}
+	renderDefaultOptions(){
+		return (
+			<View>
+				{this.getOperatingValuesOption()}
+				{this.getConfiguration()}
+				{this.getUpdateFirwmareOption()}
+			</View>
+		)
 	}
 
-	getDefaultOptions(bridge_status){
-		switch(bridge_status){
-			case 1:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getPairBridgeOption()}
-						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getConfiguration()}	
-					</View>
-				)
+	renderAdminOptions(){
+		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
+		var sales_dist = ["SALES","DIST"]		
+		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
+		
+		if(admin_options.lastIndexOf(user_type) !== -1)
+			return (
+				<View>
+					{this.getConfigureRadioOption()}
+				</View>
+			)
 
-			case 3:
-				return (
-					<View>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
-						{this.getConfiguration()}
-					</View>
-				)
-			
-			case 4:
-				return (	
-					<View style={{flex:1}}>
-						{this.getResetDemoOption()}
-						{this.getInstructionalVideos()}
-						{this.getUpdateFirwmareOption()}
-						{this.getDocumentationOption()}
-						{this.getUnPairBridgeOption()}
-						{this.getConfiguration()}
-					</View>
-				)
-			case 0xE0:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)				
-			case 0xE1:
-				return (
-					<View>
-						{this.renderForcePairOption()}
-					</View>
-				)
-			break
-			case 0xE2:
-				return (
-					<View>
-						{this.renderForceUnpairOption()}
-					</View>
-				)				
-			default:
-				return null
-			break;
-		}
+		return null
+	}
+
+	renderOptions(){
+		return (
+			<View>
+				{this.renderFirstOption()}
+				{this.renderDefaultOptions()}
+				{this.renderAdminOptions()}
+			</View>
+		)
 	}
 
 	render(){	
+
 		return (
 			<View style={{marginVertical:20}}>
 				<View>
-					{this.getAdditionalOptions()}
+					{this.renderOptions()}
 				</View>
 			</View>
 		)
@@ -742,7 +533,9 @@ const mapStateToProps = state => ({
 	user_status : state.mainScreenReducer.user_status,
 	user_data : state.loginReducer.user_data,
 	debug_mode_status : state.setupCentralReducer.debug_mode_status,
-	demo_unit_time : state.scanCentralReducer.demo_unit_time
+	demo_unit_time : state.scanCentralReducer.demo_unit_time,
+	bridge_status : state.scanCentralReducer.bridge_status,
+	device: state.scanCentralReducer.central_device,
 });
 
 export default connect(mapStateToProps)(Options);

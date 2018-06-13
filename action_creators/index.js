@@ -43,6 +43,17 @@ function bytesToHex(bytes) {
 }
 
 
+export const ADD_ZEROS_UNTIL_NUMBER = (string,number) => { 
+    do{
+        if(string.length < number){
+            string = 0 + string    
+        }
+    }while(string.length < number)
+    
+    return string
+}
+
+
 export const IS_CONNECTED = (id) => {
 	
 	return new Promise((fulfill,reject) => {
@@ -114,16 +125,14 @@ export const WRITE_COMMAND = (id,data,type) => {
 	console.log("WRITE_COMMAND()","data : " + prettyBytesToHex(data) )
 	LOG_INFO(data,COMMAND)
 
-	return new Promise((fulfill,reject) => {	
-		BleManagerModule.retrieveServices(id,() => {
-			BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
-			.then(response => {
-				fulfill(response)
-			})
-			.catch(error => {
-				console.log("Error on WRITE_COMMAND",error)
-				reject(error)
-			})
+	return new Promise((fulfill,reject) => {		
+		BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
+		.then(response => {
+			fulfill(response)
+		})
+		.catch(error => {
+			console.log("Error on WRITE_COMMAND",error)
+			reject([error,data,type])
 		})
 	})
 }
@@ -169,7 +178,7 @@ export const HVAC_WRITE_COMMAND_WRITE_OUT_RESPONSE = (data) => {
 	example command with data [0x21,0x04,0x23,0x52]
 	@type is the type of command we have 5 types COMMAND, NOTIFICATION, ERROR, CONNECTED, DISCONNECTED AND LOCKED
 	the types can be found in constans.js
-
+	@name is the name of the command, it will be show it at the last section of the log lists
 */
 export const LOG_INFO = (data,type,name) => {
 	//console.log("LOG_INFO()",type)
@@ -187,23 +196,37 @@ export const LOG_INFO = (data,type,name) => {
 	store.dispatch({type:"UPDATE_COMMANDS",commands:commands,global_command_id:id})
 }
 
+export const LOG_FIRMWARE_UPDATE_INFO = (data,type,name) => {
+	var data_to_save = data.slice(0)	
+	var value = data_to_save.shift()
+
+	var commands = store.getState().bluetoothDebugLog.commands
+	var id = store.getState().bluetoothDebugLog.global_command_id
+	id += 1
+
+	var command = new Command(id,value,type,data_to_save,name,"action")
+
+	commands.unshift(command)
+
+	store.dispatch({type:"UPDATE_FIRMWARE_COMMANDS",firmware_commands:firmware_commands,global_command_id:id})
+
+}
+
 
 export const WRITE_PAIRING = (id,data) => {
 	LOG_INFO(data,COMMAND)
 	console.log("WRITE_PAIRING()")
 	return new Promise((fulfill,reject) => {
-		BleManagerModule.retrieveServices(id,() => {
-			console.log("1")
-			BleManager.write(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,data,20)
-			.then(response => {
-				console.log("response",response)
-				fulfill(response)
-			})
-			.catch(error => {
-				console.log("error",error)
-				reject(response)
-			})
+		BleManager.write(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,data,20)
+		.then(response => {
+			console.log("response",response)
+			fulfill(response)
 		})
+		.catch(error => {
+			console.log("error",error)
+			reject(response)
+		})
+		fulfill()
 	})
 }
 
@@ -215,11 +238,13 @@ export const WRITE_FORCE_UNPAIR = (id) => {
 			console.log("BEFORE WRITE UNPAIR")
 			WRITE_UNPAIR(id)
 			.then(response => {
-				fulfill()
+				
 			})
 			.catch(error => reject(error))
 		})
 		.catch(error => reject(error))
+
+		fulfill()
 	})
 }
 
@@ -227,12 +252,11 @@ export const WRITE_FORCE_UNPAIR = (id) => {
 export const WRITE_UNPAIR = (id) => {
 	console.log("WRITE_UNPAIR()")
 	LOG_INFO([0,0,0])
-	return new Promise((fulfill,reject) => {
-		BleManagerModule.retrieveServices(id,() => {
-			BleManagerModule.unPair(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,20,() => {
-				fulfill()
-			})
+	return new Promise((fulfill,reject) => {	
+		BleManagerModule.unPair(id,PAIR_SUREFI_SERVICE,PAIR_SUREFI_WRITE_UUID,20,() => {
+			
 		})
+		fulfill()
 	})
 }
 
@@ -336,38 +360,47 @@ export const parseSecondsToHumanReadable = (number_seconds) => {
 	if(number_seconds){
 		if(number_seconds.length == 4){
 			number_seconds = BYTES_TO_INT_LITTLE_ENDIANG(number_seconds)
-			var time = ""
-			if(number_seconds < 60 ){ // a min
-				time = number_seconds + " seconds "
-			}else if(number_seconds < 3600){ //an hour
-				
-				let minutes = calculateMinutes(number_seconds)
-				let rest_of_seconds = calculateSeconds(number_seconds,minutes)
-
-				time = minutes + "m " + rest_of_seconds + "s " 
-				
-			}else if(number_seconds < 86400){ // a day
-
-				let hours = calculateHours(number_seconds)
-				let minutes = calculateMinutes(number_seconds - (3600 * hours))
-				let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
-
-				time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
-
-			}else if(number_seconds >= 86400){ //more than a day
-				var days = number_seconds / 86400
-				time = parseInt(days) + " days"
-			}
-
-			return time		
-		}else{
-			return 0
+			return parserIntSecondsToHumanReadable(number_seconds)
 		}
+	}
+	return 0
+}
+
+export const parserIntSecondsToHumanReadable = (number_seconds) => {
+	var time = ""
+	if(number_seconds < 60 ){ // a min
+		time = number_seconds + " seconds "
+	}else if(number_seconds < 3600){ //an hour
+		
+		let minutes = calculateMinutes(number_seconds)
+		let rest_of_seconds = calculateSeconds(number_seconds,minutes)
+		
+		if(rest_of_seconds == 0)
+			time = minutes + "m "
+		else
+			time = minutes + "m " + rest_of_seconds + "s " 
+		
+	}else if(number_seconds < 86400){ // a day
+
+		let hours = calculateHours(number_seconds)
+		let minutes = calculateMinutes(number_seconds - (3600 * hours))
+		let rest_of_seconds = number_seconds - ((hours * 3600) + (minutes * 60) )
+		
+		if(rest_of_seconds == 0 && minutes == 0){
+			time = hours + "h "
+		}else{
+			time = hours + "h "  + minutes + "m " + rest_of_seconds + "s"
+		}
+
+	}else if(number_seconds >= 86400){ //more than a day
+		var days = number_seconds / 86400
+		time = parseInt(days) + " days"
 	}else{
 		return 0
 	}
-}
 
+	return time
+}
 
 export const JOIN_JSONS = (json1,json2) => {
 	var result = Object.assign({},json1, json2);
@@ -384,8 +417,7 @@ export const CHECK_GENERIC_RESPONSE = response => {
 					if(response_json){
 						let internal_status = response_json.status
 						if(internal_status == "success"){
-							let data = response_json.data 
-							
+							let data = response_json.data 	
 							return data;
 						}else{
 							Alert.alert("Error",internal_status.msg)

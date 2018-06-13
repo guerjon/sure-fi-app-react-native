@@ -27,7 +27,6 @@ import {
 	USER_LOGIN
 } from './constants'
 import { StackNavigator } from 'react-navigation';
-import Coverflow from 'react-native-coverflow'
 import {styles} from './styles'
 import { connect } from 'react-redux';
 import { NavigationActions } from 'react-navigation'
@@ -461,52 +460,7 @@ class MainScreen extends Component {
 	  			</View>
 		  	</Background>
 		);  		
-		/*
-  			<View>
-  				{
-					this.renderBall(
-						require('./images/menu_serial.imageset/menu_serial.png'),
-						"RS-485",
-						() => this.goToScan())			  					
-				}
-			</View>
-
-		*/
   	}
-  	/*
-		<Coverflow 
-			onChange={(index) => null} 
-			style={styles.coverflow}
-			midRotation={50} //se queda
-			initialSelection={0}
-			spacing={230}
-		>
-			{
-				this.renderBall(
-					require('./images/menu_wiegand.imageset/menu_wiegand.png'),
-					"Wiegand",
-					() => this.goToScan())
-			}
-			{
-				this.renderBall(
-					require('./images/menu_hvac.imageset/menu_hvac.png'),
-					"HVAC",
-					() => this.goToScan())			  					
-			}
-			{
-				this.renderBall(
-					require('./images/menu_serial.imageset/menu_serial.png'),
-					"RS-485",
-					() => this.goToScan())			  					
-			}												
-		{
-				this.renderBall(
-					require('./images/menu_video.imageset/menu_video.png'),
-					"Will it Transmit?",
-					() => GoTo.goToVideos(this.props.navigator))									
-		}							  			
-		</Coverflow>
-  	*/
 }
 
 

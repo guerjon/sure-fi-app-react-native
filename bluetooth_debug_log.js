@@ -77,8 +77,6 @@ class BluetoothDebugLog extends Component{
 	  }	
 	};
 
-
-
     constructor(props) {
       super(props);
       this.commands = props.commands
@@ -117,7 +115,6 @@ class BluetoothDebugLog extends Component{
 			break
 		}   
     }
-
     
     filter(data,type){
     	console.log("filter",type)
@@ -248,25 +245,6 @@ class BluetoothDebugLog extends Component{
     }
     
 	render(){	
-/*
-
-						<View style={{flexDirection:"row",alignItems:"center"}}>
-							<View style={{width:width-70,height:40,backgroundColor:"white",margin:10,borderWidth:1,borderRadius:10}}>
-								<View style={{alignItems:"center",height:40,width:80}}>
-									<TextInput 
-										maxLength={4}
-										style={{flex:1,justifyContent:"center",fontSize:25,width:80}} 
-										keyboardType="numeric" 
-										underlineColorAndroid="transparent" 
-										onChangeText={(t) => this.handleNumberChange(t)}
-									/>
-								</View>
-							</View>
-							<TouchableHighlight style={{width:50}}>
-								{searchIcon}
-							</TouchableHighlight>							
-						</View>
-*/
 		return(
 			<View style={{flex:1}}>
 				<Background>

@@ -3,28 +3,24 @@ import {
   	Text,
   	View,
   	Image,
-  	ScrollView,
   	TouchableHighlight,
-  	ActivityIndicator,
-  	FlatList,
   	Alert,
   	NativeModules,
   	NativeEventEmitter,
-  	StyleSheet
 } from 'react-native'
-import {styles,first_color,width,height} from '../../styles/index.js'
+import {
+    styles,
+    first_color,
+    width,
+    height
+} from '../../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	IS_EMPTY,
 	HEX_TO_BYTES,
-	SUREFI_CMD_SERVICE_UUID,
-	SUREFI_CMD_WRITE_UUID,
 	DIVIDE_MANUFACTURED_DATA,
 	FIND_ID,
 	MATCH_DEVICE,
-	GET_DEVICES_ON_PAIRING_MODE,
-    CENTRAL_SERIAL_HARDWARE_TYPE,
-    REMOTE_SERIAL_HARDWARE_TYPE,
     CENTRAL_HARDWARE_TYPE,
     REMOTE_HARDWARE_TYPE,
     GET_PAIRING_TO_DEVICES,
@@ -33,20 +29,14 @@ import {
     EQUIPMENT_TYPE,
     THERMOSTAT_TYPE,
 } from '../../constants'
-import { NavigationActions } from 'react-navigation'
+
 import BleManager from 'react-native-ble-manager'
-import {COMMAND_MAKE_DEPLOY} from '../../commands'
 import ScanRemoteUnits from '../scan_remote_units'
 import Background from '../../helpers/background'
 import {
 	PUSH_CLOUD_STATUS,
-	WRITE_PAIRING,
-	CONNECT,
-	READ_STATUS,
-	DISCONNECT,
     HVAC_WRITE_COMMAND
 } from '../../action_creators/index'
-
 import {PhoneCmd_Pair} from '../../hvac_commands_and_responses'
 
 const BleManagerModule = NativeModules.BleManager;
@@ -124,7 +114,7 @@ class HVACPair extends Component{
         var remote_device_id = remote_device_id ? remote_device_id : this.props.remote_device_id;
     	var hardware_type = this.central_device.manufactured_data.hardware_type
 
-        if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
+        if(hardware_type == CENTRAL_HARDWARE_TYPE ){
             var central_id = this.central_device.manufactured_data.device_id
             var remote_id = remote_device_id.toUpperCase()
         }else{
@@ -250,7 +240,8 @@ class HVACPair extends Component{
     }
 
     onSuccess(scan_result) {
-        //Vibration.vibrate()
+        console.log("this onSuccess??")
+        
         var device_id = scan_result.data.substr(-6).toUpperCase();
         this.scan_result_id = device_id
         this.hideCamera();
@@ -259,7 +250,7 @@ class HVACPair extends Component{
     }
 
     isDeviceOnPairingMode(device){
-        console.log("isDeviceOnPairingMode",device)
+        console.log("isDeviceOnPairingMode")
         if(!device.manufactured_data)
             return false
         var state = parseInt(device.manufactured_data.device_state.substring(2,4)) 
@@ -295,13 +286,10 @@ class HVACPair extends Component{
                //if we found devices, now we need be sure that the matched devices are the correct type to pair
                
                 var correct_type = this.getCorrectPairType(this.central_device)
-                console.log("device.manufactured_data.hardware_type",device.manufactured_data.hardware_type)
-                console.log("correct_type",correct_type)
 
                 if(device.manufactured_data.hardware_type == correct_type){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
-
                     device_on_pairing_mode_flag = this.isDeviceOnPairingMode(device) // now we need check the state of the device
-
+                    console.log("device_on_pairing_mode_flag",device_on_pairing_mode_flag)    
                     if(device_on_pairing_mode_flag){
                         
                         dispatch({
@@ -363,12 +351,6 @@ class HVACPair extends Component{
             case REMOTE_HARDWARE_TYPE:
                 correct_device = "Controller Sure-Fi Bridge"
             break
-            case CENTRAL_SERIAL_HARDWARE_TYPE:
-                correct_device = "Remote Serial Sure-Fi Bridge"
-            break
-            case REMOTE_SERIAL_HARDWARE_TYPE:
-                correct_device = "Controller Serial Sure-Fi Bridge"
-            break
             default:
                 correct_device = " "
             break
@@ -421,7 +403,7 @@ class HVACPair extends Component{
         var second_string = ""
         var third_string = ""
 
-        if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
+        if(hardware_type == CENTRAL_HARDWARE_TYPE){
             first_string = "Remote Unit"
             second_string = "Scan Remote Unit"
             third_string = "Sure-Fi Bridge Controller"
@@ -430,6 +412,7 @@ class HVACPair extends Component{
             second_string = "Scan Controller Interface"
             third_string = "Sure-Fi Bridge Remote"
         }
+        
 
 		if(IS_EMPTY(remote_device))
 			var remote_content = (
@@ -456,7 +439,7 @@ class HVACPair extends Component{
 							navigation={this.props.navigation} 
 							showAlertConfirmation={() => this.showAlertConfirmation()} 
 							master_device={current_device}
-							onSuccess = {(e) => this.onSuccess(e)}
+							onScanRemoteSuccess = {(e) => this.onSuccess(e)}
 						/>
 
 					</View>

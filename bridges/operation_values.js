@@ -569,9 +569,9 @@ class OperationValues extends Component{
 					</View>
 				</Background>
 			)
-		/*console.log("wiegand_values",this.props.wiegand_values);
+		console.log("wiegand_values",this.props.wiegand_values);
 		console.log("transmit_values",this.props.transmit_values);
-		console.log("receive_values",this.props.receive_values);*/
+		console.log("receive_values",this.props.receive_values);
 
 		return(
 			<ScrollView style={styles.pairContainer}>

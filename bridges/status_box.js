@@ -25,11 +25,16 @@ import {
 	UPDATE_DEVICE_NAME_ROUTE,
 	BASE64,
 	DIVIDE_MANUFACTURED_DATA,
-	CENTRAL_HARDWARE_TYPE,
-	REMOTE_HARDWARE_TYPE,
 	CENTRAL_SERIAL_HARDWARE_TYPE,
 	REMOTE_SERIAL_HARDWARE_TYPE,
-
+	MODULE_WIEGAND_CENTRAL,
+	WIEGAND_CENTRAL,
+	WIEGAND_REMOTE,
+	EQUIPMENT_TYPE,
+	THERMOSTAT_TYPE,
+	MODULE_WIEGAND_REMOTE,
+	RELAY_WIEGAND_CENTRAL,
+	RELAY_WIEGAND_REMOTE,
 } from '../constants'
 
 import {IS_CONNECTED} from '../action_creators/'
@@ -39,7 +44,9 @@ const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 
-
+const central_types = [parseInt(WIEGAND_CENTRAL), parseInt(MODULE_WIEGAND_CENTRAL)]
+const remote_types = [parseInt(WIEGAND_REMOTE),parseInt(MODULE_WIEGAND_REMOTE)]
+		
 class StatusBox extends Component{
 	constructor(props) {
 		super(props);
@@ -47,7 +54,6 @@ class StatusBox extends Component{
 		this.input_text = ""
 		this.device = props.device
 		this.device_status = props.device_status
-		this.indicator_number = props.indicator_number
 		this.power_voltage = props.power_voltage		
 	}
 
@@ -203,27 +209,9 @@ class StatusBox extends Component{
 		this.props.dispatch({type: "START_EDITING"})
 	}
 
-	getSwitchButton(){
-		var hardware_type = this.props.device.manufactured_data.hardware_type
-		var correct_string = ""
-
-		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE)
-			correct_string = "Switch to Remote Unit"
-		else
-			correct_string = "Switch to Controller Interface"
-
-		return(
-			<WhiteRowLink 
-				name={correct_string} 
-				callback={() => this.props.switchUnit()}
-			/>
-		)
-	}
-
 	getSerialInfo(){
-		var hardware_type = this.props.device.manufactured_data.hardware_type
-
-		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
+		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type) 
+		if(central_types.includes(hardware_type)){
 			return (
 				<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
 					 					 	
@@ -239,7 +227,7 @@ class StatusBox extends Component{
 				</View>
 			)
 
-		}else{
+		}else if(remote_types.includes(hardware_type)){
 
 			return (
 				<View style={{flexDirection:"row",justifyContent:"center"}}>
@@ -297,8 +285,9 @@ class StatusBox extends Component{
 	}
 
 	getNormalText(){
-		var hardware_type = this.props.device.manufactured_data.hardware_type
-		if(hardware_type == CENTRAL_HARDWARE_TYPE || hardware_type == CENTRAL_SERIAL_HARDWARE_TYPE){
+		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type)
+
+		if(central_types.includes(hardware_type)){
 			var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
 		}else{
 			var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
@@ -350,7 +339,7 @@ class StatusBox extends Component{
 	render(){	
 	
 		var {device,is_editing,device_name,options_loaded,show_switch_button} = this.props;
-		var switch_button =  this.getSwitchButton()
+		
 		/*console.log("this.props.device_name",this.props.device_name);
 		console.log("this.props.remote_device_name",this.props.remote_device_name);
 		*/
@@ -365,14 +354,9 @@ class StatusBox extends Component{
 					<View>
 						{this.renderStatusDevice()}
 					</View>
-					<View>
-						{this.props.show_switch_button ? switch_button : null }
-					</View>
 				</View>
-
 			</ScrollView>
         );
-
 	}
 }
 

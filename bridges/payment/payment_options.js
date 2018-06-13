@@ -58,20 +58,37 @@ class PaymentOptions extends Component {
 			},		
 			body: JSON.stringify({serial: device_id})
 		}).then(response => {
+			
 			var data = JSON.parse(response._bodyInit)
-			var system = data.data
-			if(system){
-				var status = parseInt(system.direct_unit_status)
-				if(status){
-					Alert.alert("Success","The other side has been actived.")
-					this.resetDemoUnitTimeAndPop()
+			if(data.status == "success"){
+				var system = data.data
+				if(system){
+						var status = parseInt(system.direct_unit_status)
+						
+						if(status){
+							Alert.alert("Success","The other side has been actived.")
+							this.resetDemoUnitTimeAndPop()
+						}
+
+						var partners = system.partners
+						this.props.dispatch({
+							type:"SET_PARTNERS",
+							partners: partners
+						})	 
+
+				}else{
+					Alert.alert("Server Error","The response of the server isn't correct.")
+				}
+			}else{
+
+				if(typeof data.status == "string" && typeof data.msg == "string"){
+
+					Alert.alert(data.status.toUpperCase(),data.msg)	
+					
+				}else{
+					Alert.alert("Server Error","The response of the server isn't correct.")
 				}
 			}
-			var partners = system.partners
-			this.props.dispatch({
-				type:"SET_PARTNERS",
-				partners: partners
-			})	 
 		})
 	}
 
@@ -227,8 +244,8 @@ class PaymentOptions extends Component {
 	}
 
 	renderPartners(){
-		console.log("renderPartners",this.props.partners.length)
-		if(this.props.partners.length > 0){
+		console.log("renderPartners",this.props.partners)
+		if(this.props.partners && this.props.partners.length > 0){
 			return (
 				<View>
 					<FlatList 

@@ -12,6 +12,10 @@ import {
   LOADED
 } from '../constants'
 
+import {
+  AppState
+} from 'react-native'
+
 const initialState = {
   manufactured_data : [],
   central_device: {},
@@ -24,7 +28,7 @@ const initialState = {
   justDeploy : false,
   should_connect : true,
   interval : 0,
-  indicator_number : null,
+  bridge_status: 0,
   fast_manager : null,
   allow_scanning : true,
   show_camera : true,
@@ -42,6 +46,7 @@ const initialState = {
   activated : true,
   demo_mode_time : [],
   activated_led: [],
+  power_activated_led:[],
   fail_safe_option: [],
   configuration_data_state: NO_ACTIVITY,
   heart_beat: [],
@@ -49,8 +54,14 @@ const initialState = {
   cloud_equipment_fail_safe_options: [],
   equipments_paired_with: [],
   radio_update_status: [],
-  app_firmware_update_on_course: false
+  app_firmware_update_on_course: false,
+  device_scan_link: false, //string
+  cloud_fail_safe_options: [],
+  temp_fail_safe_options_value: [],
+  relay_times_selected: 0,
+  appState: AppState.currentState
 }
+
 
 export default function scanCentralReducer (state = initialState, action) {
   switch (action.type) {
@@ -83,7 +94,13 @@ export default function scanCentralReducer (state = initialState, action) {
         configuration_data_state: NO_ACTIVITY,
         heart_beat: [],
         cloud_heart_beat : [],
-        cloud_equipment_fail_safe_options: []        
+        cloud_equipment_fail_safe_options: [],
+        appState: AppState.currentState,        
+      }
+    case "SET_POWER_ACTIVATE_LED":
+      return{
+        ...state,
+        power_activated_led: action.power_activated_led
       }
     case "SET_DEMO_UNIT_PRICE": 
     {
@@ -202,10 +219,10 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         interval : action.interval
       }
-    case "SET_INDICATOR_NUMBER":
+    case "SET_BRIDGE_STATUS":
       return {
         ...state,
-        indicator_number : action.indicator_number
+        bridge_status : action.bridge_status
       }
     case "SET_FAST_MANAGER":
       return {
@@ -287,6 +304,12 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         fail_safe_option: action.fail_safe_option
       }
+    case "SET_CLOUD_FAIL_SAFE_OPTIONS":
+      return{
+        ...state,
+        cloud_fail_safe_options: action.cloud_fail_safe_options
+      }
+
     case "SET_CONFIGURATION_DATA_STATE":
     return {
       ...state,
@@ -307,6 +330,7 @@ export default function scanCentralReducer (state = initialState, action) {
         ...state,
         cloud_equipment_fail_safe_options: action.cloud_equipment_fail_safe_options
       }
+      
     case "SET_EQUIPMENTS_PAIRED_WITH":
       return{
         ...state,
@@ -321,6 +345,26 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         app_firmware_update_on_course: action.app_firmware_update_on_course
+      }
+    case "SET_DEVICE_SCAN_LINK":
+      return{
+        ...state,
+        device_scan_link : action.device_scan_link
+      }
+    case "SET_TEMP_FAIL_SAFE_OPTIONS_VALUE":
+      return{
+        ...state,
+        temp_fail_safe_options_value: action.temp_fail_safe_options_value
+      }
+    case "SET_RELAY_TIMES_SELECTED":
+      return{
+        ...state,
+        relay_times_selected: action.relay_times_selected
+      }
+    case "SET_APP_STATE":
+      return{
+        ...state,
+        app_state: action.app_state
       }
     default:
       return state

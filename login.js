@@ -25,7 +25,6 @@ import {UserInfo,AccountInformation} from './helpers/user_info'
 const api_key = "52a9"
 
 
-
 class Login extends Component{
 
     static navigatorStyle = {

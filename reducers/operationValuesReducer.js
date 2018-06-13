@@ -66,19 +66,16 @@ export default function operationValuesReducer (state = initialState, action) {
         loading_operation_values : action.loading_operation_values
       }
     case "SET_WIEGAND_VALUES":
-      console.log("SET_WIEGAND_VALUES");
       return {
         ...state,
         wiegand_values : action.wiegand_values
       }
     case "SET_TRANSMIT_VALUES":
-      console.log("SET_TRANSMIT_VALUES");
       return {
         ...state,
         transmit_values : action.transmit_values
       }
     case "SET_RECEIVE_VALUES":
-      console.log("SET_RECEIVE_VALUES");
       return {
         ...state,
         receive_values : action.receive_values

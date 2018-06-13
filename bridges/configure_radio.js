@@ -93,17 +93,12 @@ class ConfigureRadio extends Component {
 	}
 
 	startNotification(){
-        BleManagerModule.retrieveServices(
-        	this.device.id,
-        	() => {
-        		BleManagerModule.startNotification(
-					this.device.id,
-					SUREFI_CMD_SERVICE_UUID,
-					SUREFI_CMD_READ_UUID,
-					() => this.writeStartUpdate()
-				)
-        	}
-        )
+		BleManagerModule.startNotification(
+			this.device.id,
+			SUREFI_CMD_SERVICE_UUID,
+			SUREFI_CMD_READ_UUID,
+			() => this.writeStartUpdate()
+		)     
 	}
 
 	writeStartUpdate(){
@@ -372,7 +367,7 @@ class ConfigureRadio extends Component {
 			color:"white"
 		}
 
-
+		console.log("this.props.page_status",this.props.page_status)
 		if(this.props.page_status == "loaded"){
 			return (
 				<Background>

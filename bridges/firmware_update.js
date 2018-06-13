@@ -36,7 +36,11 @@ import {
     IS_EMPTY,
     GET_LARGEST,
     PRETY_VERSION,
-    HEADERS_FOR_POST
+    HEADERS_FOR_POST,
+    WIEGAND_CENTRAL,
+    WIEGAND_REMOTE,
+    HARDWARE_CENTRAL_TYPE,
+    HARDWARE_REMOTE_TYPE
 } from '../constants.js'
 
 import {
@@ -67,9 +71,6 @@ var {
     width
 } = window
 var rows_to_write = 0
-
-const hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
-const hardware_remote_type = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
 
 var Base64 = {
 
@@ -263,94 +264,81 @@ class UpdateFirmwareCentral extends Component {
         this.props.activateHandleCharacteristic()
     }    
 
-    fetchFirmwareFiles(){
+    async fetchFirmwareFiles(){
         //console.log("fetchFirmwareFiles()")
 
-        var dispatch = this.props.dispatch;
-        let hardware_central_type = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
-        let hardware_remote_type = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
+        const dispatch = this.props.dispatch;
+        let hardware_type = HARDWARE_CENTRAL_TYPE
         var application_body = {firmware_type: "application"}
         var radio_body = {firmware_type:"radio"}
         var bluetooth_body = {firmware_type: "bluetooth"}
 
         //console.log("device on firmware",this.device.manufactured_data);
 
-        if(this.device.manufactured_data.hardware_type == "01"){
+        if(this.device.manufactured_data.hardware_type == WIEGAND_REMOTE)
+            hardware_type = HARDWARE_REMOTE_TYPE
+
+    
+            this.application_files = await this.fetchFirmwareFile(hardware_type,"application")
+            this.radio_files = await this.fetchFirmwareFile(hardware_type,"radio")
+            this.bt_files = await this.fetchFirmwareFile(hardware_type,"bluetooth")
             
-            application_body.hardware_type_key = hardware_central_type
-            radio_body.hardware_type_key = hardware_central_type
-            bluetooth_body.hardware_type_key = hardware_central_type
-
-        }else{
-
-            application_body.hardware_type_key = hardware_remote_type
-            radio_body.hardware_type_key = hardware_remote_type
-            bluetooth_body.hardware_type_key = hardware_remote_type
-        }
+/*
+            console.log("this.application_files",this.application_files)
+            console.log("this.radio_files",this.radio_files)
+            console.log("this.bt_files",this.bt_files)
+*/
 
 
-        fetch(FIRMWARE_CENTRAL_ROUTE, {
-            headers: HEADERS_FOR_POST,
-            method: 'POST',
-            body : JSON.stringify(application_body)
-        })
-        .then(response_1 => {
-            fetch(FIRMWARE_CENTRAL_ROUTE,{
-                headers: HEADERS_FOR_POST,
-                method: 'POST',
-                body : JSON.stringify(radio_body)
+            let app_version = this.application_files[0]
+            let radio_version = this.radio_files[0]
+            let bt_version = this.bt_files[0]
+            
+            let app_float_value = parseFloat(app_version.firmware_version)
+            let radio_float_value = parseFloat(radio_version.firmware_version)
+            let bt_float_value = parseFloat(bt_version.firmware_version)
 
-            }).then(response_2 => {
-                fetch(FIRMWARE_CENTRAL_ROUTE,{
-                    headers: HEADERS_FOR_POST,
-                    method: 'POST',
-                    body: JSON.stringify(bluetooth_body)
-                }).then(response_3 => {
-                    this.application_files = this.sortByFirmwareVersion(JSON.parse(response_1._bodyInit).data.files)
-                    this.radio_files = this.sortByFirmwareVersion(JSON.parse(response_2._bodyInit).data.files)
-                    this.bt_files = this.sortByFirmwareVersion(JSON.parse(response_3._bodyInit).data.files)
-                    /* 
-                    console.log("application_files:",this.application_files)
-                    console.log("radio_files:",this.radio_file)
-                    console.log("bt_files:",this.bt_files)
-                    */
-                    let app_version = this.application_files[0]
-                    let radio_version = this.radio_files[0]
-                    let bt_version = this.bt_files[0]
-                    
-                    let app_float_value = parseFloat(app_version.firmware_version)
-                    let radio_float_value = parseFloat(radio_version.firmware_version)
-                    let bt_float_value = parseFloat(bt_version.firmware_version)
+            
+            if(app_float_value == radio_float_value && radio_float_value == bt_float_value){
+                
+                this.largest_version = app_float_value
+            }else{
+                
+                this.largest_version = GET_LARGEST(app_float_value,radio_float_value,bt_float_value)    
+            }
+            
+            var versions_objects = [app_version,radio_version,bt_version]
 
-                    let dispatch = this.props.dispatch
-                    
-                    if(app_float_value == radio_float_value && radio_float_value == bt_float_value){
-                        
-                        this.largest_version = app_float_value
-                    }else{
-                        
-                        this.largest_version = GET_LARGEST(app_float_value,radio_float_value,bt_float_value)    
-                    }
-                    
-                    var versions_objects = [app_version,radio_version,bt_version]
+            this.update_requires = this.checkRequireUpdates(app_version,radio_version,bt_version)
+            this.require_update = this.dispatchRequireUpdates(this.update_requires)
+            this.require_update = this.blockDevelopmentUpdate(this.require_update,versions_objects,this.largest_version) // if the user is not admin we should block the update if the next update its only for developers
 
-                    this.update_requires = this.checkRequireUpdates(app_version,radio_version,bt_version)
-                    this.require_update = this.dispatchRequireUpdates(this.update_requires)
-                    this.require_update = this.blockDevelopmentUpdate(this.require_update,versions_objects,this.largest_version) // if the user is not admin we should block the update if the next update its only for developers
-                    
-                    dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
-                    dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
-                    dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
-                    
-                    //dispatch({type: "CHANGE_TAB",active_tab: "app"})
-                })
-            })
-        })
-        .catch((error) => {
-          console.warn(error);
-        });
+            dispatch({type: "UPDATE_LARGEST_VERSION",largest_version: this.largest_version})
+            dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : this.largest_version})
+            dispatch({type: "UPDATE_SELECTED_FILES",selected_files : {app_files : this.application_files[0],radio_files : this.radio_files[0], bt_files : this.bt_files[0] }})
+            
+            //dispatch({type: "CHANGE_TAB",active_tab: "app"})
+
     }
 
+
+    async fetchFirmwareFile(hardware_type_key,firmware_type){
+        var body = {
+            firmware_type: firmware_type,
+            hardware_type_key: hardware_type_key
+        }
+
+        let response = await fetch(FIRMWARE_CENTRAL_ROUTE, {
+            headers: HEADERS_FOR_POST,
+            method: 'POST',
+            body : JSON.stringify(body)
+        })
+        console.log(response)
+        const clean_files = this.sortByFirmwareVersion(JSON.parse(response._bodyInit).data.files)
+        return new Promise((fulfill,reject) => {
+            return fulfill(clean_files)
+        }) 
+    }
 
     blockDevelopmentUpdate(require_update,versions_objects,largest_version){
         if(!this.props.user_data){ // true if normal user, we only have information in this.props.user_data if its an admin
@@ -475,7 +463,9 @@ class UpdateFirmwareCentral extends Component {
     }
 
     sortByFirmwareVersion(files){
-        var order_files = files.sort((a,b) => b.firmware_version.localeCompare(a.firmware_version))
+        const order_files = files.sort((a,b) => {
+            return b.firmware_version.localeCompare(a.firmware_version)
+        })
         return order_files;
     }
 
@@ -726,46 +716,61 @@ class UpdateFirmwareCentral extends Component {
                 </TouchableHighlight>
             )
         }
-
     }
 
-
     changeSelectedFirmware(largest_version,selected_files,app_version,radio_version,bt_version){
+        console.log("changeSelectedFirmware()",)
         this.update_requires =  this.checkRequireUpdates(app_version,radio_version,bt_version)
         this.require_update = this.dispatchRequireUpdates(this.update_requires)
         this.props.dispatch({type: "UPDATE_SELECTED_VERSION",selected_version : largest_version,selected_files:selected_files})
     }
 
-
     getSelectedFiles(){
         var selected_files = this.props.selected_files
-        
+        //console.log("getSelectedFiles()",this.props.selected_version)
+
         var selected_app_file = null
         var selected_radio_file = null
         var selected_bluetooth_file = null
-
-        if(this.application_files)
+        
+        if(this.application_files){
             this.application_files.map(application_file => {
                 if(application_file.firmware_version == this.props.selected_version ){
                     selected_app_file = application_file.firmware_path
                 }
             })
+            if(!selected_app_file){
+                selected_app_file = this.application_files[0].firmware_path // we got the mayor the are already in order
+            }
+        }
 
-        if(this.radio_files)
+        if(this.radio_files){
             this.radio_files.map(radio_file => {
                 if(radio_file.firmware_version == this.props.selected_version){
                     selected_radio_file = radio_file.firmware_path
-                }    
+                }   
             })
-        if(this.bt_files)
+            if(!selected_radio_file){
+                selected_radio_file = this.radio_files[0].firmware_path
+            }
+        }
+        if(this.bt_files){
             this.bt_files.map(bt_file => {
                 if(bt_file.firmware_version == this.props.selected_version)
                     selected_bluetooth_file = bt_file.firmware_path
             })
 
-        return [selected_radio_file,selected_app_file,selected_bluetooth_file]
+            if(!selected_bluetooth_file){
+                selected_bluetooth_file = this.bt_files[0].firmware_path
+            }
+        }
+
+        var paths = [selected_radio_file,selected_app_file,selected_bluetooth_file]
+
+        return paths
     }
 
+   
 
     renderUpdateComponent(){
         //console.log("renderUpdateComponent()",this.props.selected_version);
@@ -775,7 +780,7 @@ class UpdateFirmwareCentral extends Component {
         let content = null
 
         var selected_files = this.getSelectedFiles()
-
+        
         switch(current_update){
 
             case "app":
@@ -878,8 +883,7 @@ class UpdateFirmwareCentral extends Component {
             <View style={{backgroundColor:"white",width:width,height:200,alignItems:"center"}}>
                 <ActivityIndicator />
             </View>
-        )    
-        
+        )      
     }
 
     renderNormalView(){
@@ -918,7 +922,7 @@ class UpdateFirmwareCentral extends Component {
                                 Radio Firmware
                             </Text>
                             <Text>
-                                {PRETY_VERSION(props.radio_version)}
+                                {PRETY_VERSION(props.radio_info)}
                             </Text>
                         </View>
                         <View style={{alignItems:"center",padding:5}}>
@@ -926,7 +930,7 @@ class UpdateFirmwareCentral extends Component {
                                 App Firmware
                             </Text>
                             <Text>
-                                {PRETY_VERSION(props.app_version)}
+                                {PRETY_VERSION(props.app_info)}
                             </Text>
                         </View>
                         <View style={{alignItems:"center",padding:5}}>
@@ -934,7 +938,7 @@ class UpdateFirmwareCentral extends Component {
                                 BT Firmware
                             </Text>
                             <Text>
-                                {PRETY_VERSION(props.bluetooth_version)}
+                                {PRETY_VERSION(props.bluetooth_info)}
                             </Text>
                         </View>
                     </View>
@@ -1017,7 +1021,7 @@ class UpdateFirmwareCentral extends Component {
                             APP 
                         </Text>
                         <Text style={app_text_style}>
-                            {PRETY_VERSION(props.app_version)}
+                            {PRETY_VERSION(props.app_info)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -1027,7 +1031,7 @@ class UpdateFirmwareCentral extends Component {
                             RADIO 
                         </Text>
                         <Text style={radio_text_style}>
-                            {PRETY_VERSION(props.radio_version)}
+                            {PRETY_VERSION(props.radio_info)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -1037,7 +1041,7 @@ class UpdateFirmwareCentral extends Component {
                             BLUETOOTH 
                         </Text>
                         <Text style={bluetooth_text_style}>
-                            {PRETY_VERSION(this.props.bluetooth_version)}
+                            {PRETY_VERSION(props.bluetooth_info)}
                         </Text>
                         </View>
                     </TouchableHighlight>
@@ -1071,9 +1075,9 @@ const mapStateToProps = state => ({
     active_tab : state.updateFirmwareCentralReducer.active_tab,
     firmware_update_state: state.firmwareUpdateReducer.firmware_update_state,
     progress: state.firmwareUpdateReducer.progress,
-    app_version : state.setupCentralReducer.app_version,
-    radio_version : state.setupCentralReducer.radio_version,
-    bluetooth_version : state.setupCentralReducer.bluetooth_version,
+    app_info : state.setupCentralReducer.app_info,
+    radio_info : state.setupCentralReducer.radio_info,
+    bluetooth_info : state.setupCentralReducer.bluetooth_info,
     application_firmware_files : state.firmwareUpdateReducer.application_firmware_files,
     radio_firmware_files : state.firmwareUpdateReducer.radio_firmware_files,
     bluetooth_firmware_files : state.firmwareUpdateReducer.radio_firmware_files,

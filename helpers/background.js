@@ -5,7 +5,7 @@ import {
   	Image,
   	ScrollView,
 } from 'react-native'
-import {styles,first_color} from '../styles/index.js'
+import {styles,first_color,light_gray_background} from '../styles/index.js'
 import { connect } from 'react-redux';
 import { 
 	LOADING,
@@ -17,17 +17,8 @@ class Background extends Component{
 
 	render(){	
 		return(
-			<View style={{flex:1}}>
-				<Image source={
-					require('../images/temp_background.imageset/temp_background.png')} 
-					style={{
-						flex:1,
-						width:undefined,
-						height: undefined,
-						backgroundColor:'transparent',
-					}}>
-					{this.props.children}
-				</Image>
+			<View style={{flex:1,backgroundColor:light_gray_background}}>
+				{this.props.children}
 			</View>
 		);	
 	}

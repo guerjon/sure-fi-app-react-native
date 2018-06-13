@@ -35,6 +35,8 @@ export const GET_CONFIGURATION_LOG_URL = BASE_URL + "hardware/get_log"
 export const TESTING_RESULTS_ROUTE = BASE_URL + "testing/get_test_results"
 export const GET_DEVICE_DOCUMENTS = BASE_URL + "documents/get_device_documents"
 
+export const LOADING_VALUE = "loading value ..."
+
 export const HVAC_TYPE = 4
 export const COMMAND = 0
 export const NOTIFICATION = 1
@@ -44,6 +46,7 @@ export const DISCONNECTED = 4
 export const LOOKED  = 5
 
 export const SUCCESS_STATUS = 200
+export const FAIL_STATUS = 403
 
 export const NO_ACTIVITY = "NO_ACTIVITY"
 export const LOADING = 'LOADING'
@@ -104,12 +107,12 @@ export const ADD_DEVICES = "ADD_DEVICES"
 export const RESET_PAIR_REDUCER_STATE = "RESET_PAIR_REDUCER_STATE"
 
 export const SUREFI_CMD_SERVICE_UUID = "C8BF000A-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_CMD_READ_UUID = "C8BF000C-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_CMD_WRITE_UUID = "C8BF000B-0EC5-2536-2143-2D155783CE78" 
+export const SUREFI_CMD_READ_UUID = "C8BF000C-0EC5-2536-2143-2D155783CE78" // i should get the notifications from this... so i need subscribte to this
 
 
-export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78"
-export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78"
+export const SUREFI_SEC_SERVICE_UUID = "58BF000A-0EC5-2536-2143-2D155783CE78" // this service is for wirte the security string 
+export const SUREFI_SEC_HASH_UUID = "58BF000B-0EC5-2536-2143-2D155783CE78" // this characteristic  is for write the security string
 
 export const PAIR_SUREFI_SERVICE = "98BF000A-0EC5-2536-2143-2D155783CE78"
 export const PAIR_SUREFI_TX = "98BF000B-0EC5-2536-2143-2D155783CE78" // rx
@@ -125,10 +128,36 @@ export const ADV_DATA_CHAR_SHORT_UUID = "E8BF000E-0EC5-2536-2143-2D155783CE78"
 
 export const MODULE_SERVICE_SHORT_UUID = "01"
 export const REMOTE_HARDWARE_TYPE = "02"
+
+export const HARDWARE_CENTRAL_TYPE = "eaa4c810-e477-489c-8ae8-c86387b1c62e"
+export const HARDWARE_REMOTE_TYPE = "0ef2c2a6-ef1f-43e3-be3a-e69628f5c7bf"
+
+
+export const WIEGAND_CENTRAL = "01"
+export const WIEGAND_REMOTE = "02"
 export const EQUIPMENT_TYPE = "04"
 export const THERMOSTAT_TYPE = "03"
-export const CENTRAL_SERIAL_HARDWARE_TYPE = "05"
-export const REMOTE_SERIAL_HARDWARE_TYPE = "06"
+export const MODULE_WIEGAND_CENTRAL = "07"
+export const MODULE_WIEGAND_REMOTE = "08"
+export const RELAY_WIEGAND_CENTRAL = 0x0A 
+export const RELAY_WIEGAND_REMOTE = 0x0B 
+
+
+export const RADIO_FIRMWARE_UPDATE = 1
+export const APP_FIRMWARE_UDATE = 2
+export const BLUETOOTH_FIRMWARE_UPDATE = 3
+
+export const NORMAL_USER = 1
+export const ADMIN_USER = 2
+
+
+export const UNPAIR_STATUS = 1
+export const PAIR_STATUS = 4
+
+
+export const FORCE_PAIR_STATUS = 98
+export const FORCE_UNPAIR_STATUS = 99
+
 
 
 export const LOG_TYPES = [
@@ -187,7 +216,6 @@ export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{
 }
 
 
-
 export const FOUR_BYTES_TO = (byte_1,byte_2,byte_3,byte_4) =>{
 	return ((byte_1 & 0xff) << 32) | (byte_2 & 0xff << 16) | (byte_3 & 0xff << 8) | (byte_4 && 0xff ); 
 }
@@ -228,7 +256,7 @@ export const BYTES_TO_INT = array => { //big endian
 	return result
 }
 
-export const BYTES_TO_INT_LITTLE_ENDIANG = array => { //big endian
+export const BYTES_TO_INT_LITTLE_ENDIANG = array => { 
 	var result = ((array[array.length - 4]) | 
               (array[array.length - 3] << 8) | 
               (array[array.length - 2] << 16) | 
@@ -255,9 +283,14 @@ export const UINT8TOSTRING = (u8a) => {
 	return c.join("");
 }
 
-const checkHex = (n) => {return/^[0-9A-Fa-f]{1,64}$/.test(n)}
+const checkHex = (n) => {
+	return/^[0-9A-Fa-f]{1,64}$/.test(n)}
 
-export const Hex2Bin = (n) => {if(!checkHex(n))return 0;return parseInt(n,16).toString(2)}
+export const Hex2Bin = (n) => {
+	if(!checkHex(n))
+		return 0;
+
+	return parseInt(n,16).toString(2)}
 
 export const longToByteArray = (long) => {
 	// we want to represent the input as a 8-bytes array
@@ -392,16 +425,15 @@ export const CRC16 = bytes => {
 export const DIVIDE_MANUFACTURED_DATA = (manufacturedData, address) => {
 	var divide_manufactured_data = {}
 	if(manufacturedData){
-		//console.log("manufacturedData",manufacturedData)
 		divide_manufactured_data.hardware_type = manufacturedData.substr(0, 2) // 01 or 02
 		divide_manufactured_data.firmware_version = manufacturedData.substr(2, 2) //all four bytes combinations
 		divide_manufactured_data.device_state = manufacturedData.substr(4, 4)
 		divide_manufactured_data.device_id = manufacturedData.substr(8, 6);
 		divide_manufactured_data.tx = manufacturedData.substr(14, 6);
+		divide_manufactured_data.extra_byte = manufacturedData.substr(20,2)
 		divide_manufactured_data.address = address;
 		divide_manufactured_data.security_string = GET_SECURITY_STRING(manufacturedData.substr(8, 6), manufacturedData.substr(14, 6))
 	}
-
 	return divide_manufactured_data;
 }
 
@@ -411,6 +443,18 @@ export const GET_SECURITY_STRING = (peripheralRXUUID, peripheralTXUUID) => {
 	let string = peripheralRXUUID + peripheralTXUUID
 	let md5_string = md5(string)
 	let hex_string = HEX_TO_BYTES(md5_string)
+	return hex_string
+}
+
+
+export const GET_SECURITY_STRING_WITH_EXTRA_BYTE = (peripheralRXUUID, peripheralTXUUID,extra_byte) => {
+	peripheralRXUUID = peripheralRXUUID.toUpperCase()
+	peripheralTXUUID = REVERSE_STRING(peripheralTXUUID.toUpperCase()) + "x~sW5-C\"6fu>!!~X" 
+	let string = peripheralRXUUID + peripheralTXUUID + extra_byte
+	
+	let md5_string = md5(string)
+	let hex_string = HEX_TO_BYTES(md5_string)
+
 	return hex_string
 }
 
@@ -429,6 +473,13 @@ export const MATCH_DEVICE = (devices, device_id) => {
 	devices = devices.filter(device => {
 		if (!device)
 			return false
+			
+		if(!device.manufactured_data)
+			return false
+			
+		if(!device.manufactured_data.device_id)
+			return false
+			
 		
 		var data_upper_case = device.manufactured_data.device_id.toUpperCase()
 		device_id = device_id.toUpperCase()
@@ -571,6 +622,19 @@ export const prettyBytesToHex = bytes => {
 	}
 	return final_string;
 }
+
+export const prettyBytesToHexTogether = bytes => {
+	var string_bytes = bytesToHex(bytes)
+	var final_string = ""
+	for(var i = 0; i < string_bytes.length -1; i = i + 2){
+		var j = i + 1
+		if(j < string_bytes.length){
+			final_string = final_string + string_bytes.charAt(i) + string_bytes.charAt(i + 1)
+		}
+	}
+	return final_string.toUpperCase();
+}
+
 
 export const bytesToHex = bytes => {
     for (var hex = [], i = 0; i < bytes.length; i++) {

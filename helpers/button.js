@@ -4,7 +4,7 @@ import {
   	View,
   	Image,
   	ScrollView,
-  	TouchableHighlight
+  	TouchableNativeFeedback
 } from 'react-native'
 import {styles,first_color,success_green,option_blue} from '../styles/index.js'
 import { connect } from 'react-redux';
@@ -22,10 +22,11 @@ class Button extends Component{
 			height: height,
 			alignItems: "center",
 			justifyContent:"center",
-			borderRadius: 10,
+			borderRadius: 5,
 			marginHorizontal: marginHorizontal,
-			borderWidth: 0.3,
-			backgroundColor: "white"
+			borderWidth: 1,
+			backgroundColor: "white",
+			borderColor:option_blue,
 		}
 
 		let basic_text_style = {
@@ -41,11 +42,13 @@ class Button extends Component{
 		}
 
 		return(
-			<TouchableHighlight style={basic_style} onPress={() => this.props.handleTouchButton(this.props.text)}>
-				<Text style={basic_text_style}>
-					{this.props.text}
-				</Text>
-			</TouchableHighlight>
+			<TouchableNativeFeedback  onPress={() => this.props.handleTouchButton(this.props.text)}>
+				<View style={basic_style}>
+					<Text style={basic_text_style}>
+						{this.props.text}
+					</Text>
+				</View>
+			</TouchableNativeFeedback>
 		)
 	}
 }

@@ -27,7 +27,10 @@ import {
     REMOTE_SERIAL_HARDWARE_TYPE,
     CENTRAL_HARDWARE_TYPE,
     REMOTE_HARDWARE_TYPE,
-    GET_PAIRING_TO_DEVICES
+    GET_PAIRING_TO_DEVICES,
+    PAIR_STATUS,
+    WIEGAND_CENTRAL,
+    WIEGAND_REMOTE,
 } from '../constants'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
@@ -206,7 +209,7 @@ class PairBridge extends Component{
 						this.central_device.manufactured_data.tx = txUUID
 						this.central_device.manufactured_data.device_state = "0004";
 						this.central_device.writePairResult = true
-                        
+                        this.props.setBridgeStatus(PAIR_STATUS)
                         this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
 			    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
                         
@@ -307,6 +310,7 @@ class PairBridge extends Component{
     }
 
     showDeviceIsNotOnPairingMode(device_id){
+        console.log("showDeviceIsNotOnPairingMode()")
         Alert.alert(
             "Pairing Error",
             "Device " + device_id.toUpperCase() +" is not on pairing mode.",
@@ -320,6 +324,7 @@ class PairBridge extends Component{
     }
 
     showDeviceNotFound(device_id){
+        console.log("showDeviceNotFound()")
         Alert.alert(
             "Pairing error",
             "The device " + device_id.toUpperCase() + " was not found",
@@ -374,20 +379,13 @@ class PairBridge extends Component{
         var correct_type = 0
 
         switch(device_type){
-            case CENTRAL_HARDWARE_TYPE:
-                correct_type = REMOTE_HARDWARE_TYPE
+            case WIEGAND_CENTRAL:
+                correct_type = WIEGAND_REMOTE
             break
-            case REMOTE_HARDWARE_TYPE:
-                correct_type = CENTRAL_HARDWARE_TYPE
-            break
-            case CENTRAL_SERIAL_HARDWARE_TYPE:
-                correct_type = REMOTE_SERIAL_HARDWARE_TYPE
-            break
-            case REMOTE_SERIAL_HARDWARE_TYPE:
-                correct_type = CENTRAL_SERIAL_HARDWARE_TYPE
+            case WIEGAND_REMOTE:
+                correct_type = WIEGAND_CENTRAL
             break
             default:
-                correct_type = 0
             break
         }
         return correct_type
@@ -444,7 +442,7 @@ class PairBridge extends Component{
 							navigation={this.props.navigation} 
 							showAlertConfirmation={() => this.showAlertConfirmation()} 
 							master_device={current_device}
-							onSuccess = {(e) => this.onSuccess(e)}
+                            onScanRemoteSuccess = {(e) => this.onSuccess(e)}
 						/>
 
 					</View>

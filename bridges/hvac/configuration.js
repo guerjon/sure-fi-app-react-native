@@ -8,7 +8,8 @@ import {
   	Alert,
   	ActivityIndicator,
     Slider,
-    FlatList
+    FlatList,
+    TouchableOpacity
 } from 'react-native'
 import {styles,first_color,width,height,success_green,red_error,option_blue} from '../../styles/index.js'
 import { connect } from 'react-redux';
@@ -26,7 +27,8 @@ import {
     SUCCESS_STATUS,
     DECIMAL_TO_FOUR_BYTES,
     prettyBytesToHex,
-    BYTES_TO_HEX
+    BYTES_TO_HEX,
+
 } from '../../constants'
 import Background from '../../helpers/background'
 import {SWITCH} from '../../helpers/switch'
@@ -40,7 +42,7 @@ import {
 } from '../../action_creators'
 
 var bytes_values = BYTES_VALUES
-
+var equipments_paired_with_interval = 0
 
 class Configuration extends Component{
 
@@ -62,12 +64,33 @@ class Configuration extends Component{
     componentWillMount(){
         this.loadingConfigurationData()
         if(this.props.isEquipment()){
-            this.fetchLog()    
+            
+            this.fetchLog()
+
         }else if(this.props.isThermostat()){
-            this.fetchLogThermostat()
+            if(this.props.equipments_paired_with.length > 0){
+                this.fetchLogThermostat()
+            }else{
+                this.createEquipmentsPairedWithInterval()
+            }
         }else{
             console.log("Error","The device has not hardware type.")
-        }        
+        } 
+    }
+
+    createEquipmentsPairedWithInterval(){
+        if(equipments_paired_with_interval == 0){
+            equipments_paired_with_interval = setInterval(() => {
+                if(this.props.equipments_paired_with_interval.length > 0){
+                    this.deleteEquipmentsPairedWithInterval()
+                    this.fetchLogThermostat()
+                }
+            },1000)
+        }
+    }
+
+    deleteEquipmentsPairedWithInterval(){
+        clearInterval(equipments_paired_with_interval)
     }
 
     loadingConfigurationData(){
@@ -92,6 +115,7 @@ class Configuration extends Component{
             if(response.status == SUCCESS_STATUS){
                 if(response._bodyInit){
                     const data = JSON.parse(response._bodyInit)
+                    console.log("data",data)
                     if(data.status == "success"){
                         const internal_data = data.data
                         if(data){
@@ -99,7 +123,7 @@ class Configuration extends Component{
                             
                             if(value && value != ''){
                                 let int_bytes = value.match(/.{2}/g) //split in chunks of 2
-                                this.props.dispatch({type: "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS",cloud_equipment_fail_safe_options: int_bytes.map(x => parseInt(x,16))})
+                                this.props.dispatch({type: "SET_CLOUD_HEART_BEAT",cloud_heart_beat: int_bytes.map(x => parseInt(x,16))})
                             }else{
                                 Alert.alert("Error","The data doesn't content any heartbeat value connect to the thermostat interface first.")
                             }
@@ -139,7 +163,10 @@ class Configuration extends Component{
                     "log_field": "BridgeRsp_FailsafeOption"
                 })            
             })
+
             const clean_response =  CHECK_GENERIC_RESPONSE(response)
+            
+
             if(clean_response){
                 if(clean_response.value){
                     let int_bytes = clean_response.value.match(/.{2}/g) //split in chunks of 2
@@ -270,35 +297,35 @@ class Configuration extends Component{
             <View style={{alignItems:"center",justifyContent:"center"}}>
                 <View style={{alignItems:"center"}}>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}> Relay 1 (W,O/B) </Text> 
+                        <Text style={{width:width-70}}> Relay 1 (W,O/B) </Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[0])} onPress={(value) => this.changeSwitchStatus(value,0)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 2 (Y)</Text> 
+                        <Text style={{width:width-70}}>Relay 2 (Y)</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[1])}  onPress={(value) => this.changeSwitchStatus(value,1)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 3 (G)</Text> 
+                        <Text style={{width:width-70}}>Relay 3 (G)</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[2])} onPress={(value) => this.changeSwitchStatus(value,2)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 4 (Y2)</Text> 
+                        <Text style={{width:width-70}}>Relay 4 (Y2)</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[3])} onPress={(value) => this.changeSwitchStatus(value,3)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 5 (W2,AUX)</Text> 
+                        <Text style={{width:width-70}}>Relay 5 (W2,AUX)</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[4])}  onPress={(value) => this.changeSwitchStatus(value,4)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 6 (E)</Text> 
+                        <Text style={{width:width-70}}>Relay 6 (E)</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[5])} onPress={(value) => this.changeSwitchStatus(value,5)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 7</Text> 
+                        <Text style={{width:width-70}}>Relay 7</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[6])}  onPress={(value) => this.changeSwitchStatus(value,6)}/>
                     </View>
                     <View style={row_style}>
-                        <Text style={{width:width-60}}>Relay 8</Text> 
+                        <Text style={{width:width-70}}>Relay 8</Text> 
                         <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[7])} onPress={(value) => this.changeSwitchStatus(value,7)}/>
                     </View>
                 </View>
@@ -318,7 +345,8 @@ class Configuration extends Component{
         let seconds_heart_beat = BYTES_TO_INT_LITTLE_ENDIANG(this.props.cloud_heart_beat)
 
         var option_style = {
-            padding:10,
+            height:40,
+            width:40,
             borderColor:option_blue,
             alignItems:"center",
             justifyContent:"center",
@@ -342,7 +370,7 @@ class Configuration extends Component{
             if(option_selected >= 0 && option_selected <= 5){
 
                 return (
-                    <View style={{height:50,flexDirection:"row"}}>
+                    <View style={{height:50,flexDirection:"row",alignItems:'center',justifyContent:"center"}}>
                         <TouchableHighlight style={off_style} onPress={() => this.updateRelayFailSafe(0 * seconds_heart_beat)}>
                             <Text>
                                 Off
@@ -388,6 +416,7 @@ class Configuration extends Component{
     }   
 
     renderFailSafeOptionOn(element){
+        console.log("element",element)
         let index = element.index
         let item = element.item
         let seconds_fail_option = BYTES_TO_INT_LITTLE_ENDIANG(item.slice(0,4))
@@ -409,16 +438,18 @@ class Configuration extends Component{
             padding:10
         }
 
-
         return(
             <View>
                 <Text style={{padding:10,fontSize:14}}>
                     Relay FAILSAFE DEFAULTS - {id}
                 </Text>            
                 <View style={{backgroundColor:"white",borderBottomWidth:1,borderTopWidth:1,padding:10,marginBottom:20}}>
-                    <View>
-                        <Text>
-                            Equipment Failsafe Delay Time : {seconds_fail_option} Sec
+                    <View style={{alignItems:"center",flexDirection:"row",borderBottomWidth:.5,width:width,borderBottomColor:"gray",padding:10,justifyContent:"space-between"}}>
+                        <Text >
+                            Equipment Failsafe Delay Time : 
+                        </Text>
+                        <Text style={{marginRight:15}}>
+                            {seconds_fail_option} Sec
                         </Text>
                     </View>
                 
@@ -465,6 +496,8 @@ class Configuration extends Component{
     }
 
     renderHeatBeatTimeStuffs(){
+        console.log("renderHeatBeatTimeStuffs()",this.props.cloud_equipment_fail_safe_options)
+        
         if(this.props.isThermostat()){
             if(this.props.heart_beat){
                 if(this.props.heart_beat.length == 4){
@@ -485,11 +518,13 @@ class Configuration extends Component{
                                     <Button text="2h" width={width/9} active={time == 7200} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(7200)}/>
                                 </View>
                             </View>
-                            <FlatList 
-                                data={this.props.cloud_equipment_fail_safe_options} 
-                                renderItem={(item) => this.renderFailSafeOptionOn(item)} 
-                                keyExtractor={(item,index) => index}
-                            />
+                            {this.props.cloud_equipment_fail_safe_options.length && (
+                                <FlatList 
+                                    data={this.props.cloud_equipment_fail_safe_options} 
+                                    renderItem={(item) => this.renderFailSafeOptionOn(item)} 
+                                    keyExtractor={(item,index) => index}
+                                />
+                            )}
                         </View>
                     )
 
@@ -513,7 +548,7 @@ class Configuration extends Component{
                         <View style={{flexDirection:"row",padding:10,alignItems:"center",justifyContent:"center"}}>
                             <TouchableHighlight onPress={() => this.handleLedsEnabledButton()}>
                                 <Text style={{color:"black"}}>
-                                    THERMOSTAT : {BYTES_TO_INT_LITTLE_ENDIANG(this.props.cloud_heart_beat)}
+                                    THERMOSTAT : {BYTES_TO_INT_LITTLE_ENDIANG(this.props.cloud_heart_beat)} s
                                 </Text>
                             </TouchableHighlight>
                         </View>
@@ -536,10 +571,9 @@ class Configuration extends Component{
     }
 
 	render(){	
-		console.log("render",this.props.activated_led);
         let led_value = this.props.activated_led[0]
         let led_enable_text = led_value == 0 ? "Off" : "On"
-        var led_button_style = {padding:10,borderRadius:10,marginLeft:10}
+        var led_button_style = {padding:10,borderRadius:10,marginLeft:10,width:50,alignItems:'center'}
         led_button_style.backgroundColor = led_value == 0 ? "gray" : "green"
 
         if(this.props.configuration_data_state == NO_ACTIVITY || this.props.configuration_data_state == LOADING)
@@ -560,16 +594,16 @@ class Configuration extends Component{
                                 LEDS SETTINGS
                             </Text>
                         </View>
-						<View style={{backgroundColor:"white",alignItems:"center"}}>
-							<View style={{flexDirection:"row",padding:10,alignItems:"center",justifyContent:"center"}}>
+						<View style={{backgroundColor:"white",width:width}}>
+							<View style={{flexDirection:"row",padding:10,alignItems:"center",justifyContent:"space-between"}}>
 								<Text style={{fontSize:18,color:"black"}}>
 									LEDs Enabled
 								</Text>
-                                <TouchableHighlight onPress={() => this.handleLedsEnabledButton()} style={led_button_style}>
-                                    <Text style={{color:"white"}}>
+                                <TouchableOpacity onPress={() => this.handleLedsEnabledButton()} style={led_button_style}>
+                                    <Text style={{color:"white",fontSize:18}}>
                                         {led_enable_text}
                                     </Text>
-                                </TouchableHighlight>
+                                </TouchableOpacity>
 							</View>
 						</View>
                         <View>

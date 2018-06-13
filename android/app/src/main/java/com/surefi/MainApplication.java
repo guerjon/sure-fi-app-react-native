@@ -2,7 +2,7 @@ package com.surefi;
 
 import com.facebook.react.ReactApplication;
 import com.gettipsi.stripe.StripeReactPackage;
-import com.airbnb.android.react.maps.MapsPackage;
+
 import com.inprogress.reactnativeyoutube.ReactNativeYouTube;
 import com.oblador.keychain.KeychainPackage;
 import com.facebook.react.ReactPackage;
@@ -36,7 +36,7 @@ public class MainApplication extends NavigationApplication implements ReactAppli
               new BlePackage(),
               new KeychainPackage(),
               new ReactNativeYouTube(),
-              new MapsPackage(),
+ 
                new StripeReactPackage()
        );
    }

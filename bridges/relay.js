@@ -18,7 +18,7 @@ import {
 	LOADING,
 	DEC2BIN,
 	NOTIFICATION,
-	BYTES_VALUES
+
 } from '../constants'
 import Background from '../helpers/background'
 import {
@@ -27,9 +27,6 @@ import {
 } from '../action_creators'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
-
-var bytes_values = BYTES_VALUES
-	
 
 class Relay extends Component{
 
@@ -44,7 +41,6 @@ class Relay extends Component{
     constructor(props) {
     	super(props);
     	this.device = this.props.device
-    	this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
     	this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     	this.updating = false
     }
@@ -62,84 +58,6 @@ class Relay extends Component{
             }
         } 
     }
-
-
-	handleCharacteristicNotification(data){
-		console.log("data",data)
-		LOG_INFO(data.value,NOTIFICATION)
-		var value = data.value[0]
-		
-		switch(value){
-			case 0x02:
-				data.value.shift()
-				console.log("old_value",data.value);
-				
-				if(data.value.length > 0)
-					this.updateQsValues(data.value[0])
-				else
-					console.log("Error","Someting is wrong getting the values");
-
-				break
-			case 0x18:
-				data.value.shift()
-				this.updateRelayValues(data.value)
-				this.props.saveOnCloudLog(data.value,"FAILSAFES")
-				break
-			default:
-			break
-		}
-	}
-
-    componentWillMount() {
-    	this.props.dispatch({type :"RESET_RELAY_REDUCER"});
-    	this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification)
-    	setTimeout(() => this.getRelayValues(),1000)
-    }
-
-    componentWillUnmount() {
-    	this.handleCharacteristic.remove()
-    }
-
-    updateRelayValues(values){
-    	console.log("updateRelayValues",values);
-    	let props = this.props
-    	let dispatch = props.dispatch
-    	
-    	dispatch({type: "SET_SLIDER_VALUE",slider_value: values[0]})
-    	dispatch({type: "SET_RELAY_IMAGE_1_STATUS",relay_1_image_status : values[1]})
-    	dispatch({type: "SET_RELAY_IMAGE_2_STATUS",relay_2_image_status : values[2]})
-    	this.getQosConfig()
-
-    }
-
-    getQosConfig(){
-    	WRITE_COMMAND(this.device.id,[0x0B])
-    	.catch(error => Alert.alert("Error",error))
-    }
-
-    updateQsValues(value){
-    	console.log("updateQsValues",value);
-    	
-    	var binary_value = bytes_values[value]
-    	
-    	if(binary_value.substr(0,1) == "0")
-    		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: false})
-    	else
-    		this.props.dispatch({type: "SHOW_QUALITY_DEPENDES",show_quality_dependes: true})
-    		
-
-    	this.props.dispatch({type: "SET_QS",qs : binary_value})
-    	this.props.dispatch({type: "SET_RELAY_LOADING",relay_loading: false})
-    }
-
-	getRelayValues(){
-		console.log("getRelayValues()");
-		WRITE_COMMAND(this.device.id,[0x24])
-		.then(response => {
-		})
-		.catch(error =>  Alert.alert("Error",error))		
-	}
-
 
 	updateSliderValue(slider_value){
 		if(this.slider_value === true)
@@ -227,9 +145,8 @@ class Relay extends Component{
 
 		return(
 			<View>
-				<View style={{flexDirection:"row"}}>
-					<View style={{flexDirection:"row"}}>
-						<View style={{width: (width/2 -20)}}>
+				<View style={{flexDirection:"row",width:width,alignItems:"center",justifyContent:"center",marginTop:10}}>
+						<View style={{width: (width/2 -20),justifyContent:"center",alignItems:"center"}}>
 							<Text style={{marginHorizontal:20}}>
 								Relay 1 Default
 							</Text>
@@ -245,7 +162,7 @@ class Relay extends Component{
 								{relay_2_image}
 							</View>
 						</View>						
-					</View>
+					
 				</View>
 				<View style={{marginHorizontal:20,marginVertical:20}}>
 					<Text>
@@ -349,12 +266,12 @@ class Relay extends Component{
 			<ScrollView style={styles.pairContainer}>
 				<Background>
 					<View style={{height: height}}>
-						<View style={{justifyContent:"center",alignItems:"center",marginTop:30}}>
+						<View style={{justifyContent:"center",alignItems:"center",marginVertical:20}}>
 							<Text style={{fontSize:20}}>
 								LED SETTINGS
 							</Text>
 						</View>
-						<View style={{marginBottom:30,backgroundColor:"white"}}>
+						<View style={{marginBottom:20,backgroundColor:"white"}}>
 							<View style={styles.relay_option}>
 								<Switch 
 									onValueChange={slider_value => this.updateQs(3)} 
@@ -383,7 +300,7 @@ class Relay extends Component{
 
 						</View>
 						<View>
-							<View style={{alignItems:"center",justifyContent:"center"}}>
+							<View style={{alignItems:"center",justifyContent:"center",marginBottom:20}}>
 								<Text style={{fontSize:20}}>
 									RELAY SETTINGS
 								</Text>

@@ -18,6 +18,7 @@ import ConfigureRadio from '../bridges/configure_radio'
 
 import DeviceControlPanel from '../bridges/device_control_panel'
 import HVACDeviceControlPanel from '../bridges/hvac_device_control_panel'
+import ModuleDeviceControlPanel from '../bridges/module_device_control_panel'
 import SetupCentralExamples from '../bridges/setup_central_examples'
 import Deploy from '../bridges/deploy'
 import PINCodeModal from '../bridges/pin_code_modal'
@@ -25,28 +26,30 @@ import DemoUnitKeyModal from '../bridges/demo_unit_key_modal'
 import InsertIDModal from '../bridges/insert_id_modal'
 import SetDemoModeTimeModal from '../bridges/set_demo_unit_time_modal'
 import SetRuntimeModal from '../bridges/set_run_time_modal'
+import DocumentationModal from '../documentation_modal'
+import VideosModal from '../videos_modal'
 
 
 import BridgeDetails from '../bridges/bridge_details'
 import Register from '../bridges/register'
 import RadioConfiguration from '../bridges/radio/index'
 import OperationValues from '../bridges/operation_values'
-import DeviceNotMatched from '../bridges/device_not_matched'
+import Documentation from '../bridges/documentation'
 import Relay from '../bridges/relay'
 import Login from '../login'
 import Videos from '../videos'
 import BluetoothDebugLog from '../bluetooth_debug_log'
-
-import Chat from '../bridges/chat'
-import CustomMap from '../bridges/chat/custom_map'
-import ChatOptions from '../bridges/chat/chat_options'
 import RSSettings from '../bridges/rs_settings'
 import PaymentOptions from '../bridges/payment/payment_options'
 import HVACPair from '../bridges/hvac/pair'
+import ModulePair from '../bridges/module/pair'
 import HVACOperatingValues from '../bridges/hvac/operating_values'
+import ModuleOperatingValues from '../bridges/module/operating_values'
+import ModuleConfiguration from '../bridges/module/configuration'
 import HVACConfigureRadio from '../bridges/hvac/configure_radio'
 import Configuration from '../bridges/hvac/configuration'
 import HVACFirmwareUpdate from '../bridges/hvac/firmware_update'
+import HelpScreen from '../help_screen'
 
 
 const screens =
@@ -76,14 +79,11 @@ const screens =
 	['Videos',Videos],
 	['OperationValues',OperationValues],
 	['Relay',Relay],
-	['Chat',Chat],
-	['ChatOptions',ChatOptions],
 	['PINCodeModal',PINCodeModal],
 	['DemoUnitKeyModal',DemoUnitKeyModal],
 	['InsertIDModal',InsertIDModal],
 	['SetDemoModeTimeModal',SetDemoModeTimeModal],
-	['CustomMap',CustomMap],
-	['DeviceNotMatched',DeviceNotMatched],
+	['Documentation',Documentation],
 	['BluetoothDebugLog',BluetoothDebugLog],
 	['RSSettings',RSSettings],
 	['HVACDeviceControlPanel',HVACDeviceControlPanel],
@@ -93,8 +93,14 @@ const screens =
 	["SetRuntimeModal",SetRuntimeModal],
 	["HVACConfigureRadio",HVACConfigureRadio],
 	["Configuration",Configuration],
-	["HVACFirmwareUpdate",HVACFirmwareUpdate]
-
+	["HVACFirmwareUpdate",HVACFirmwareUpdate],
+	["HelpScreen",HelpScreen],
+	["DocumentationModal",DocumentationModal],
+	["VideosModal",VideosModal],
+	["ModuleDeviceControlPanel",ModuleDeviceControlPanel],
+	["ModuleOperatingValues",ModuleOperatingValues],
+	["ModuleConfiguration",ModuleConfiguration],
+	["ModulePair",ModulePair]
 ];
 
 export function registerScreens(store,Provider){

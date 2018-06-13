@@ -25,10 +25,10 @@ import loginReducer from './loginReducer'
 import videosReducer from './videos'
 import operationValuesReducer from './operationValuesReducer'
 import relayReducer from './relayReducer'
-import chatReducer from './chatReducer'
 import bluetoothDebugLog from './bluetoothDebugLog'
 import rsSettingsReducer from './rsSettingsReducer'
 import paymentReducer from './payment_reducer'
+import screenReducer from './screenReducer'
 
 const rootReducer = combineReducers({
     appData,
@@ -55,10 +55,10 @@ const rootReducer = combineReducers({
     videosReducer,
     operationValuesReducer,
     relayReducer,
-    chatReducer,
     bluetoothDebugLog,
     rsSettingsReducer,
-    paymentReducer
+    paymentReducer,
+    screenReducer,
 })
 
 export default rootReducer

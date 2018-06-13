@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {
   	Text,
   	View,
+  	TouchableOpacity,
   	TouchableHighlight
 } from 'react-native'
 import {
@@ -14,13 +15,13 @@ import {
 
 export const WhiteRowLink = params => {
 	return(
-		<TouchableHighlight style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => params.callback()}>
+		<TouchableOpacity style={{backgroundColor:"white",width:width,alignItems:"center"}} onPress={() => params.callback()}>
 			<View style={{padding:15,flexDirection:"row"}}>
 				<Text style={{fontSize:16,color:option_blue}}>
 					{params.name}
 				</Text>
 			</View>
-		</TouchableHighlight>						
+		</TouchableOpacity>						
 	)
 
 }
@@ -47,7 +48,7 @@ export const WhiteRowInfoLink = params => {
 export const WhiteRowIconLink = params => {
 	return (
 	      <View style={styles.container}>
-	        	<TouchableHighlight
+	        	<TouchableOpacity
 	        		onPress={() => params.callback()}
 	        		style={{backgroundColor:"white",height:50,borderTopRightRadius:10, borderTopLeftRadius: 10}} 
 	        	>
@@ -61,7 +62,7 @@ export const WhiteRowIconLink = params => {
 			        		</Text>
 		        		</View>
 	        		</View>
-	        	</TouchableHighlight>
+	        	</TouchableOpacity>
 	         
 	      </View>
 	)

@@ -74,7 +74,7 @@ class ScanRemoteUnits extends Component {
                             ref={(cam) => {
                                 this.camera = cam;
                             }}
-                            onBarCodeRead={(e) => this.props.onSuccess(e)}
+                            onBarCodeRead={(e) => this.props.onScanRemoteSuccess(e)}
                         >
                             <Image 
                                 source={require('../images/scanner_background.imageset/scanner_background.png')}
@@ -86,7 +86,6 @@ class ScanRemoteUnits extends Component {
                             </Image>
                         </Camera>                    
                 </View>
-
             )           
         }else{
             return (

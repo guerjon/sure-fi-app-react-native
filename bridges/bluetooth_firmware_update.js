@@ -39,7 +39,7 @@ var {
     width
 } = window
 
-
+var scanning_interval = 0
 
 class BluetoothFirmwareUpdate extends Component{
 	
@@ -149,16 +149,26 @@ class BluetoothFirmwareUpdate extends Component{
 
 
 	searchDevices(){
-		this.scanning = setInterval(() => {
-			BleManager.scan([], 3, true).then(() => {
-        	})
-		} , 1000)
-        this.devices = []
-        setTimeout(() => {
-        	this.scanning_status = "stopped"
-        	if(this.scanning)
-          	clearInterval(this.scanning)
-        },60000)
+		if(scanning_interval == 0){
+			scanning_interval = setInterval(() => {
+				BleManager.scan([], 3, true).then(() => {
+	        	})
+			} , 2000)
+	        this.devices = []
+	        setTimeout(() => {
+	        	this.stopScan()
+	        },60000)			
+		}else
+			console.log("Can't start searchDevices, the scanning_interval is already active.")
+	}
+
+	stopScan(){
+		if(scanning_interval != 0){
+			clearInterval(scanning_interval)
+			scanning_interval = 0
+		}else{
+			console.log("The scanning was stopped before")
+		}
 	}
 
 	getStartRow(){
@@ -200,39 +210,23 @@ class BluetoothFirmwareUpdate extends Component{
 
 		if(device.name){
 			console.log("1")
-	        if (device.name.toUpperCase().indexOf("DF") !== -1){
 	        	
-	        	let short_id = this.device.manufactured_data.device_id.substring(2,6)
-	        	//console.log("this.device",this.device)
-	        	console.log("device",device.new_representation)
-	        	if(device.new_representation.indexOf(short_id) !== -1){
-	        		
-	        		console.log("this.scanning",this.scanning)
+        	let short_id = this.device.manufactured_data.device_id.substring(2,6)
+        	//console.log("this.device",this.device)
+        	console.log("device",device.new_representation)
+        	if(device.new_representation.indexOf(short_id) !== -1){
 
-					if(this.scanning){
-						
-						console.log("this.scanning_status",this.scanning_status)
+        		this.stopScan()
+		    	
+		    	this.props.dispatch({type:"SET_DEPLOY_DISCONNECT",deploy_disconnect:false})							
+  				
+  				this.props.dispatch({type: "START_UPDATE"})
+  				
+  				console.log("Founded Device  ID ",device.id)
+				console.log("Founded Device  Name ",device.name.toUpperCase())
 
-						if(this.scanning_status != "stopped"){
-							this.scanning_status = "stopped"; //just should be in one time
-							
-							clearInterval(this.scanning)
-					    	
-					    	this.props.dispatch({
-					    		type:"SET_DEPLOY_DISCONNECT",
-					    		deploy_disconnect:false
-					    	})							
-	          				
-	          				this.props.dispatch({type: "START_UPDATE"})
-	          				
-	          				console.log("Founded Device  ID ",device.id)
-							console.log("Founded Device  Name ",device.name.toUpperCase())
-
-	          				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),2000)							
-						}
-					}
-	        	}
-	        }
+  				setTimeout(() => BluetoothModule.initService(device.id,device.name.toUpperCase(),this.filePath),2000)				
+          	}
         }
 	}
 
