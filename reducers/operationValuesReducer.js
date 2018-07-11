@@ -25,7 +25,10 @@ const initialState = {
   },
   operating_values: [],
   power_on_time: [],
-  power_on_time_seconds: 0
+  power_on_time_seconds: 0,
+  operating_values_disconnect: false,
+  blockBackButton: false,
+  disable_back_button: false
 }
 
 export default function operationValuesReducer (state = initialState, action) {
@@ -95,8 +98,22 @@ export default function operationValuesReducer (state = initialState, action) {
         ...state,
         power_on_time_seconds: action.power_on_time_seconds
       }
-
-    default:
-      return state
+    case "SET_OPERATING_VALUES_DISCONNECT":
+      return{
+        ...state,
+        operating_values_disconnect: action.operating_values_disconnect
+      }
+    
+    case "SET_DISABLE_BACK_BUTTON":
+      return {
+        ...state,
+        disable_back_button: action.disable_back_button
+      }
+    default:{
+      return {
+        ...state
+      }
+    }
+    break
   }
 }

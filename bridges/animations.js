@@ -32,7 +32,7 @@ export const finishRadioFirmwareUpdate = () => {
     }).start()
 
     Animated.timing(store.getState().updateFirmwareCentralReducer.radioFirmwareUpdateBoxPosition,{
-        toValue: {x: 10,y: 10},
+        toValue: {x: height - 200,y: 10},
         duration: 1000
     }).start()
 
@@ -49,7 +49,7 @@ export const finishAppFirmwareUpdate = () => {
     }).start()
 
     Animated.timing(store.getState().updateFirmwareCentralReducer.appFirmwareUpdateBoxPosition,{
-        toValue: {x: 10,y: (width/2 - 37) },
+        toValue: {x: height - 200,y: (width/2 - 37) },
         duration: 1000
     }).start()
 
@@ -69,7 +69,7 @@ export const finishBluetoothFirmwareUpdate = () => {
     }).start()
 
     Animated.timing(store.getState().updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxPosition,{
-        toValue: {x: 10,y: (width - 75) },
+        toValue: {x: height - 200,y: (width - 75) },
         duration: 1000
     }).start()
 
@@ -101,10 +101,17 @@ export const startRadioFirmwareUpdate = () => {
 export const startAppFirmwareUpdate = () => {
     console.log("startAppFirmwareUpdate()")
     store.dispatch({type: "SET_FILLING_PORCENTAGE",filling_porcentage:0})
+    store.dispatch({type: "SET_FIRMWARE_UPDATE_STATUS",firmware_update_status: UPDATING_FIRMWARE})
     store.dispatch({type: "SET_CURRENT_FIRMWARE_UPDATE",current_firmware_update: APP_FIRMWARE_UDATE})
+    
+    Animated.timing(store.getState().updateFirmwareCentralReducer.firmareButtonAnimation,{
+        toValue: {x: height, y: ((width/2) - 125)},
+        duration: 1000,
+    }).start()    
 }
 
 export const startBluetoothFirmwareUpdate = () =>{
+    store.dispatch({type: "SET_FIRMWARE_UPDATE_STATUS",firmware_update_status: UPDATING_FIRMWARE})
     store.dispatch({type: "SET_CURRENT_FIRMWARE_UPDATE",current_firmware_update: BLUETOOTH_FIRMWARE_UPDATE})
     store.dispatch({type: "SET_FILLING_PORCENTAGE",filling_porcentage:0})
 }    

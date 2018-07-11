@@ -43,7 +43,6 @@ class PINCodeModal extends Component{
 			}) 
 		}).then(response => {
 			var data = JSON.parse(response._bodyInit)
-
 			if(data.status == "success"){
 				var user_data = data.data.user_data
 				this.props.dispatch({type: "SET_USER_DATA",user_data: user_data})
@@ -64,7 +63,6 @@ class PINCodeModal extends Component{
 
 	handlePinNumber(){
 		if(this.text.length){
-
 			this.fetchResults(this.text)		
 		}else{
 			Alert.alert("Error","The field can't be empty.")

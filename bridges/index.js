@@ -291,7 +291,7 @@ class Bridges extends Component{
     }
 
     checkDeviceType(device){
-        console.log("checkDeviceType()",device.manufactured_data)
+        console.log("checkDeviceType()")
         if(device){
             this.props.dispatch({
                 type: "CENTRAL_DEVICE_MATCHED",
@@ -299,9 +299,10 @@ class Bridges extends Component{
             });
 
             const type = device.manufactured_data.hardware_type
+
             if(type == '03' || type == '04'){
                 this.goToDeviceControl(device,"HVACDeviceControlPanel")
-            }else if(type == "07" || type == "08"){
+            }else if(type == "07" || type == "08" || type == "0A" || type == "0B"){
                 this.goToDeviceControl(device,"ModuleDeviceControlPanel")
             }
             else{
@@ -592,7 +593,7 @@ class Bridges extends Component{
                                 borderRadius: 10
                             }}>
                             <Text style={{color:option_blue}}>
-                                CONTINUE
+                                OK
                             </Text>
                         </TouchableHighlight>
                     </View>

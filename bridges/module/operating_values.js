@@ -27,7 +27,13 @@ import {
 	FOUR_BYTES_ARRAY_TO_DECIMAL,
 	BYTES_TO_INT,
 	prettyBytesToHex,
-	prettyBytesToHexTogether
+	prettyBytesToHexTogether,
+	reverseTwoComplement,
+	TRANSMIT,
+	RECEIVE,
+	ERROR_BLOCK,
+	TIME,
+	SWITCH
 } from '../../constants'
 import {
 	WRITE_COMMAND,
@@ -52,126 +58,12 @@ const text_style = {
 import {success_green,cancel_red,gray_background} from '../../styles/index.js'
 
 
-function doPrettyZeros(number){
-	if(number == "0"){
-		return "0x00"
-	}else{
-		var number_string = number.toString()
-		if(number_string.length > 1)
-			return "0x" + number
-
-		return "0x0" + number
-	}
-}
-
-var TIME = params => {
-	var value = ""
-	var minutes = params.minutes
-	
-	if(minutes < 1){
-		value = "Less than a minute"
-
-	}else if(minutes >= 1 && minutes <= 60){
-		
-		value = minutes + " minutes"
-
-	}else if(minutes > 60 && minutes < 240){
-	
-		var hours = parseInt(minutes / 60)
-		var rest_minutes = minutes - (hours * 60)
-		value = hours + " Hours " + minutes + " minutes"
-
-	}else if(minutes >= 240 && minutes <= 254){
-
-		value = "More than 4 hours"
-
-	}else {
-		value = "Empty"
-	}
-
-	return (
-		<View style={{marginLeft:5}}>
-			<Text>
-				{value}
-			</Text>
-		</View>
-	)
-}
-
-var SWITCH = params => {
-	let style = {
-		borderWidth:3,
-		width:35,
-		height:35,
-		marginHorizontal:3,
-		alignItems:"center",
-		borderRadius:2,
-		justifyContent:"center",
-		borderColor: params.color,
-		borderRadius:50,
-		backgroundColor: "white",
-	}
-	
-	let name = params.name ? params.name : " - " 
-
-	if(params.isActivated){
-		style.borderColor = params.color
-		style.backgroundColor = params.color
-
-		return (
-			<TouchableOpacity 
-				style={style}
-				onPress={() => params.onPress(1)}
-			>
-				<Text style={{color:"black",fontSize:14}}>
-					{name}
-				</Text>
-			</TouchableOpacity> 
-		)
-	}
-
-	return (
-		<TouchableOpacity 
-			style={style}
-			onPress={() => params.onPress(0)}
-		>
-			<Text style={{color:"black",fontSize:14}}>
-				{name}
-			</Text>
-		</TouchableOpacity>
-	)	
-}
-
-var ERROR_BLOCK = params => {
-	var error = params.error
-	return(
-		<View style={{width:width/8,borderRadius:30,alignItems:"center"}}>
-			<Text style={{backgroundColor:gray_background,padding:5,margin:1,fontSize:10}}>
-				{doPrettyZeros(error)}
-			</Text>
-		</View>
-	)
-}
-
-var DATA_BLOCK = params => {
-	var data = params.data
-	return(
-		<View style={{width:35,alignItems:"center"}}>
-			<Text style={{backgroundColor:gray_background,padding:5,margin:1,fontSize:10}}>
-				{doPrettyZeros(data)}
-			</Text>
-		</View>
-	)	
-}
-
-
 var WIEGAND_DATA = params => {
 	let wiegand_data = params.wiegand_data
 	let wiegandDataString = -1
 	let bitCount = -1
 	let code = -1
 	let facility = -1
-
 	
 	bitCount = wiegand_data[0]
 	let wiegandInt =  wiegand_data.slice(1,wiegand_data.length).reverse()
@@ -243,10 +135,10 @@ var RELAY_STATE = params => {
 				return (
 					<View style={backgroundStyle}>
 						<View style={{flexDirection:"row",height:80,alignItems:"center",justifyContent:"center"}}>
-							<SWITCH isActivated={relay_states[4]} onPress={() => console.log("switch pressend")} name="R1" color="#FFFF00"/>
-							<SWITCH isActivated={relay_states[5]} onPress={() => console.log("switch pressend")} name="R2" color="#008000"/>
-							<SWITCH isActivated={relay_states[6]} onPress={() => console.log("switch pressend")} name="R3" color="#5DADE2"/>
-							<SWITCH isActivated={relay_states[7]} onPress={() => console.log("switch pressend")} name="R4" color="#F5B041"/>
+							<SWITCH isActivated={relay_states[4]} onPress={() => console.log("switch pressend")} name="R1" color="#FFFF00" background="white"/>
+							<SWITCH isActivated={relay_states[5]} onPress={() => console.log("switch pressend")} name="R2" color="#008000" background="white"/>
+							<SWITCH isActivated={relay_states[6]} onPress={() => console.log("switch pressend")} name="R3" color="#5DADE2" background="white"/>
+							<SWITCH isActivated={relay_states[7]} onPress={() => console.log("switch pressend")} name="R4" color="#F5B041" background="white"/>
 						</View>
 						<View style={{alignItems:"center",flexDirection:"row",height:40,alignItems:"center",justifyContent:"center"}}>
 							<Text style={{color:"white",borderWidth:1,padding:1,borderRadius:50,paddingHorizontal:5,backgroundColor:"black",textAlign:"center"}}>
@@ -277,7 +169,7 @@ var HVAC_DEVICE = params => {
 				</View>
 				<View>
 					<Text>
-						Last Package: {params.time}
+						Last Communication: {params.time}
 					</Text>
 				</View>
 			</View>
@@ -308,108 +200,6 @@ var HVAC_DEVICE = params => {
 	)
 }
 
-
-var reverseTwoComplement = decimal_number => {
-
-	
-  	var first_byte_less_one = decimal_number - 1
-  	
-  	var string_array = first_byte_less_one.toString(2).split("")
-  	let is_positive = true
-
-  	if(string_array[0] == "1"){ // the negative numbers start with 1
-  		is_positive = false
-  	}
-
-  	var reverse_string_array = string_array.map(x => {
-  		if(x == '1') 
-  			return '0' 
-  		else return '1'
-  	})
-
-  	var new_string_array = reverse_string_array.reduce((acumulator,x) => acumulator + x,"")
-  	if(is_positive)
-  		return parseInt(new_string_array,2)
-  	else 
-  		return (parseInt(new_string_array,2) * -1)
-
-  	return final_result
-
-}
-
-
-
-
-var TRANSMIT = params => {
-	var transmit_info = params.transmit_info
-	var success_text = transmit_info.success == 1 ? "SUCCESS" : "FAILURE";
-	var success_color = transmit_info.success == 1 ? success_green : "red";
-	var num_retries = transmit_info.numRetries + " retries"
-	
-	var rssi = "RSSI: "  + reverseTwoComplement([transmit_info.rssi[0]]) + " dBm"
-	var snr = "SNR: " + transmit_info.snr + " dB"
-	var ack_data = transmit_info.ackDataLength + " Byte ACK" 
-
-	
-
-	return (
-		<View style={{marginRight:10,marginLeft:5,padding:10,width: ((width/3) - 5)}}>
-			<View style={{flexDirection:"row"}}>
-				<Text style={{color:success_color}}>
-					{success_text}
-				</Text>
-			</View>
-			<View>
-				<Text>
-					{num_retries}
-				</Text>
-			</View>
-			<View style={{flexDirection:"row"}}>
-				<Text>
-					{rssi}
-				</Text>
-			</View>
-			<View style={{flexDirection:"row"}}>
-				<Text>
-					{snr}
-				</Text>
-			</View>
-			<View>
-				<Text>
-					{ack_data}
-				</Text>
-			</View>
-		</View>
-	)
-}
-
-var RECEIVE = params => {
-	var receive_info = params.receive_info
-	var success_text = receive_info.success == 1 ? "SUCCESS" : "FAILURE";
-	var success_color = receive_info.success == 1 ? success_green : "red";
-	var rssi = "RSSI: "  + reverseTwoComplement([receive_info.rssi[0]]) + " dBm"
-	var snr = "SNR: " + receive_info.snr
-
-	return (
-		<View style={{marginRight:5,marginLeft:5,padding:10,width: ((width/3) - 5)}}>
-			<View style={{flexDirection:"row"}}>
-				<Text style={{color:success_color}}>
-					{success_text}
-				</Text>
-			</View>
-			<View style={{flexDirection:"row"}}>
-				<Text>
-					{rssi}
-				</Text>
-			</View>
-			<View style={{flexDirection:"row"}}>
-				<Text>
-					{snr}
-				</Text>
-			</View>
-		</View>
-	)
-}
 
 var powerOnTimeInterval = 0
 
@@ -660,6 +450,19 @@ class OperationValues extends Component{
 		return null
 	}
 
+	renderPairedDevice(data){
+		console.log("renderPairedDevices()")
+		
+		var time = parseSecondsToHumanReadable(this.props.last_package_time)
+		return(
+			<View>
+				<HVAC_DEVICE time={time} equipment_number={1} device_id={this.device.manufactured_data.tx} hardware_type={this.device.manufactured_data.hardware_type} />
+			</View>
+
+		)
+	}	
+
+
 	renderThermostatHVAC(data){
 		console.log("renderThermostatHVAC")
 		var item = data.item
@@ -712,6 +515,12 @@ class OperationValues extends Component{
 
 	render(){
 		console.log("this.props.loading_operation_values",this.props.loading_operation_values)
+		let paired_text = "Central Paired Unit"
+
+		if(this.props.isCentral()){
+			paired_text = "Remote Paired Unit"
+		}
+
 		if(this.props.loading_operation_values)
 			return (
 				<Background> 
@@ -736,6 +545,13 @@ class OperationValues extends Component{
 							</Text>
 							<View style={{height:130}}>
 								{this.renderRelays(data.relay_states,data.relay_times)}
+							</View>
+							<View>
+								<Text style={styles.device_control_title}>
+									{paired_text}	
+								</Text>
+								{this.renderPairedDevice()}
+
 							</View>
 							{this.renderWiegandData(data.wiegand_data_1,data.wiegand_data_2,data.wiegand_data_3)}
 							<Text style={styles.device_control_title}>

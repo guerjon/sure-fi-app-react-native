@@ -226,7 +226,8 @@ export const  bridgeResponseStrings =  new Map([
 	[0x0F,"BridgeError_InvalidCrc"],
 	[0x10,"BridgeError_Timeout"],
 	[0x11,"BridgeError_FwUpdating"],
-	[0x12,"BridgeError_GotFailures"]
+	[0x12,"BridgeError_GotFailures"],
+	[0XA9,"PhoneCmd_GetWiegandEnabled"]
 ])
 
 

@@ -426,7 +426,6 @@ class AppFirmwareUpdate extends Component{
 				this.new_current_row = this.new_rows.shift()
 				this.processRow(this.new_current_row) //solo pasamos la primer row de new_rows donde estan todos a processRow	
 			}else{
-				console.log("entra aqui 1")
 				this.new_rows = null;
 				this.write([7]) //finish the rows sending
 			}
@@ -463,7 +462,7 @@ class AppFirmwareUpdate extends Component{
 			this.writeWithoutResponse(data)
 		}
 
-		setTimeout(() => this.write([0x06]),2000) // you should wait a 0x0B if all is ok
+		setTimeout(() => this.write([0x06]),500) // you should wait a 0x0B if all is ok
 	}
 
 

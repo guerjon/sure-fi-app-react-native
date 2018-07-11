@@ -42,7 +42,9 @@ const initialState = {
   show_disconnecting_modal : false,
   registration_info : [],
   show_going_back_screen: false,
-  on_back_disconnect: false
+  on_back_disconnect: false,
+  pairing_device_status: false,
+  reset_factory_disconnect: false
 }
 
 export default function setupCentralReducer (state = initialState, action) {
@@ -289,6 +291,16 @@ export default function setupCentralReducer (state = initialState, action) {
       return {
         ...state,
         on_back_disconnect: action.on_back_disconnect
+      }
+    case "SET_PAIRING_DEVICE_STATUS":
+      return{
+        ...state,
+        pairing_device_status: action.pairing_device_status
+      }
+    case "SET_RESET_FACTORY_DISCONNECT":
+      return{
+        ...state,
+        reset_factory_disconnect: action.reset_factory_disconnect
       }
     default:
       return state

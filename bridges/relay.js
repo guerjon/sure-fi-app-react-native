@@ -51,7 +51,7 @@ class Relay extends Component{
             switch(event.id){
                 case "update":
                 	this.props.dispatch({type: "SET_SAVING",saving:true})
-                    this.save()
+                    this.update()
                 break
                 default:
                 break
@@ -78,15 +78,18 @@ class Relay extends Component{
 	}
 
 
-	save(){		
-
+	update(){		
+		console.log("----------")
+		console.log(this.device.id)
+		console.log(this.props.slider_value)
+		console.log(this.props.relay_1_image_status)
+		console.log(this.props.relay_2_image_status)
+		console.log("----------")
+		
 		WRITE_COMMAND(this.device.id,[0x23, this.props.slider_value,this.props.relay_1_image_status,this.props.relay_2_image_status])
 		.then(() => {
 			setTimeout(() => {
-				console.log("this.props.qs",this.props.qs);
-				var number = parseInt(this.props.qs,2)
-				console.log("number",number);
-				WRITE_COMMAND(this.device.id,[0x0C,number])
+				WRITE_COMMAND(this.device.id,[0x0C,this.props.qs])
 				.then(() =>{
 					Alert.alert("Update Complete","Sure-Fi Relay Settings successfully updated.")
 					this.props.dispatch({type: "SET_SAVING",saving:false})
@@ -109,13 +112,12 @@ class Relay extends Component{
 	}
 
 	getRelayImage(value,image){
-		
 		if(value == 1){
 			return (
 				<TouchableHighlight 
 					onPress={() => this.updateRelayImage(image,2)}
 				> 
-					<Image source={require('../images/relay_no.imageset/relay_no.png')} style={{width:100,height:100}}/>
+					<Image source={require('../images/relay_nc.imageset/relay_nc.png')} style={{width:100,height:100}}/>
 				</TouchableHighlight>
 			)
 		}else{
@@ -123,7 +125,8 @@ class Relay extends Component{
 				<TouchableHighlight 
 					onPress={() => this.updateRelayImage(image,1)}
 				> 
-					<Image source={require('../images/relay_nc.imageset/relay_nc.png')} style={{width:100,height:100}}/>
+					<Image source={require('../images/relay_no.imageset/relay_no.png')} style={{width:100,height:100}}/>
+					
 				</TouchableHighlight>)
 		}
 	}
@@ -139,7 +142,7 @@ class Relay extends Component{
 
 
 	renderRelayOptions(slider_value){
-		
+		console.log("renderRelayOptions()",slider_value)
 		var relay_1_image = this.getRelayImage(this.props.relay_1_image_status,1) 
 		var relay_2_image = this.getRelayImage(this.props.relay_2_image_status,2)
 
@@ -186,7 +189,6 @@ class Relay extends Component{
 	}
 
 	updateQs(pos){
-		//we need change the value before save it!
 		console.log("pos",pos);
 		console.log("this.props.qs.substr",this.props.qs);
 		var value = this.props.qs.substr(pos,1)
@@ -214,8 +216,6 @@ class Relay extends Component{
 	}
 
 	renderQualityDependes(){
-		
-
 		if(this.props.show_quality_dependes){
 			return (
 				<View>
@@ -250,8 +250,27 @@ class Relay extends Component{
 		return null
 	}
 
+	updateQsValues(new_value){
+		console.log("new_value",new_value)
+		let dispatch_body = {
+			type: "SET_QS",
+			qs: 0
+		}
+
+		if(new_value){
+			dispatch_body.qs = 9
+		}
+		
+		this.props.dispatch(dispatch_body)
+	}
+
 	render(){	
-		console.log("relay_loading",this.props.relay_loading);
+		console.log("this.props.qs",this.props.qs);
+		let led_string = "LEDS - DISABLED"
+		if(this.props.qs){
+			led_string = "LEDS - ENABLED"
+		}
+
 		if(this.props.relay_loading){
 			return (
 				<Background> 
@@ -274,30 +293,16 @@ class Relay extends Component{
 						<View style={{marginBottom:20,backgroundColor:"white"}}>
 							<View style={styles.relay_option}>
 								<Switch 
-									onValueChange={slider_value => this.updateQs(3)} 
+									onValueChange={slider_value => this.updateQsValues(slider_value)} 
 									onTintColor={option_blue}
 									tintColor="orange"
-									value={this.props.qs.substr(3,1) == "1" ? true : false}
+									value={this.props.qs ? true : false}
 								/>
+
 								<Text style={{marginLeft:20,fontSize:18}}>
-									Active for Status Indications
+									{led_string}
 								</Text>
 							</View>
-
-							<View style={styles.relay_option}>
-								<Switch 
-									onValueChange={slider_value => this.updateQs(0)} 
-									onTintColor={option_blue}
-									tintColor="orange"
-									value={this.props.qs.substr(0,1) == "1" ? true : false}
-								/>
-								<Text style={{marginLeft:20,fontSize:18}}>
-									Quality of Service Lights
-								</Text>
-							</View>
-
-							{this.renderQualityDependes()}
-
 						</View>
 						<View>
 							<View style={{alignItems:"center",justifyContent:"center",marginBottom:20}}>

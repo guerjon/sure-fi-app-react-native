@@ -67,3 +67,22 @@ export const WhiteRowIconLink = params => {
 	      </View>
 	)
 }
+
+export const WhiteRowInfoButton = params => {
+	return (
+		<TouchableHighlight style={{backgroundColor:"white",width:width,height:50,alignItems:"center",padding:10}} onPress={() => params.callback()}>
+			<View style={{flex:1,flexDirection:"row",alignItems:"center"}}>
+				<View style={{flex:1}}>
+					<Text style={{fontSize:14}}>
+						{params.name}
+					</Text>
+				</View>
+				<View style={{flex:1}}>
+					<Text style={{fontSize:12}}>
+						{params.value}
+					</Text>
+				</View>				
+			</View>
+		</TouchableHighlight>
+	)
+}

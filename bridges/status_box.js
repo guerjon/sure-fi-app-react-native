@@ -1,4 +1,5 @@
 import React, {Component} from 'react'
+import {Navigation} from 'react-native-navigation';
 import {
   	Text,
   	View,
@@ -9,9 +10,12 @@ import {
   	NativeModules,
   	NativeEventEmitter,
   	TextInput,
-  	Alert
+  	Alert,
+  	FlatList,
+  	Modal,
+  	TouchableOpacity
 } from 'react-native'
-import {styles,first_color,width} from '../styles/index.js'
+import {styles,first_color,width,link_color} from '../styles/index.js'
 import { connect } from 'react-redux';
 import BleManager from 'react-native-ble-manager'
 
@@ -35,18 +39,26 @@ import {
 	MODULE_WIEGAND_REMOTE,
 	RELAY_WIEGAND_CENTRAL,
 	RELAY_WIEGAND_REMOTE,
+	PAIR_STATUS,
+	HEADERS_FOR_POST,
+	GET_DEVICE_NAME_ROUTE,
+	BYTES_TO_HEX,
 } from '../constants'
 
-import {IS_CONNECTED} from '../action_creators/'
+import {IS_CONNECTED,fetchDeviceName} from '../action_creators/'
 import Icon from 'react-native-vector-icons/FontAwesome'
 import {WhiteRowLink} from '../helpers/white_row_link'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 
-const central_types = [parseInt(WIEGAND_CENTRAL), parseInt(MODULE_WIEGAND_CENTRAL)]
-const remote_types = [parseInt(WIEGAND_REMOTE),parseInt(MODULE_WIEGAND_REMOTE)]
-		
+const central_types = [parseInt(WIEGAND_CENTRAL), parseInt(MODULE_WIEGAND_CENTRAL),RELAY_WIEGAND_CENTRAL]
+const remote_types = [parseInt(WIEGAND_REMOTE),parseInt(MODULE_WIEGAND_REMOTE),RELAY_WIEGAND_REMOTE]
+
+
+var fetch_names_interval = 0		
+
 class StatusBox extends Component{
 	constructor(props) {
 		super(props);
@@ -210,7 +222,11 @@ class StatusBox extends Component{
 	}
 
 	getSerialInfo(){
-		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type) 
+		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type)
+		if(hardware_type == 0)
+			hardware_type = parseInt(this.props.device.manufactured_data.hardware_type,16)
+
+
 		if(central_types.includes(hardware_type)){
 			return (
 				<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
@@ -277,20 +293,102 @@ class StatusBox extends Component{
 		)
 	}
 
+  	renderPairedDevice(item){
+		const id = item.item[0]
+		const name = item.item[1]
+
+		return(
+	  		<View style={{borderRadius:5,marginTop:10,backgroundColor:"white",borderBottomWidth:1,borderBottomColor:"black"}}>
+				<Text style={{fontSize:18, marginRight:5,color:"black"}}>
+				  	{id} - {name}
+				</Text>
+	  		</View>
+		)
+  	}
+
+  	showDevicesPairedWith(){
+  		this.props.dispatch({type: "SET_SHOW_DEVICES_PAIRED_WITH",show_devices_paired_with: true})
+
+  	}
+
+  	hideDevicesPairedWith(){
+  		this.props.dispatch({type: "SET_SHOW_DEVICES_PAIRED_WITH",show_devices_paired_with: false})
+  	}
+
 	getTextPairedWith(){
-		if(this.props.remote_device_name != "" && this.props.remote_device_name != "000000" && this.props.remote_device_name ){
-			return <Text style={{fontSize:18,fontWeight:"400",textAlign: 'center',color:"black"}}>Paired to {this.props.remote_device_name}</Text>
-		}else
+		var state = this.props.bridge_status
+		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type)
+		const style = {fontSize:18,fontWeight:"400",textAlign: 'center',color:"black"}
+		let paired_devices_text = "Show Paired Devices"
+		let show_devices_action = () => this.showDevicesPairedWith()
+		if(this.props.show_devices_paired_with){
+			show_devices_action = () => this.hideDevicesPairedWith()
+			paired_devices_text = "Hide Paired Devices"
+		}
+		
+		if(state == PAIR_STATUS || parseInt(state) == PAIR_STATUS){
+			if(this.props.remote_device_name != "" && this.props.remote_device_name != "000000" && this.props.remote_device_name){
+				return <Text style={style}>Paired to {this.props.remote_device_name}</Text>
+			}		
+			return null	
+		}else{
+			if(hardware_type == THERMOSTAT_TYPE || hardware_type == parseInt(THERMOSTAT_TYPE)){
+				if(Array.isArray(this.props.equipments_paired_with) && this.props.equipments_paired_with.length > 0){
+					if(this.props.equipments_paired_with.length == 1){
+						return <Text style={style}>Paired to {this.props.equipments_paired_with.length} devices</Text>	
+					}else{
+						return (
+							<View>
+								<View style={{alignItems:"center"}}>
+									<TouchableOpacity onPress={show_devices_action}><Text style={{color:link_color}}>{paired_devices_text}</Text></TouchableOpacity>	
+								</View>
+								{this.props.show_devices_paired_with && (
+									<View>
+										<FlatList data={this.props.devices_name} renderItem={(item) => this.renderPairedDevice(item)} keyExtractor={(item,index) => index}/>
+									</View>
+								)}
+							</View>
+						) 
+					}
+				}
+				return null	
+			}
+
 			return null
+		}
+	}
+
+
+ 	choseNameIfNameNull(name,hardware_type){
+		if(name == "" || name == " " || name == null){
+			if(hardware_type == EQUIPMENT_TYPE || hardware_type == parseInt(EQUIPMENT_TYPE)){
+				return "Sure-FI Equipment interface."
+			}else if(hardware_type == THERMOSTAT_TYPE || hardware_type == parseInt(THERMOSTAT_TYPE)){
+				return "Sure-Fi Thersmostat interface"
+			}
+		}
+		return name
 	}
 
 	getNormalText(){
-		var hardware_type = parseInt(this.props.device.manufactured_data.hardware_type)
+		let hardware_type = parseInt(this.props.device.manufactured_data.hardware_type)
+		let hardware_type_hex = parseInt(this.props.device.manufactured_data.hardware_type,16) 
+		
+		//console.log("getNormalText()",this.props.device.manufactured_data)
 
+		let image = null
 		if(central_types.includes(hardware_type)){
-			var image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
-		}else{
-			var image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
+			image  = <Image source={require('../images/device_wiegand_central.imageset/device_wiegand_central.png')}/>
+		}else if(remote_types.includes(hardware_type)) {
+			image = <Image source={require('../images/device_wiegand_remote.imageset/device_wiegand_remote.png')}/>
+		}else if(hardware_type == parseInt(THERMOSTAT_TYPE)){
+			image = <Image source={require('../images/device_hvac_thermostat.imageset/device_hvac_thermostat.png')}/>
+		}else if(hardware_type == parseInt(EQUIPMENT_TYPE)){
+			image = <Image source={require('../images/device_hvac_equipment.imageset/device_hvac_equipment.png')}/>
+		}else if(hardware_type_hex == RELAY_WIEGAND_CENTRAL){
+			image = <Image source={require('../images/relay_a/device_relay_a.png')}/>
+		}else if(hardware_type_hex== RELAY_WIEGAND_REMOTE){
+			image = <Image source={require('../images/relay_b/device_relay_b.png')}/>
 		}
 
 		return (
@@ -307,6 +405,7 @@ class StatusBox extends Component{
 					<View>
 						{this.getTextPairedWith()}
 					</View>
+					
 					<View style={{marginTop:10}}>
 						{this.getSerialInfo()}
 					</View>
@@ -366,7 +465,12 @@ const mapStateToProps = state => ({
 	show_switch_button : state.setupCentralReducer.show_switch_button,
   	device_name : state.setupCentralReducer.device_name,
 	remote_device_name : state.setupCentralReducer.remote_device_name,
-	original_name: state.setupCentralReducer.original_name
+	original_name: state.setupCentralReducer.original_name,
+	bridge_status : state.scanCentralReducer.bridge_status,
+	equipments_paired_with : state.scanCentralReducer.equipments_paired_with,
+	devices_name : state.scanCentralReducer.devices_name,
+	loading_devices_name : state.scanCentralReducer.loading_devices_name,
+	show_devices_paired_with: state.scanCentralReducer.show_devices_paired_with
 })
 
 export default connect(mapStateToProps)(StatusBox);

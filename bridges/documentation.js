@@ -19,7 +19,8 @@ import {
     width,
     option_blue,
     success_green,
-    hvac_red
+    hvac_red,
+    relay_blue
 } from '../styles/index.js'
 import {
     connect
@@ -71,6 +72,7 @@ class Documentation extends Component {
         
         if(scan_result){
             var device_id = scan_result.substr(-6).toUpperCase();
+
             try{
                 let response = await this.getManualsAndVideos(device_id)
                 if(response == SUCCESS_STATUS){
@@ -396,23 +398,29 @@ class Documentation extends Component {
     }
 
     renderHeaderType(){
+        console.log("this.props.system_hardware_type",this.props.system_hardware_type)
         if(this.props.system_hardware_type){
             var type = "Uknown type"
             var color = "white"
 
             switch(this.props.system_hardware_type){
                 case 7:
-                    type = "HVAC Interface"
+                    type = "HVAC Bridge"
                     color = hvac_red
                 break
                 case 4:
-                    type = "Wiegand Controller" 
+                    type = "Wiegand Bridge" 
                     color = success_green
                 break
                 case 8:
-                    type = "Relay Controller"
-                    color = option_blue
+                    type = "Relay Bridge"
+                    color = relay_blue
                 break
+                case 9:
+                    type = "Relay Bridge"
+                    color = relay_blue
+                break
+
                 default:
                 break
             }

@@ -32,7 +32,13 @@ import {
     RADIO_FIRMWARE_UPDATE,
     APP_FIRMWARE_UDATE,
     BLUETOOTH_FIRMWARE_UPDATE,
-    PRETY_VERSION
+    PRETY_VERSION,
+    LOADING_VALUE,
+    THERMOSTAT_TYPE,
+    EQUIPMENT_TYPE,
+    RELAY_WIEGAND_CENTRAL,
+    RELAY_WIEGAND_REMOTE,
+    
 } from '../../constants.js'
 
 import {
@@ -40,7 +46,9 @@ import {
 } from '../../action_creators'
 
 import {
-    COMMAND_NAME
+    FIRMWARE_UPDATE_ACCIONS,
+    fetchFirmwareFile,
+    FIRMWARE_LOG_CREATOR
 } from '../../action_creators/firmware_update'
 
 import ProgressBar from 'react-native-progress/Bar';
@@ -49,7 +57,7 @@ const check = (<Icon name="check" size={75} color="green"/>)
 
 const FIRMWARE_UPDATE_AVAIBLE  = 0
 const UPDATING_FIRMWARE = 1
-const FINISHING_FIRMWARE_UDAPTE = 2
+const FINISHING_FIRMWARE_UPDATE = 2
 const SYSTEM_UPDATED = 3
 
 
@@ -63,20 +71,132 @@ class FirmwareUpdate extends Component{
         navBarTextColor : "white",
         navBarButtonColor: "white",
         orientation: 'portrait',
-        navBarTitleTextCentered: true, 
+        navBarTitleTextCentered: true,
     }   
 
 	constructor(props) {
     	super(props);	
         this.device = this.props.device
+        this.hardware_type = parseInt(this.props.device.manufactured_data.hardware_type) 
+        if(this.hardware_type == 0)
+            this.hardware_type = parseInt(this.props.device.manufactured_data.hardware_type,16)
+
+        this.props.navigator.setOnNavigatorEvent(this.onNavigatorEvent.bind(this));
     }
 
-    componentWillMount(){
+    async componentWillMount(){
+        console.log("componentWillMount()")
         this.resetVariables()
+        await this.fetchMajorVersion()
+        const major_version_on_cloud = this.chooseMajorVersion("MAJOR_VERSION_ON_CLOUD")
+        const major_version_on_bridge = this.chooseMajorVersion("MAJOR_VERSION_ON_BRIDGE")
+
+        console.log("major_version_on_cloud",major_version_on_cloud)
+        console.log("major_version_on_bridge",major_version_on_bridge)
+        
+
+        if(major_version_on_cloud > major_version_on_bridge){
+            this.props.dispatch({type: "SET_FIRMWARE_UPDATE_STATUS",firmware_update_status: FIRMWARE_UPDATE_AVAIBLE})
+            this.props.dispatch({type: "SET_MAJOR_GENERAL_VERSION",major_general_version: major_version_on_cloud})
+        }
+        else 
+            this.props.dispatch({type: "SET_FIRMWARE_UPDATE_STATUS",firmware_update_status: SYSTEM_UPDATED})
+        
+    }
+
+    onNavigatorEvent(event){
+        if(event.type == 'NavBarButtonPress'){
+            switch(event.id){
+                case "show_details":
+                    //console.log("this.props.show_firmware_update_details",this.props.show_firmware_update_details)
+                    if(this.props.show_firmware_update_details){
+                        this.hideDetails()
+                        this.props.navigator.setButtons({rightButtons:[
+                            {
+                                title: "show info",
+                                id: "show_details"
+                            }                                
+                        ]})
+                    }else{
+                        this.showDetails()
+                        this.props.navigator.setButtons({rightButtons:[
+
+                            {
+                                title: "hide info",
+                                id: "show_details"
+                            }                                
+                        ]})                        
+                    }
+                break
+                default:
+                break
+            }
+        }
+    }
+
+    isThermostat(){
+        //console.log("isThermostat()")
+        if(this.hardware_type == THERMOSTAT_TYPE || this.hardware_type == parseInt(THERMOSTAT_TYPE))
+            return true
+
+        return false
+    }
+
+    isEquipment(){
+        //console.log("isEquipment()")
+        if(this.hardware_type == EQUIPMENT_TYPE || this.hardware_type == parseInt(EQUIPMENT_TYPE))
+            return true
+        return false
+    }
+
+
+
+    async fetchMajorVersion(){
+        console.log("fetchMajorVersion()",this.hardware_type)
+        const return_files_array = true
+        const hardware_type = this.hardware_type
+        const {dispatch} = this.props
+
+        let app_files = await fetchFirmwareFile(APP_FIRMWARE_UDATE,hardware_type,return_files_array)
+        let radio_files = await fetchFirmwareFile(RADIO_FIRMWARE_UPDATE,hardware_type,return_files_array)
+        let bluetooth_files = await fetchFirmwareFile(BLUETOOTH_FIRMWARE_UPDATE,hardware_type,return_files_array)
+
+        console.log("app_files",app_files)
+        console.log("radio_files",radio_files)
+        console.log("bluetooth_files",bluetooth_files)
+
+
+        if(this.isThermostat()){
+            if(app_files.length && bluetooth_files.length){
+                dispatch({type: "SET_APP_MAJOR_VERSION_ON_CLOUD",app_major_version_on_cloud: parseFloat(app_files[0].firmware_version)})
+                dispatch({type: "SET_BLUETOOTH_MAJOR_VERSION_ON_CLOUD",bluetooth_major_version_on_cloud: parseFloat( bluetooth_files[0].firmware_version)})
+            }else{
+                this.showErrorGettingTheVersions()
+            }
+        }else{
+            if(app_files.length && radio_files.length && bluetooth_files.length){
+
+                dispatch({type: "SET_APP_MAJOR_VERSION_ON_CLOUD",app_major_version_on_cloud: parseFloat(app_files[0].firmware_version)})    
+                dispatch({type: "SET_RADIO_MAJOR_VERSION_ON_CLOUD",radio_major_version_on_cloud: parseFloat(radio_files[0].firmware_version )})    
+                dispatch({type: "SET_BLUETOOTH_MAJOR_VERSION_ON_CLOUD",bluetooth_major_version_on_cloud: parseFloat( bluetooth_files[0].firmware_version )})    
+
+            }else{
+                this.showErrorGettingTheVersions()
+            }            
+        }
+
+        return new Promise.resolve()
+    }
+
+    showErrorGettingTheVersions(){
+        Alert.alert("Error","Error downloading the firmware from the server.")
     }
 
     resetVariables(){
+        console.log("resetVariables()")
         var {dispatch} = this.props
+        
+        dispatch({type: "RESET_ANIMATIONS"})
         dispatch({type: "SET_FILLING_PORCENTAGE",filling_porcentage: 0})
         dispatch({type: "SET_SHOW_FIRMWARE_UPDATE_DETAILS",show_firmware_update_details:false})
         dispatch({type: "SET_FIRMWARE_UPDATE_STATUS",firmware_update_status:0 })
@@ -137,31 +257,33 @@ class FirmwareUpdate extends Component{
     }
 
     showDetails(){
+        //console.log("showDetails()")
         this.props.dispatch({type: "SET_SHOW_FIRMWARE_UPDATE_DETAILS",show_firmware_update_details:true})
     }
 
     hideDetails(){
-
+        console.log("hideDetails()")
         this.props.dispatch({type: "SET_SHOW_FIRMWARE_UPDATE_DETAILS",show_firmware_update_details:false})  
 
     }
 
-    firmwareUpdateBox(){
+    renderFirmwareUpdateBox(){
+
         if(this.props.firmware_update_status == FIRMWARE_UPDATE_AVAIBLE){
             return ( this.props.current_firmware_update == 0 && (
-                    <View style={{alignItems:"center",justifyContent:"center",borderWidth:1,padding:30,width:300,height:300,backgroundColor:"white"}}>
-                        <Text style={{fontSize:30,marginVertical:5}}>
-                            Current Version  
+                    <View style={{alignItems:"center",justifyContent:"center",borderWidth:1,padding:30,width:width - 60,height:300,backgroundColor:"white",marginTop:30}}>
+                        <Text style={{fontSize:30,marginVertical:5,color:"black"}}>
+                            Current Version
                         </Text>
                         <Text style={{fontSize:28,color:"black",fontWeight:'bold'}}>
-                            {PRETY_VERSION(this.props.app_version)}
+                            {PRETY_VERSION(parseFloat(this.props.app_info[0]) + "." + this.props.app_info[1])}
                         </Text>
                     
-                        <Text style={{fontSize:30,borderTopWidth:1,marginVertical:5}}>
+                        <Text style={{fontSize:30,borderTopWidth:1,marginVertical:5,color:"black"}}>
                             Available Version
                         </Text>
                         <Text style={{fontSize:28,color:"black",fontWeight:'bold'}}>
-                            2.1
+                            {this.props.major_general_version ? PRETY_VERSION(this.props.major_general_version) : LOADING_VALUE}
                         </Text>
                         <View style={{alignItems:"center",marginVertical:10}}>
                             <Text style={{color:"black",fontSize:15}}>
@@ -175,7 +297,7 @@ class FirmwareUpdate extends Component{
 
         if(this.props.firmware_update_status == SYSTEM_UPDATED){
             return (
-                <View style={{width:300,height:300,backgroundColor:"white",borderRadius:5,borderWidth:1,alignItems:"center",justifyContent:"center"}}>
+                <View style={{alignItems:"center",justifyContent:"center",borderWidth:1,padding:30,width:width - 60,height:300,backgroundColor:"white",marginTop:30}}>
                     <Text style={{fontSize:32}}>
                         Current Version  
                     </Text>
@@ -285,7 +407,7 @@ class FirmwareUpdate extends Component{
                 borderColor:box_color
               }}>            
 
-                    <View style={{width:300,height:300,padding:20,alignItems:"center",justifyContent:"center",borderWidth:1,borderRadius:5}}>
+                    <View style={{width:width - 60,height:300,padding:20,alignItems:"center",justifyContent:"center",borderWidth:1,borderRadius:5}}>
                         <Text style={{fontSize:20,color:text_color}}>
                             {text}
                         </Text>
@@ -344,7 +466,7 @@ class FirmwareUpdate extends Component{
             let text = "Updating Bluetooth Firmware"
             let backgroundColor = "white"
             let text_color = "black"
-            if(this.props.firmware_update_status == FINISHING_FIRMWARE_UDAPTE ){
+            if(this.props.firmware_update_status == FINISHING_FIRMWARE_UPDATE ){
                 text = "B"
                 backgroundColor = success_green
                 text_color = "white"
@@ -368,14 +490,92 @@ class FirmwareUpdate extends Component{
                             <Text style={{fontSize:18,color:text_color}}>
                                 {text}
                             </Text>
-                            {(this.props.current_firmware_update == BLUETOOTH_FIRMWARE_UPDATE) && (this.props.firmware_update_status != FINISHING_FIRMWARE_UDAPTE) && this.renderInfo()}
+                            {(this.props.current_firmware_update == BLUETOOTH_FIRMWARE_UPDATE) && (this.props.firmware_update_status != FINISHING_FIRMWARE_UPDATE) && this.renderInfo()}
                         </View>
                 </Animated.View>
             )
         }
     }
 
+
+    chooseMajorVersion(type){
+        let major_version = 0
+        let app_version = 0
+        let radio_version = 0
+        let bluetooth_version = 0
+
+        if(type == "MAJOR_VERSION_ON_CLOUD"){
+            if(this.isThermostat()){
+                app_version = this.props.app_major_version_on_cloud
+                bluetooth_version = this.props.bluetooth_major_version_on_cloud
+            }else{
+                app_version = this.props.app_major_version_on_cloud
+                radio_version = this.props.radio_major_version_on_cloud
+                bluetooth_version = this.props.bluetooth_major_version_on_cloud                
+            }
+
+        }else if(type == "MAJOR_VERSION_ON_BRIDGE"){
+            if(this.isThermostat()){            
+                app_version = parseFloat(this.props.app_info[0] + "." + this.props.app_info[1]) 
+                bluetooth_version = parseFloat(this.props.bluetooth_info[0] + "." + this.props.bluetooth_info[1])
+            }else{
+                app_version = parseFloat(this.props.app_info[0] + "." + this.props.app_info[1]) 
+                radio_version = parseFloat(this.props.radio_info[0] + "." + this.props.radio_info[1]) 
+                bluetooth_version = parseFloat(this.props.bluetooth_info[0] + "." + this.props.bluetooth_info[1])                
+            }
+
+        }else{
+            console.error("ChooseeMajor Version has an incorrect type")
+        }
+
+        if(app_version >= radio_version){
+            major_version = app_version
+            if(bluetooth_version > app_version){
+                major_version = bluetooth_version
+            }
+        }else{
+            major_version = radio_version
+            if(radio_version > bluetooth_version){
+                major_version = bluetooth_version
+            }
+        }
+
+        return major_version
+    }
+
+
+    startFirmwareUpdate(){
+        if(!this.isThermostat())
+            this.props.startFirmwareUpdate(RADIO_FIRMWARE_UPDATE)
+        else
+            this.props.startFirmwareUpdate(APP_FIRMWARE_UDATE)
+
+        setTimeout(() => {
+            this.props.navigator.setButtons({rightButtons:[
+                {
+                    title: "show info",
+                    id: "show_details"
+                }                                
+            ]})
+        },3000)
+    }
+
     renderInfo(){
+        const porcentage_number = parseInt(this.props.filling_porcentage  * 100)
+        var porcentage = (<Text> {porcentage_number} %</Text>)
+        
+        if(this.props.current_firmware_update == BLUETOOTH_FIRMWARE_UPDATE && (porcentage_number == 0 )){
+            porcentage = (
+                <View style={{marginTop:5}}>  
+                    <ActivityIndicator/>
+                    <Text>
+                        Searching for device ...
+                    </Text>
+                </View>
+            )
+        }
+
+
         return(
             <View style={{alignItems:"center",marginBottom:20}}>
                 <View style={{marginVertical:20,alignItems:"center"}}>
@@ -390,43 +590,24 @@ class FirmwareUpdate extends Component{
                     </Text>
                 </View>
                 <ProgressBar progress={this.props.filling_porcentage} width={width-200} height={5} borderRadius={5} color={option_blue}/>
-                <Text>
-                    {parseInt(this.props.filling_porcentage  * 100)} %
-                </Text>
+                <View>
+                    {porcentage}
+                </View>
             </View>
         )        
     }
 
-    renderShowLogsButton(){
-        let action = () => this.showDetails()
-        var details_text = "Show Details"
-
-        if(this.props.show_firmware_update_details){
-            details_text = "Hide Details"
-            action = () => this.hideDetails()
-        }
-
-        if(this.props.firmware_update_status == UPDATING_FIRMWARE){
-            return(
-                <View style={{width:250,height:50,top:(height/2 + 50),left:((width/2) - 125),borderRadius:10,alignItems:"center",justifyContent:"center",backgroundColor:gray_background,marginTop:20,position:"absolute"}}>
-                    <TouchableOpacity onPress={action} style={{width:250,height:50,alignItems:"center",justifyContent:"center"}}> 
-                        <Text style={{color:"blue",alignItems:"center",justifyContent:"center"}}>
-                            {details_text}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            )
-        }
-
-        return null
-    }
-
 
     renderDetails(){
-        if(this.props.firmware_update_status == UPDATING_FIRMWARE && this.props.show_firmware_update_details){
+        //console.log("renderDetails()",this.props.firmware_update_status,this.props.show_firmware_update_details)
+        if(this.props.show_firmware_update_details){
             return(
-                <ScrollView style={{height:height,width:width,backgroundColor:"white",top:((height - 200))}}>
-                    <FlatList data={this.props.firmware_update_logs} renderItem={item => renderItem(item)}/>
+                <ScrollView style={{height:height,width:width - 100,backgroundColor:"white",top:(30),borderRadius:10 }}>
+                    <View style={{width:width - 100,alignItems:"center"}}>
+                        <View style={{width:width - 100,padding:20,alignItems:"center"}}>
+                            <FlatList data={this.props.firmware_update_logs} renderItem={item => this.renderItem(item)} keyExtractor={(item, index) => index}/>
+                        </View>
+                    </View>
                 </ScrollView>
             )
         }
@@ -434,64 +615,90 @@ class FirmwareUpdate extends Component{
     }
 
     renderItem(item){
-        console.log("item",item)
+        
+        var command = FIRMWARE_UPDATE_ACCIONS.get(item.item.command) 
+        var extra_data = item.item.extra_data
+
         return (
             <View>
                 <Text>
-                    {item.index}
+                    {command}
                 </Text>
+                {extra_data ? (
+                    <Text>
+                        {"page count: "  + extra_data.page_count + " total_pages " + extra_data.total_pages}
+                    </Text>
+                ) : null} 
             </View>
         )
     }
 
     getHeader(){
-        if(this.props.firmware_update_status == FIRMWARE_UPDATE_AVAIBLE){
-            return(
-                <View style={{width:width,backgroundColor:option_blue,alignItems:"center",justifyContent:"center"}}>    
-                    <Text style={{color:"black",padding:10,fontSize:18,color:"white"}}>
-                        A firmware update is available
-                    </Text>
-                </View>
-            )
+        const {firmware_update_status} = this.props
+
+        if(firmware_update_status == FIRMWARE_UPDATE_AVAIBLE){
+            return this.getFirmwareStatusBox("A firmware update is available",option_blue)
         }
 
-        if(this.props.firmware_update_status == UPDATING_FIRMWARE){
-            return(
-                <View style={{width:width,backgroundColor:"#F1C40F",alignItems:"center",justifyContent:"center"}}>  
-                    <Text style={{color:"white",padding:10,fontSize:18,color:"white"}}>
-                        Updating system ...
-                    </Text>
-                </View>     
-            )
+        if(firmware_update_status == UPDATING_FIRMWARE){
+            return this.getFirmwareStatusBox("Updating system ...","#F1C40F")
         }
 
-        if(this.props.firmware_update_status == SYSTEM_UPDATED){
-            return(
-                <View style={{width:width,backgroundColor:success_green,alignItems:"center",justifyContent:"center"}}>  
-                    <Text style={{color:"black",padding:10,fontSize:18,color:"white"}}>
-                        The system is updated
-                    </Text>
-                </View>                                 
-            )
+        if(firmware_update_status == SYSTEM_UPDATED){
+            return this.getFirmwareStatusBox("The system is updated",success_green) 
         }
                                                             
         return null
     }    
 
+    getFirmwareStatusBox(text,color){
+        const container_style = 
+        {
+            width:width,
+            alignItems:"center",
+            justifyContent:"center"
+        }        
+
+        let box_style = {
+            width:300,
+            height:30,
+            backgroundColor:"white",
+            alignItems:"center",
+            justifyContent:"center",
+            borderColor:color,
+            borderWidth:3,
+            marginTop:5,
+            borderRadius:5
+        }     
+           
+        return(
+            <View style={container_style}>
+                <View style={box_style}>
+                    <Text style={{color:"black",padding:2,fontSize:18}}>
+                        {text}
+                    </Text>
+                </View>                                 
+            </View>
+        )        
+    }
+
     renderFirmwareUpdateButton(){
         var text = "Start Firmware Update"
-        
+        let action = () => this.startFirmwareUpdate()
+
         if(this.props.firmware_update_status == UPDATING_FIRMWARE){
             text = "Staring Firmware Update"
+            action = () => console.log("System system updating")
         }
 
         if(this.props.firmware_update_status == SYSTEM_UPDATED){
             text = "System updated"
+            action = () => console.log("System updated.")
         }
 
         return(
             <Animated.View style={{width:250,height:50,top:this.props.firmareButtonAnimation.x,left:this.props.firmareButtonAnimation.y,borderRadius:10,alignItems:"center",justifyContent:"center",backgroundColor:success_green,marginTop:20,position:"absolute"}}>
-                <TouchableOpacity onPress={() => this.props.startFirmwareUpdate(RADIO_FIRMWARE_UPDATE)} style={{width:250,height:50,alignItems:"center",justifyContent:"center"}}> 
+                <TouchableOpacity onPress={action} style={{width:250,height:50,alignItems:"center",justifyContent:"center"}}> 
                     <Text style={{color:"white",alignItems:"center",justifyContent:"center"}}>
                         {text}
                     </Text>
@@ -503,7 +710,7 @@ class FirmwareUpdate extends Component{
     }
 
     renderFinishingFirmwareUpdate(){
-        if(this.props.firmware_update_status == FINISHING_FIRMWARE_UDAPTE){
+        if(this.props.firmware_update_status == FINISHING_FIRMWARE_UPDATE){
             return(
                 <View style={{width:300,height:300,padding:20,alignItems:"center",justifyContent:"center",borderWidth:1,borderRadius:5,backgroundColor:"white"}}>
                     <Text style={{fontSize:18,color:"black"}}>
@@ -519,7 +726,9 @@ class FirmwareUpdate extends Component{
         //return this.uselessButtons()
         //console.log("this.props.radio_board_version",this.props.radio_board_version)
 
-        if(this.props.radio_info.length == 0){
+
+
+        if(this.props.app_info.length == 0){
             return (
                 <View style={{backgroundColor:gray_background,height:height}}> 
                     <ActivityIndicator /> 
@@ -529,14 +738,15 @@ class FirmwareUpdate extends Component{
 
 		return(
             <View style={{backgroundColor:gray_background,height:height}}>
+                
                 {this.getHeader()}
-                <View style={{width:width,height:(height - 200),alignItems:"center",justifyContent:"center"}}>
-                    {this.firmwareUpdateBox()}
+
+                <View style={{width:width,height:height - 30,alignItems:"center"}}>
+                    {this.renderFirmwareUpdateBox()}
                     {this.renderRadioBox()}
                     {this.renderAppBox()}
                     {this.renderBluetoothBox()}
                     {this.renderFirmwareUpdateButton()}
-                    {this.renderShowLogsButton()}
                     {this.renderDetails()}
                     {this.renderFinishingFirmwareUpdate()}
                 </View>
@@ -549,6 +759,7 @@ const mapStateToProps = state => ({
 	device : state.scanCentralReducer.central_device,
 	app_info : state.setupCentralReducer.app_info,
   	radio_info : state.setupCentralReducer.radio_info,
+    bluetooth_info: state.setupCentralReducer.bluetooth_info,
     bluetooth_version : state.setupCentralReducer.bluetooth_version,
     complete_firmware_update_on_course: state.updateFirmwareCentralReducer.complete_firmware_update_on_course,
     radio_and_aplication_firmware_update: state.updateFirmwareCentralReducer.radio_and_aplication_firmware_update,
@@ -570,7 +781,11 @@ const mapStateToProps = state => ({
     bluetoothFirmwareUpdateBoxRadius: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxRadius,
     bluetoothFirmwareUpdateBoxPosition: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxPosition,
     bluetoothFirmwareUpdateBoxShape: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxShape,
-    firmware_update_logs: state.updateFirmwareCentralReducer.firmware_update_logs
+    firmware_update_logs: state.firmwareUpdateReducer.firmware_update_logs,
+    app_major_version_on_cloud : state.updateFirmwareCentralReducer.app_major_version_on_cloud,
+    radio_major_version_on_cloud: state.updateFirmwareCentralReducer.radio_major_version_on_cloud,
+    bluetooth_major_version_on_cloud: state.updateFirmwareCentralReducer.bluetooth_major_version_on_cloud,
+    major_general_version: state.updateFirmwareCentralReducer.major_general_version
 });
 
 export default connect(mapStateToProps)(FirmwareUpdate);

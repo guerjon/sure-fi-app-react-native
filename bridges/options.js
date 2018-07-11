@@ -230,17 +230,16 @@ class Options extends Component{
     getInstructionalVideos(){
     	//<Option callback={() => this.props.goToInstructionalVideos()} image={require('../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
     	return (
-    		<View>
-				<Text style={{textAlign:"center",fontSize:19,color:"black"}}>
+    		<View style={{width:width,alignItems:"center"}}>
+				<Text style={styles.device_control_title}>
 					ADDITIONAL OPTIONS
 				</Text>    		
-    			
     		</View>
     	)
     }
 
     getRelayDefaults(){
-    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
+    	return <Option callback={() => this.props.goToRelay()} image={require('../images/menu_config_dark/menu_config_dark.png')} name="Configuration" />
    	}
 
     getUnPairBridgeOption(){
@@ -367,6 +366,10 @@ class Options extends Component{
     	)
     }    
 
+    getResetUnit(){
+    	return <Option callback={() => this.props.resetUnitAlert()} image={require('../images/menu_flash_firmware_dark.imageset/menu_flash_firmware.png')} name="Reset Unit" />
+    }
+
     renderForcePairOption(){
 		return (
 			<View style={{marginBottom:50}}>
@@ -438,6 +441,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getConfigureRadioOption()}
+						{this.getOperatingValuesOption()}
 					</View>
 				)
 			break
@@ -450,7 +454,7 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getConfigureRadioOption()}
-						{this.getRelayDefaults()}
+						
 					</View>
 				)
 			break
@@ -502,7 +506,7 @@ class Options extends Component{
 	}
 
 	getNormalOptions(bridge_status){
-		console.log("getNormalOptions()",bridge_status)
+		//console.log("getNormalOptions()",bridge_status)
 		switch(bridge_status){
 			case 1:
 				return (
@@ -512,7 +516,9 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getRelayDefaults()}
+						{this.getOperatingValuesOption()}
+						{this.getResetUnit()}
+						
 					</View>
 				)
 			break
@@ -525,7 +531,7 @@ class Options extends Component{
 						{this.getUpdateFirwmareOption()}
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
-						{this.getRelayDefaults()}
+						{this.getResetUnit()}
 					</View>
 				)
 			break
@@ -539,6 +545,7 @@ class Options extends Component{
 						{this.getUnPairBridgeOption()}
 						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
+						{this.getResetUnit()}
 					</View>
 				)
 			break
@@ -575,7 +582,8 @@ class Options extends Component{
 						{this.getPairBridgeOption()}
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
-						{this.getRelayDefaults()}	
+						{this.getOperatingValuesOption()}
+						
 					</View>
 				)
 
@@ -586,7 +594,8 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getUnPairBridgeOption()}
-						{this.getRelayDefaults()}
+						{this.getOperatingValuesOption()}
+						
 					</View>
 				)
 			
@@ -597,6 +606,7 @@ class Options extends Component{
 						{this.getInstructionalVideos()}
 						{this.getUpdateFirwmareOption()}
 						{this.getUnPairBridgeOption()}
+						{this.getOperatingValuesOption()}
 						{this.getRelayDefaults()}
 					</View>
 				)

@@ -33,6 +33,7 @@ import {
 import Background from '../../helpers/background'
 import {SWITCH} from '../../helpers/switch'
 import Button from '../../helpers/button'
+
 import {
 	HVAC_WRITE_COMMAND,
 	LOG_INFO,
@@ -68,6 +69,7 @@ class Configuration extends Component{
             this.fetchLog()
 
         }else if(this.props.isThermostat()){
+
             if(this.props.equipments_paired_with.length > 0){
                 this.fetchLogThermostat()
             }else{
@@ -79,6 +81,7 @@ class Configuration extends Component{
     }
 
     createEquipmentsPairedWithInterval(){
+        console.log("createEquipmentsPairedWithInterval()")
         if(equipments_paired_with_interval == 0){
             equipments_paired_with_interval = setInterval(() => {
                 if(this.props.equipments_paired_with_interval.length > 0){
@@ -98,6 +101,7 @@ class Configuration extends Component{
     }
 
     loadedConfigurationData(){
+        console.log("loadedConfigurationData()")
         this.props.dispatch({type: "SET_CONFIGURATION_DATA_STATE", configuration_data_state : LOADED})
     }
 
@@ -163,9 +167,9 @@ class Configuration extends Component{
                     "log_field": "BridgeRsp_FailsafeOption"
                 })            
             })
-
+            console.log("response",response)
             const clean_response =  CHECK_GENERIC_RESPONSE(response)
-            
+            console.log("clean_response",clean_response)
 
             if(clean_response){
                 if(clean_response.value){

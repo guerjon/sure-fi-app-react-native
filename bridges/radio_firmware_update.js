@@ -93,7 +93,6 @@ class RadioFirmwareUpdate extends Component{
 		if(path){
 			RNFetchBlob.fetch('GET', path,GET_HEADERS)
 			.then((res) => {
-				console.log("res",res)
 			  	var byteCharacters = res.text()
 			  	var byteArrays = [];
 			  	var sliceSize = 2048
@@ -155,12 +154,6 @@ class RadioFirmwareUpdate extends Component{
 		var response = data.value[0]
 
 		switch(response){
-			case 1:
-				console.log("BleRsp_FirmwareVersion")
-				return
-			case 2:
-				console.log("BleRsp_QosConfig")
-				return
 			case 0xA:
 				console.log("BleRsp_UpdateStartSuccess")
 				this.startRadioRow()
@@ -202,7 +195,7 @@ class RadioFirmwareUpdate extends Component{
 					}
 				return
 			case 0x13:
-				console.log(data)
+				
 				let radio_status = data.value[3]
 				if(!radio_status){
 					clearInterval(this.interval)
@@ -213,7 +206,8 @@ class RadioFirmwareUpdate extends Component{
 				console.log("BleRsp_SecurityError")
 				return
 			case START_UPDATE_ERROR:
-				console.log("BleRsp_StartUpdateError")
+				Alert.alert("BleRsp_StartUpdateError","Please connect and disconnect the bridge to continue.")
+				this.props.navigator.pop()
 				return
 			case ALREADY_STARTED_ERROR:
 				Alert.alert("Error","BleRsp_AlreadyStartedError")
@@ -331,7 +325,6 @@ class RadioFirmwareUpdate extends Component{
 			row.row_length.first,
 			row.row_length.second
 		]
-		console.log("data",data)
 		this.write(data)
 	}
 

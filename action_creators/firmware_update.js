@@ -11,7 +11,9 @@ import {
     GET_HEADERS,
     MODULE_WIEGAND_CENTRAL,
     MODULE_WIEGAND_REMOTE,
-    RELAY_WIEGAND_CENTRAL
+    RELAY_WIEGAND_CENTRAL,
+    RELAY_WIEGAND_REMOTE,
+    BYTES_TO_HEX
 } from "../constants"
 
 import {Alert} from 'react-native'
@@ -66,13 +68,14 @@ export const FIRMWARE_LOG_CREATOR = (command,extra_data) => {
         extra_data: extra_data
     }
     const firmware_update_logs =  store.getState().firmwareUpdateReducer.firmware_update_logs.slice()
+
     firmware_update_logs.push(new_log)
 
     store.dispatch({type: "SET_FIRMWARE_UPDATE_LOGS",firmware_update_logs:firmware_update_logs})
 }
 
 
-export const COMMAND_NAME = new Map([
+export const FIRMWARE_UPDATE_ACCIONS = new Map([
     [START_RADIO_FIRMWARE_UPDATE,"START_RADIO_FIRMWARE_UPDATE"],
     [WRITING_START_RADIO_UPDATE_COMMAND,"WRITING_START_RADIO_UPDATE_COMMAND"],
     [WRITING_START_APP_UPDATE_COMMAND,"WRITING_START_APP_UPDATE_COMMAND"],
@@ -114,50 +117,55 @@ const createStartFirmwareLogUpdate = (firmware_type) => {
 
 
 export const  startFirmwareUpdate =  async (firmware_type,hardware_type) => {
-    console.log("startFirmwareUpdate()" )
+    console.log("startFirmwareUpdate() - action_creators",hardware_type)
     hardware_type = parseInt(hardware_type) 
+    if(hardware_type == 0)
+        hardware_type = parseInt(hardware_type,16)
+
     createStartFirmwareLogUpdate(firmware_type)
 	const byteCharacters = await fetchFirmwareFile(firmware_type,hardware_type)    
-
-    if((firmware_type == RADIO_FIRMWARE_UPDATE) || (firmware_type == APP_FIRMWARE_UDATE) ){
-        
-
-        var bytes_arrays = [];      
-        var sliceSize = 2048
-        var total_bytes = 0
-        
-        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-            const slice = byteCharacters.slice(offset, offset + sliceSize);
+    
+    if(byteCharacters){
+        if((firmware_type == RADIO_FIRMWARE_UPDATE) || (firmware_type == APP_FIRMWARE_UDATE) ){
+            var bytes_arrays = [];      
+            var sliceSize = 2048
+            var total_bytes = 0
             
-            const byteNumbers = new Array(slice.length);
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                
+                const byteNumbers = new Array(slice.length);
 
-            for (let i = 0; i < slice.length; i++) {
-              byteNumbers[i] = slice.charCodeAt(i);
-              total_bytes++
-            }
+                for (let i = 0; i < slice.length; i++) {
+                  byteNumbers[i] = slice.charCodeAt(i);
+                  total_bytes++
+                }
+                
+                bytes_arrays.push(byteNumbers);
+            }   
+            if(firmware_type == APP_FIRMWARE_UDATE){
+                FIRMWARE_LOG_CREATOR(FETCHED_APP_FILE_FETCHED)
+                startAppFirmwareUpdate()
+            }else if(firmware_type == RADIO_FIRMWARE_UPDATE){
+                FIRMWARE_LOG_CREATOR(FETCHED_RADIO_FILE_FETCHED)
+                startRadioFirmwareUpdate()
+            }        
             
-            bytes_arrays.push(byteNumbers);
-        }   
-        if(firmware_type == APP_FIRMWARE_UDATE){
-            FIRMWARE_LOG_CREATOR(FETCHED_APP_FILE_FETCHED)
-            startAppFirmwareUpdate()
-        }else if(firmware_type == RADIO_FIRMWARE_UPDATE){
-            FIRMWARE_LOG_CREATOR(FETCHED_RADIO_FILE_FETCHED)
-            startRadioFirmwareUpdate()
-        }        
-        
-        return new Promise.resolve({"total_bytes" : total_bytes, "bytes_arrays" : bytes_arrays})
+            return new Promise.resolve({"total_bytes" : total_bytes, "bytes_arrays" : bytes_arrays})
 
-    }else if(firmware_type == BLUETOOTH_FIRMWARE_UPDATE){
-        FIRMWARE_LOG_CREATOR(FETCHED_BLUETOOTH_FILE_FETCHED)
-        return byteCharacters
-    }     
+        }else if(firmware_type == BLUETOOTH_FIRMWARE_UPDATE){
+            FIRMWARE_LOG_CREATOR(FETCHED_BLUETOOTH_FILE_FETCHED)
+            return byteCharacters
+        }  
+    }else 
+        return new Promise.reject()
 }
 
 
 
 const selectHardwareTypeKey = (hardware_type) => {
-    console.log("selectHardwareTypeKey()")
+    console.log("selectHardwareTypeKey()",hardware_type)
+
     if(hardware_type ==  parseInt(THERMOSTAT_TYPE) ){
         return "cc8a24bf-960f-443d-acb9-a764fc6618d4"
 
@@ -173,11 +181,11 @@ const selectHardwareTypeKey = (hardware_type) => {
         
         return "5c396f23-7916-441b-be60-da93b36d87ff"
 
-    }else if(hardware_type == parseInt(RELAY_WIEGAND_CENTRAL)){
+    }else if(hardware_type == RELAY_WIEGAND_CENTRAL){
         
         return "6bd2b45d-5ade-4d8d-b068-9c2c20e11977"            
 
-    }else if(hardware_type == parseInt(RELAY_WIEGAND_REMOTE)){
+    }else if(hardware_type == RELAY_WIEGAND_REMOTE){
         
         return "5c396f23-7916-441b-be60-da93b36d87ff"
 
@@ -187,26 +195,42 @@ const selectHardwareTypeKey = (hardware_type) => {
     }
 }
 
+const getChipSetNumber = (type) => {
+    console.log("getChipSetNumber",type)
+    if(type == APP_FIRMWARE_UDATE){
+        const chipset_bytes = store.getState().setupCentralReducer.app_info.slice(6,10).reverse()
+        const number = BYTES_TO_HEX(chipset_bytes).toUpperCase()
+        return number
+    }else if(type == RADIO_FIRMWARE_UPDATE){
+        const chipset_bytes = store.getState().setupCentralReducer.radio_info.slice(6,10).reverse()
+        const number = BYTES_TO_HEX(chipset_bytes).toUpperCase()
+        return number
+    }else{
+        console.error("The getChipSetNumber type isn't incorrect")
+        return
+    }
+}
+
 const initDeployDisconnect = () => {
     console.log("initDeployDisconnect()")
     store.dispatch({type: "SET_DEPLOY_DISCONNECT",deploy_disconnect:true})
 }
 
-export const fetchFirmwareFile = async (firmware_type,hardware_type) => {
+export const fetchFirmwareFile = async (firmware_type,hardware_type,return_files_array) => {
+    let key = selectHardwareTypeKey(hardware_type)
     let body = {
-        hardware_type_key: selectHardwareTypeKey(hardware_type)
+        hardware_type_key: key
     }
     
-
     if(firmware_type == APP_FIRMWARE_UDATE){
-        FIRMWARE_LOG_CREATOR()        
+        FIRMWARE_LOG_CREATOR(FETCHING_APP_FIRMWARE_FILE)        
         body.firmware_type = "application"
-        body.chipset = store.getState().setupCentralReducer.app_board_version
+        body.chipset = getChipSetNumber(APP_FIRMWARE_UDATE) 
 
     }else if(firmware_type == RADIO_FIRMWARE_UPDATE){
         FIRMWARE_LOG_CREATOR(FETCHING_RADIO_FIRMWARE_FILE)
         body.firmware_type = "radio"
-        body.chipset = store.getState().setupCentralReducer.radio_board_version
+        body.chipset =  getChipSetNumber(RADIO_FIRMWARE_UPDATE)
 
     }else if(firmware_type == BLUETOOTH_FIRMWARE_UPDATE){
         FIRMWARE_LOG_CREATOR(FETCHING_BLUETOOTH_FIRMWARE_FILE)
@@ -218,7 +242,6 @@ export const fetchFirmwareFile = async (firmware_type,hardware_type) => {
     }
 
     const json_body = JSON.stringify(body)
-    console.log("json_body 1",json_body)
 
     let response = await fetch(FIRMWARE_CENTRAL_ROUTE, {
         headers: HEADERS_FOR_POST,
@@ -226,16 +249,23 @@ export const fetchFirmwareFile = async (firmware_type,hardware_type) => {
         body : json_body 
     })
     
-    let data = JSON.parse(response._bodyInit).data.files
+    let files_array = JSON.parse(response._bodyInit).data.files
     
-    if(data){
-        console.log("json_body",response)
+    if(return_files_array){
+        return new Promise.resolve(files_array) 
+    }
 
+    if(files_array){
+        
         let firmware_path = files_array[0].firmware_path
         
         if((firmware_type == RADIO_FIRMWARE_UPDATE) || (firmware_type == APP_FIRMWARE_UDATE) ){
             
             let firmware_file_response = await  RNFetchBlob.fetch('GET', firmware_path,GET_HEADERS)
+            if(firmware_type == RADIO_FIRMWARE_UPDATE){
+                console.log("firmware_file_response",firmware_file_response)    
+            }
+            
             let firmware_file_data =  firmware_file_response.text()
                     
             return new Promise.resolve(firmware_file_data) 

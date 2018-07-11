@@ -6,6 +6,8 @@ import {
     height,
 } from '../../styles/index.js'
 
+const y_distance = (width - 300) / 2;
+
 const initialState = {
   firmware_file: null,
   central_update_mode : false,
@@ -38,14 +40,23 @@ const initialState = {
   show_current_firmware_update: true,
   firmareButtonAnimation: new Animated.ValueXY({x: (height/2 + 50) ,y: ((width/2) - 125) }),
   radioFirmwareUpdateBoxRadius: new Animated.Value(5),
-  radioFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8}),
-  radioFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300,y:300}),
+  radioFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8 - 25}),
+  radioFirmwareUpdateBoxShape: new Animated.ValueXY({x: width - 60,y:300}),
+  
   appFirmwareUpdateBoxRadius: new Animated.Value(5),
-  appFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4 ,y: width/8 }),
-  appFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300 ,y: 300 }),
+  appFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8 - 25}),
+  appFirmwareUpdateBoxShape: new Animated.ValueXY({x: width - 60 ,y: 300 }),
+
   bluetoothFirmwareUpdateBoxRadius: new Animated.Value(5),
-  bluetoothFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8}),
-  bluetoothFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300,y:300}),
+  bluetoothFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8 - 25}),
+  bluetoothFirmwareUpdateBoxShape: new Animated.ValueXY({x: width - 60,y:300}),
+  app_major_version_on_cloud: 0,
+  radio_major_version_on_cloud : 0,
+  bluetooth_major_version_on_cloud: 0,
+  major_general_version: 0,
+  app_firwmare_files_on_cloud: [],
+  radio_firwmare_files_on_cloud: [],
+  bluetooth_firwmare_files_on_cloud: [],
 
 }
 
@@ -56,13 +67,13 @@ export default function updateFirmwareCentralReducer (state = initialState, acti
         ...state,
         firmareButtonAnimation: new Animated.ValueXY({x: (height/2 + 50) ,y: ((width/2) - 125) }),
         radioFirmwareUpdateBoxRadius: new Animated.Value(5),
-        radioFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8}),
+        radioFirmwareUpdateBoxPosition: new Animated.ValueXY({x: 50,y: y_distance }),
         radioFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300,y:300}),
         appFirmwareUpdateBoxRadius: new Animated.Value(5),
-        appFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4 ,y: width/8 }),
+        appFirmwareUpdateBoxPosition: new Animated.ValueXY({x: 50,y: y_distance }),
         appFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300 ,y: 300 }),
         bluetoothFirmwareUpdateBoxRadius: new Animated.Value(5),
-        bluetoothFirmwareUpdateBoxPosition: new Animated.ValueXY({x: width/4,y: width/8}),
+        bluetoothFirmwareUpdateBoxPosition: new Animated.ValueXY({x: 50,y: y_distance }),
         bluetoothFirmwareUpdateBoxShape: new Animated.ValueXY({x: 300,y:300}),        
     }
     case "RESET_UPDATE_FIRMWARE_CENTRAL_REDUCER":
@@ -143,6 +154,48 @@ export default function updateFirmwareCentralReducer (state = initialState, acti
         ...state,
         show_current_firmware_update: action.show_current_firmware_update
       }
+    case "SET_MAJOR_FIRMWARE_VERSION":
+      return{
+        ...state,
+        major_firmware_version: action.major_firmware_version
+      }
+    case "SET_APP_MAJOR_VERSION_ON_CLOUD":
+      return{
+        ...state,
+        app_major_version_on_cloud: action.app_major_version_on_cloud
+      }
+    case "SET_RADIO_MAJOR_VERSION_ON_CLOUD":
+      return{
+        ...state,
+        radio_major_version_on_cloud: action.radio_major_version_on_cloud
+      }
+    case "SET_BLUETOOTH_MAJOR_VERSION_ON_CLOUD":
+      return{
+        ...state,
+        bluetooth_major_version_on_cloud: action.bluetooth_major_version_on_cloud
+      }            
+    case "SET_MAJOR_GENERAL_VERSION":
+      return{
+        ...state,
+        major_general_version: action.major_general_version
+      }
+
+    case "SET_APP_FIRMWARE_FILES_ON_CLOUD":
+      return{
+        ...state,
+        app_firwmare_files_on_cloud: action.app_firwmare_files_on_cloud      
+      }
+    case "SET_RADIO_FIRMWARE_FILES_ON_CLOUD":
+      return{
+        ...state,
+        radio_firwmare_files_on_cloud: action.radio_firwmare_files_on_cloud
+      }
+    case "SET_BLUETOOTH_FIRMWARE_ON_CLOUD":
+      return{
+        ...state,
+        bluetooth_firwmare_files_on_cloud : action.bluetooth_firwmare_files_on_cloud
+      }
+
     default:
       return state
   }

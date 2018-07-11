@@ -40,11 +40,13 @@ class PaymentOptions extends Component {
 		this.price = 0
 	}
 	//fake key --> pk_test_DkfAPP0epveDUsdjCnc9c9Bz
+	//real key --> pk_live_eBINMcXVt60GGZy3ZK42rHld
+
     componentWillMount(){
 	    stripe.setOptions({
 		  publishableKey: 'pk_live_eBINMcXVt60GGZy3ZK42rHld',
 		})   
-		this.getPrice() 
+		//this.getPrice() 
 		this.fetchDeviceActivationStatus(this.device.manufactured_data.device_id.toUpperCase())	
     }
 
@@ -60,11 +62,15 @@ class PaymentOptions extends Component {
 		}).then(response => {
 			
 			var data = JSON.parse(response._bodyInit)
+			console.log("fetchDeviceActivationStatus()",data.data.system)
+
 			if(data.status == "success"){
 				var system = data.data
+
 				if(system){
-						var status = parseInt(system.direct_unit_status)
+						var status = parseInt(system.system.on_demand_unit_status)
 						
+						this.props.dispatch({type:"SET_DEMO_UNIT_PRICE",demo_unit_price: system.system.product_direct_price})	 
 						if(status){
 							Alert.alert("Success","The other side has been actived.")
 							this.resetDemoUnitTimeAndPop()
@@ -103,17 +109,15 @@ class PaymentOptions extends Component {
 			body: JSON.stringify({serial: this.device.manufactured_data.device_id.toUpperCase()}) 
 		})
 		.then(response => {
-			
 			var data = JSON.parse(response._bodyInit)
+			
 			if(data.status == "success"){
 				data = data.data
+
 				if(data){
 					let system = data.system
 					if(system){
-						this.props.dispatch({
-							type:"SET_DEMO_UNIT_PRICE",
-							demo_unit_price: system.product_direct_price 
-						})	 
+						this.props.dispatch({type:"SET_DEMO_UNIT_PRICE",demo_unit_price: system.product_direct_price})	 
 					}else{
 						Alert.alert("Server Error","The format of the response isn't correct.")		
 					}
@@ -126,7 +130,7 @@ class PaymentOptions extends Component {
 			}
 			
 		})
-		.catch(error => console.log("error on fetchDeviceName 2",error))    		
+		.catch(error => console.log("error on getPrice",error))    		
 
     	return price
     }
@@ -154,13 +158,8 @@ class PaymentOptions extends Component {
 	    	})	 
 	    			
 			const token = await stripe.paymentRequestWithCardForm()
-			var data = {
-				price : this.props.demo_unit_price,
-				serial  : this.props.device.manufactured_data.device_id.toUpperCase(),
-				tokenId : token.tokenId,
-			}
-			
-			this.showProcessTransactionAlert(data,token.card.last4)
+
+			this.showProcessTransactionAlert(token.card.last4,token.tokenId)
 
 	    } catch (error) {
 	    	console.log("error",error)
@@ -168,10 +167,22 @@ class PaymentOptions extends Component {
 	}
 
 
-	showProcessTransactionAlert(data,card_ending){
+	showProcessTransactionAlert(card_ending,tokenId){
+		console.log("showProcessTransactionAlert()",card_ending,tokenId)
+		this.props.navigator.push({
+			screen : 'ProcessTransactionModal',
+			title: "Process Transaction",
+			animated: false,
+			passProps: {
+				card_ending: card_ending,
+				cancelTransaction: () => this.cancelTransaction(),
+				doPaymentOnTheServer: (email) => this.doPaymentOnTheServer(email,tokenId)
+			}
+		})
+/*
 		Alert.alert(
 			"Process Transaction",
-			"Process transaction for $" + this.props.demo_unit_price + " on card ending in " + card_ending,
+			,
 			[
 				{
 					text: "Cancel", 
@@ -182,14 +193,24 @@ class PaymentOptions extends Component {
 					text: "Accept", onPress: () => this.doPaymentOnTheServer(data)
 				}
 			]
-		)
+		)*/
 	}
 
 	cancelTransaction(){
 
 	}
 
-	doPaymentOnTheServer(data){
+	doPaymentOnTheServer(email,tokenId){
+		console.log("doPaymentOnTheServer()",data,email)
+		//test: "something"
+		var data = {
+			price : this.props.demo_unit_price,
+			serial  : this.props.device.manufactured_data.device_id.toUpperCase(),
+			tokenId : tokenId,
+			email : email
+		}		
+
+
 		fetch(COMPLETE_DIRECT_UNIT_PURCHASE,{
 			method: "POST",
 			headers: {
@@ -199,6 +220,7 @@ class PaymentOptions extends Component {
 			body: JSON.stringify(data) 
 		})
 		.then(response => {
+			console.log("response",response)
 			var data = JSON.parse(response._bodyInit)
 			if(data.status == "success"){
 		      	Alert.alert(
@@ -230,6 +252,7 @@ class PaymentOptions extends Component {
 		setTimeout(() => this.props.getDemoModeTime(),1000)
 		
 		this.props.navigator.pop()
+		this.props.navigator.pop()
 	}
 
 	renderPartner(partner){
@@ -244,7 +267,7 @@ class PaymentOptions extends Component {
 	}
 
 	renderPartners(){
-		console.log("renderPartners",this.props.partners)
+		//console.log("renderPartners",this.props.partners)
 		if(this.props.partners && this.props.partners.length > 0){
 			return (
 				<View>

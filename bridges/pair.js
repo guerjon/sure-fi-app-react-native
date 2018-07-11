@@ -31,6 +31,7 @@ import {
     PAIR_STATUS,
     WIEGAND_CENTRAL,
     WIEGAND_REMOTE,
+    PAIRING_STATUS
 } from '../constants'
 import { NavigationActions } from 'react-navigation'
 import BleManager from 'react-native-ble-manager'
@@ -182,26 +183,16 @@ class PairBridge extends Component{
 
         this.fast_manager.stopDeviceScan();
 
-        if(!this.props.debug_mode_status)
-            this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
-
+        this.props.dispatch({type: "SET_PAIRING_DEVICE_STATUS",pairing_device_status: PAIRING_STATUS})
+        this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
         this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
         
         this.props.saveOnCloudLog(remote_id_bytes,"PAIR")
-
-        console.log("central_device.id",this.central_device.id)
-        console.log("remote_id_bytes",remote_id_bytes)
-        console.log("rxUUID",rxUUID)
-        console.log("txUUID",txUUID)
-
 
 	    WRITE_PAIRING(this.central_device.id,remote_id_bytes)
 			.then(response => {
 				PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
 		    	.then(response => {	
-                    
-                    //console.log("response 0 on pair",response)
-
 		    		PUSH_CLOUD_STATUS(txUUID,"04|04|" + txUUID + "|" + rxUUID)
 		    		.then(response => {
                         //console.log("response on pair",response)
@@ -223,23 +214,10 @@ class PairBridge extends Component{
                             setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000)
                             setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
                         }
-
-                        this.props.navigator.pop();
 		               
 	    			}).catch(error => console.log(error))
 	    		}).catch(error => console.log("error",error))
 	    	}).catch(error => {console.log("error",error)})	
-    }
-
-    getNoMatchedMessage(){
-
-        return (
-            <View style={{backgroundColor:"white"}}>
-                <Text>
-                    Device with code {this.props.scan_result_id} not found it.
-                </Text>
-            </View>
-        )
     }
 
     onSuccess(scan_result) {
@@ -304,7 +282,7 @@ class PairBridge extends Component{
                     this.showCorrectErrorForPair(this.central_device)
                 }
             }else{
-                this.showDeviceNotFound(device_id)
+                this.showDeviceNotFound(this.central_device,device_id)
             }
         }
     }
@@ -323,11 +301,18 @@ class PairBridge extends Component{
         );   
     }
 
-    showDeviceNotFound(device_id){
+    showDeviceNotFound(device,device_id){
         console.log("showDeviceNotFound()")
+        var device_type = device.manufactured_data.hardware_type
+        var text = "The device " + device_id.toUpperCase() + " was not found"
+        
+        if(device_id == device.manufactured_data.device_id){
+            text = "The device scanned is the same connected, please scan the other device."
+        }
+
         Alert.alert(
             "Pairing error",
-            "The device " + device_id.toUpperCase() + " was not found",
+            text,
             [
                 {text: "Accept", onPress: () => this.showCamera()}
             ],
@@ -397,6 +382,36 @@ class PairBridge extends Component{
 
     hideCamera(){
         this.props.dispatch({type:"HIDE_REMOTE_CAMERA"})
+    }
+
+    renderResetButton(current_device,remote_device){
+        
+        if(!IS_EMPTY(current_device) && !IS_EMPTY(remote_device)){
+            if(this.props.pairing_device_status == PAIRING_STATUS){
+                return (    
+                    <TouchableHighlight
+                        style={{flex:0.5,backgroundColor: "gray",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
+                        onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
+                    >
+                        <Text style={{color:"white",fontSize:16}}>
+                            Pairing Device ...
+                        </Text>
+                    </TouchableHighlight>
+                )
+            }else{
+                return(    
+                    <TouchableHighlight
+                        style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
+                        onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
+                    >
+                        <Text style={{color:"white",fontSize:16}}>
+                            Reset
+                        </Text>
+                    </TouchableHighlight>
+                )
+            }            
+        }
+        return null
     }
 
 	render(){
@@ -500,20 +515,9 @@ class PairBridge extends Component{
 						{remote_content}
 					</View>
 				</View>
-				{!IS_EMPTY(current_device) && !IS_EMPTY(remote_device) &&
-					(
-				        <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
-				            <TouchableHighlight
-				            	style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
-				            	onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
-				            >
-				                <Text style={{color:"white",fontSize:16}}>
-				                    Reset
-				                </Text>
-				            </TouchableHighlight>
-				        </View>
-					)
-				}								
+                <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
+				    {this.renderResetButton(current_device,remote_device)}								
+                </View>
 			</Background>
 		)
 	}
@@ -529,6 +533,7 @@ const mapStateToProps = state => ({
   	remote_device_status : state.scanRemoteReducer.remote_device_status,
   	device: state.scanCentralReducer.central_device,
     debug_mode_status : state.setupCentralReducer.debug_mode_status,
+    pairing_device_status: state.setupCentralReducer.pairing_device_status
 });
 
 export default connect(mapStateToProps)(PairBridge);

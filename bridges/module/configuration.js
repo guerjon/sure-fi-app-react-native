@@ -28,7 +28,8 @@ import {
     SUCCESS_STATUS,
     DECIMAL_TO_FOUR_BYTES,
     prettyBytesToHex,
-    BYTES_TO_HEX
+    BYTES_TO_HEX,
+    UPDATING
 } from '../../constants'
 import Background from '../../helpers/background'
 import {SWITCH} from '../../helpers/switch'
@@ -60,7 +61,6 @@ const relay_nc = <Image style={{width:image_width,height:image_height}} source={
 const relay_no = <Image style={{width:image_width,height:image_height}} source={require('../../images/relay_no.imageset/relay_no.png') }/>
 
 
-
 export const RELAY_TIME = params => {
     const relay_time = params.relay_time
     const option_selected = params.option_selected
@@ -85,7 +85,7 @@ export const RELAY_TIME = params => {
     }
 
     return(
-        <TouchableNativeFeedback onPress={ () => params.onPress()}>
+        <TouchableNativeFeedback onPress={() => params.onPress()}>
             <View style={style}>
                 <Text style={style_text}>
                     {params.text}
@@ -93,6 +93,39 @@ export const RELAY_TIME = params => {
             </View>
         </TouchableNativeFeedback>
     )   
+}
+
+const WIEGAND_LED_OPTION = params => {
+    const wiegand_led_mode = params.wiegand_led_mode
+    const text = params.text
+    const position = params.position
+    let style = {
+        width:width/3 -10,
+        height:35,
+        marginHorizontal:3,
+        borderColor:option_blue,
+        alignItems:"center",
+        justifyContent:"center",
+        borderWidth:1,
+        borderRadius:5,
+        backgroundColor: "white"
+    }
+    let style_text = {
+        color:"black"
+    }
+
+    if(wiegand_led_mode == position){
+        style.backgroundColor = option_blue        
+        style_text.color = "white"
+    }
+
+    return(
+        <TouchableOpacity style={style} onPress={() => params.onPress()}>
+            <Text style={style_text}>
+                {text}
+            </Text>
+        </TouchableOpacity>
+    )
 }
 
 
@@ -155,9 +188,9 @@ class Configuration extends Component{
     setRelayOptionSelected(){
         console.log("setRelayOptionSelected()")
         const local_fail_safe_options = this.getLocalFailSafeOptions()
-        console.log("local_fail_safe_options",local_fail_safe_options)
+        //console.log("local_fail_safe_options",local_fail_safe_options)
         let seconds_heart_beat = BYTES_TO_INT_LITTLE_ENDIANG(this.getCurrentHeartbeat()) 
-        console.log("seconds_heart_beat()",seconds_heart_beat)
+        //console.log("seconds_heart_beat()",seconds_heart_beat)
         let option_selected = parseInt(local_fail_safe_options.fail_safe_options_time/seconds_heart_beat)
         this.updateRelayTimesSelected(option_selected)
     }
@@ -251,9 +284,7 @@ class Configuration extends Component{
             }            
         }else{
             Alert.alert("Error","The equipment in not paried.")
-        }
-
-        
+        }        
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
@@ -269,14 +300,8 @@ class Configuration extends Component{
     }
 
     update(){
-        
-        if(this.props.isCentral()){
-            this.props.setHeartbeat(this.props.heart_beat) 
-        }
-        setTimeout(() => this.props.setFailSafeOption(this.props.fail_safe_option),500)
-        setTimeout(() => this.props.setActivateLed(this.props.activated_led),1000)
-        setTimeout(() => Alert.alert("Success.","All changes are saved correctly."),1500)
-        
+        this.props.dispatch({type: "SET_CONFIGURATION_UPDATE_STATUS",configuration_update_status: UPDATING})
+        this.props.setFailSafeOption(this.props.fail_safe_option)
     }
 
 
@@ -388,12 +413,12 @@ class Configuration extends Component{
 
                 return (
                     <View>
+                        <View style={styles.device_control_title_container}>
+                            <Text style={styles.device_control_title}>
+                                HEARTBEAT TIME
+                            </Text>
+                        </View>   
                         <View style={{backgroundColor:"white"}}>
-                            <View style={{marginLeft:20,marginBottom:5,marginTop:5}}>
-                                <Text style={{fontSize:16,color:"black"}}>
-                                    HEARTBEAT TIME
-                                </Text>
-                            </View>
                             <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center",height:50}}>
                                 <Button text="Off" width={width/9} active={time == 0} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeatAndHeartBeatTimes(0)}/>
                                 <Button text="1m" width={width/9} active={time == 60} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeatAndHeartBeatTimes(60)}/>
@@ -418,9 +443,14 @@ class Configuration extends Component{
 
                 return (
                     <View>
+                        <View style={styles.device_control_title_container}>
+                            <Text style={styles.device_control_title}>
+                                HEARTBEAT TIME
+                            </Text>
+                        </View>                         
                         <View style={{flexDirection:"row",justifyContent:"space-between",height:50,backgroundColor:"white",width:width,alignItems:"center"}}>
                             <Text style={{marginLeft:20,fontSize:18,color:"black"}}>
-                                WIEGAND CONTROLLER HEARTBEAT: 
+                                Sey by Controller to 
                             </Text>
                             <Text style={{marginRight:20,fontSize:18,color:"black"}}>
                                 {time}
@@ -519,10 +549,10 @@ class Configuration extends Component{
             return(
                 <View style={{flexDirection:"row",justifyContent:"space-between",height:50,width:width,alignItems:"center"}}>
                     <Text style={{fontSize:18,color:"black"}}>
-                        FAILSAFE TIME : 
+                        Remote Failsafe Delay Time : 
                     </Text>
                     <Text style={{marginRight:40,fontSize:18,color:"black"}}>
-                        {cloud_fail_safe_options.fail_safe_options_time == 0 ? "DISABLED" : seconds_string }
+                        {cloud_fail_safe_options.fail_safe_options_time == 0 ? "Disabled" : seconds_string }
                     </Text>
                 </View>
 
@@ -531,10 +561,10 @@ class Configuration extends Component{
             return(
                 <View style={{flexDirection:"row",justifyContent:"space-between",height:50,width:width,alignItems:"center"}}>
                     <Text style={{marginLeft:20,fontSize:18,color:"black"}}>
-                        FAILSAFE TIME : 
+                        Failsafe Delay Time : 
                     </Text>
                     <Text style={{marginRight:20,fontSize:18,color:"black"}}>
-                        {cloud_fail_safe_options.fail_safe_options_time == 0 ? "DISABLED" : seconds_string }
+                        {cloud_fail_safe_options.fail_safe_options_time == 0 ? "Disabled" : seconds_string }
                     </Text>
                 </View>            
             )
@@ -562,20 +592,26 @@ class Configuration extends Component{
         
         led_button_style.backgroundColor = led_value == 0 ? "gray" : success_green
         power_led_button_style.backgroundColor = power_led_value == 0 ? "gray" : success_green
-        
+        const wiegand_led_mode = this.props.wiegand_led_mode 
+        console.log("wiegand_led_mode",wiegand_led_mode)
         return(     
-            <View style={{backgroundColor:"white",marginVertical:20,width:width}}>
-                <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",height:50,borderBottomWidth:0.3}}>
-                    <Text style={{fontSize:18,color:"black",marginLeft:20}}>
-                        LEDs
+            <View style={{marginVertical:20,width:width}}>
+                <View style={styles.device_control_title_container}>
+                    <Text style={styles.device_control_title}>
+                    LEDS SETTINGS
                     </Text>
-                    <TouchableOpacity onPress={() => this.handleLedsEnabledButton(0)} style={led_button_style}>
-                        <Text style={{color:"white"}}>
-                            {led_enable_text}
+                </View>                         
+                <View style={{backgroundColor:"white"}}>
+                    <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",height:50,borderBottomWidth:0.3}}>
+                        <Text style={{fontSize:18,color:"black",marginLeft:20}}>
+                            LEDs
                         </Text>
-                    </TouchableOpacity>
-                </View>            
-                {this.props.isRemote() && (
+                        <TouchableOpacity onPress={() => this.handleLedsEnabledButton(0)} style={led_button_style}>
+                            <Text style={{color:"white"}}>
+                                {led_enable_text}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>            
                     <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",height:50,borderBottomWidth:0.3}}>
                         <Text style={{fontSize:18,color:"black",marginLeft:20}}>
                             Power LEDs Enabled
@@ -585,6 +621,21 @@ class Configuration extends Component{
                                 {power_led_enable_text}
                             </Text>
                         </TouchableOpacity>
+                    </View>                    
+                </View>
+                {this.props.isRemote() && (
+                    <View style={{backgroundColor:"white"}}>
+
+                        <View style={{width:width,alignItems:"center"}}>
+                            <Text style={{padding:5,color:"black"}}>
+                                Wiegand LED Mode
+                            </Text>
+                            <View style={{flexDirection:"row",padding:5}}>
+                                <WIEGAND_LED_OPTION text="LED - Input" position={1} wiegand_led_mode={wiegand_led_mode} onPress={() => this.props.dispatch({type: "SET_WIEGAND_LED_MODE",wiegand_led_mode:1})} />
+                                <WIEGAND_LED_OPTION text="Follow R1" position={2} wiegand_led_mode={wiegand_led_mode} onPress={() => this.props.dispatch({type: "SET_WIEGAND_LED_MODE",wiegand_led_mode:2})} />
+                                <WIEGAND_LED_OPTION text="Follow R2" position={3} wiegand_led_mode={wiegand_led_mode} onPress={() => this.props.dispatch({type: "SET_WIEGAND_LED_MODE",wiegand_led_mode:3})} />
+                            </View>
+                        </View>
                     </View>            
                 )}
             </View>   
@@ -610,9 +661,8 @@ class Configuration extends Component{
         let seconds_heart_beat =  BYTES_TO_INT_LITTLE_ENDIANG(current_heart_beat)
         
         let option_selected = this.props.relay_times_selected
-        console.log("option_selected",option_selected)
         let time = seconds_heart_beat * option_selected
-        let select_text =  time ? parserIntSecondsToHumanReadable(time) : "DISABLED"
+        let select_text =  time ? parserIntSecondsToHumanReadable(time) : "Disabled"
         
 
         if(option_selected >= 0 && option_selected <= 5){
@@ -642,7 +692,7 @@ class Configuration extends Component{
     }
 
     renderCentralInfo(){
-        const backgroundColor = this.props.isCentral() ? "white" : gray_background
+        const backgroundColor = this.props.isCentral() ? "white" : "white"
 
         var actived = this.props.isCentral()
 
@@ -653,13 +703,15 @@ class Configuration extends Component{
         }
 
         return(
-            <View style={{width:width,marginTop:20}}>
-                <View>
-                    <Text style={{color:"black",fontSize:18,marginHorizontal:20}}>
-                        WIEGAND CONTROLLER
-                    </Text>
+            <View style={{width:width}}>
+                <View style={{marginTop:10}}>
+                    <View style={{padding:10}}>
+                        <Text style={{}}>
+                            CONTROLLER RELAY FAILSAFE - PAIRED DEVICE
+                        </Text>
+                    </View>
                 </View> 
-                <View style={{width:width,padding:10,backgroundColor:backgroundColor,marginVertical:20}}>                                   
+                <View style={{width:width,padding:10,backgroundColor:backgroundColor,marginBottom:20,marginTop:10}}>                                   
                     <View>
                         {this.renderRelaysTimes(local_fail_safe_options,"central")}
                     </View>                        
@@ -680,15 +732,20 @@ class Configuration extends Component{
         }else{
             var local_fail_safe_options = this.getCloudFailSafeOptions()
         }
+        var text = "REMOTE RELAY FAILSAFES - THIS DEVICE"
+
+        if(this.props.isCentral())
+            text = "REMOTE RELAY FAILSAFES - THIS DEVICE"
+
 
         return(
             <View style={{width:width}}>
                 <View>
-                    <Text style={{color:"black",fontSize:18,marginHorizontal:20}}>
-                        WIEGAND REMOTE
+                    <Text style={{padding:10}}>
+                        {text}
                     </Text>
                 </View>   
-                <View style={{width:width,padding:20,backgroundColor:backgroundColor,marginVertical:20}}>                                 
+                <View style={{width:width,padding:20,backgroundColor:backgroundColor,marginBottom:20}}>                                 
                     <View>
                         {this.renderRelaysTimes(local_fail_safe_options,"remote")}
                     </View>
@@ -763,7 +820,7 @@ class Configuration extends Component{
 
 
     render(){   
-        
+        console.log("render()",this.props.configuration_data_state + " " + this.props.configuration_data_state + " " + this.props.fail_safe_option.length)
         if(this.props.configuration_data_state == NO_ACTIVITY || this.props.configuration_data_state == LOADING || (this.props.fail_safe_option.length == 0))
             return (
                 <Background>
@@ -800,7 +857,8 @@ const mapStateToProps = state => ({
     equipments_fail_safe_options : state.scanCentralReducer.equipments_fail_safe_options,
     heart_beat : state.scanCentralReducer.heart_beat,
     temp_fail_safe_options_value: state.scanCentralReducer.temp_fail_safe_options_value,
-    relay_times_selected: state.scanCentralReducer.relay_times_selected
+    relay_times_selected: state.scanCentralReducer.relay_times_selected,
+    wiegand_led_mode: state.scanCentralReducer.wiegand_led_mode
 });
 
 export default connect(mapStateToProps)(Configuration);

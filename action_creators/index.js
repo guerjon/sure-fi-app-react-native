@@ -24,7 +24,10 @@ import {
 	RX_DATA_CHAR_SHORT_UUID,
 	TX_DATA_CHAR_SHORT_UUID,
 	prettyBytesToHex,
-	BYTES_TO_INT_LITTLE_ENDIANG
+	BYTES_TO_INT_LITTLE_ENDIANG,
+	GET_DEVICE_NAME_ROUTE,
+	EQUIPMENT_TYPE,
+	THERMOSTAT_TYPE
 } from '../constants'
 import {store} from "../app"
 import {
@@ -122,18 +125,19 @@ export const PUSH_CLOUD_STATUS = (hardware_serial,hardware_status) => {
 	example command with data [0x21,0x04,0x23,0x52]
 */
 export const WRITE_COMMAND = (id,data,type) => {
-	console.log("WRITE_COMMAND()","data : " + prettyBytesToHex(data) )
+	//console.log("WRITE_COMMAND()","data : " + prettyBytesToHex(data) )
 	LOG_INFO(data,COMMAND)
 
 	return new Promise((fulfill,reject) => {		
 		BleManager.write(id,SUREFI_CMD_SERVICE_UUID,SUREFI_CMD_WRITE_UUID,data,20)
 		.then(response => {
-			fulfill(response)
+			
 		})
 		.catch(error => {
 			console.log("Error on WRITE_COMMAND",error)
 			reject([error,data,type])
 		})
+		fulfill()
 	})
 }
 
@@ -440,3 +444,34 @@ export const CHECK_GENERIC_RESPONSE = response => {
 	return false
 }
 
+
+const choseNameIfNameNull = (name,hardware_type) => {
+	
+	if(name == "" || name == " " || name == null){
+		if(hardware_type == EQUIPMENT_TYPE || hardware_type == parseInt(EQUIPMENT_TYPE)){
+			return "Sure-FI Equipment interface."
+		}else if(hardware_type == THERMOSTAT_TYPE || hardware_type == parseInt(THERMOSTAT_TYPE)){
+			return "Sure-Fi Thersmostat interface"
+		}
+	}
+	return name
+}
+
+export const fetchDeviceName = async (device_id,hardware_type) => {
+		console.log("fetchDeviceName()",device_id);
+		var hardware_type = hardware_type;
+		var body = {
+			method: "POST",
+			headers: HEADERS_FOR_POST,
+			body: JSON.stringify({hardware_serial: device_id})
+		}
+
+		const response = await fetch(GET_DEVICE_NAME_ROUTE,body)
+		
+		var data = JSON.parse(response._bodyInit).data
+
+		var new_name = choseNameIfNameNull(data.name,hardware_type)
+		
+		return new Promise.fulfill(new_name) 
+
+	}

@@ -1,5 +1,20 @@
-var md5 = require('md5');
-
+ var md5 = require('md5');
+import React, {Component} from 'react'
+import {success_green,cancel_red,gray_background} from './styles/index.js'
+import {
+  	Text,
+  	View,
+  	Image,
+  	ScrollView,
+  	NativeModules,
+  	NativeEventEmitter,
+  	ActivityIndicator,
+  	Alert,
+  	TouchableHighlight,
+  	FlatList,
+  	TouchableOpacity
+} from 'react-native'
+import {styles,first_color,width,height} from './styles/index.js'
 export const BASE_URL = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/"
 export const FIRMWARE_CENTRAL_ROUTE = "https://tjdk5m3fi2.execute-api.us-west-2.amazonaws.com/prod/firmware/get_available_firmware"
 
@@ -51,6 +66,10 @@ export const FAIL_STATUS = 403
 export const NO_ACTIVITY = "NO_ACTIVITY"
 export const LOADING = 'LOADING'
 export const LOADED = 'LOADED'
+
+export const UPDATING = 2
+export const NO_UPDATING = 3
+
 
 export const SET_MANUFACTURED_DATA = "SET_MANUFACTURED_DATA"
 
@@ -152,6 +171,7 @@ export const ADMIN_USER = 2
 
 
 export const UNPAIR_STATUS = 1
+export const PAIRING_STATUS = 3
 export const PAIR_STATUS = 4
 
 
@@ -372,6 +392,12 @@ export const IS_EMPTY = obj => {
 			return false;
 	}
 	return true;
+}
+
+export const IS_STRING = obj => {
+	if (typeof obj === 'string' || obj instanceof String)
+		return true
+	return false
 }
 
 export const REVERSE_STRING = str => {
@@ -829,3 +855,207 @@ var Base64 = {
     }
 }
 
+export const reverseTwoComplement = decimal_number => {
+
+	
+  	var first_byte_less_one = decimal_number - 1
+  	
+  	var string_array = first_byte_less_one.toString(2).split("")
+  	let is_positive = true
+
+  	if(string_array[0] == "1"){ // the negative numbers start with 1
+  		is_positive = false
+  	}
+
+  	var reverse_string_array = string_array.map(x => {
+  		if(x == '1') 
+  			return '0' 
+  		else return '1'
+  	})
+
+  	var new_string_array = reverse_string_array.reduce((acumulator,x) => acumulator + x,"")
+  	if(is_positive)
+  		return parseInt(new_string_array,2)
+  	else 
+  		return (parseInt(new_string_array,2) * -1)
+
+  	return final_result
+
+}
+
+function doPrettyZeros(number){
+	if(number == "0"){
+		return "0x00"
+	}else{
+		var number_string = number.toString()
+		if(number_string.length > 1)
+			return "0x" + number
+
+		return "0x0" + number
+	}
+}
+
+
+export const TRANSMIT = params => {
+	var transmit_info = params.transmit_info
+	var success_text = transmit_info.success == 1 ? "SUCCESS" : "FAILURE";
+	var success_color = transmit_info.success == 1 ? success_green : "red";
+	var num_retries = transmit_info.numRetries + " retries"
+	
+	var rssi = "RSSI: "  + reverseTwoComplement([transmit_info.rssi[0]]) + " dBm"
+	var snr = "SNR: " + transmit_info.snr + " dB"
+	var ack_data = transmit_info.ackDataLength + " Byte ACK" 
+
+	
+
+	return (
+		<View style={{marginRight:10,marginLeft:5,padding:10,width: ((width/3) - 5)}}>
+			<View style={{flexDirection:"row"}}>
+				<Text style={{color:success_color}}>
+					{success_text}
+				</Text>
+			</View>
+			<View>
+				<Text>
+					{num_retries}
+				</Text>
+			</View>
+			<View style={{flexDirection:"row"}}>
+				<Text>
+					{rssi}
+				</Text>
+			</View>
+			<View style={{flexDirection:"row"}}>
+				<Text>
+					{snr}
+				</Text>
+			</View>
+			<View>
+				<Text>
+					{ack_data}
+				</Text>
+			</View>
+		</View>
+	)
+}
+
+
+export const RECEIVE = params => {
+	var receive_info = params.receive_info
+	var success_text = receive_info.success == 1 ? "SUCCESS" : "FAILURE";
+	var success_color = receive_info.success == 1 ? success_green : "red";
+	var rssi = "RSSI: "  + reverseTwoComplement([receive_info.rssi[0]]) + " dBm"
+	var snr = "SNR: " + receive_info.snr
+
+	return (
+		<View style={{marginRight:5,marginLeft:5,padding:10,width: ((width/3) - 5)}}>
+			<View style={{flexDirection:"row"}}>
+				<Text style={{color:success_color}}>
+					{success_text}
+				</Text>
+			</View>
+			<View style={{flexDirection:"row"}}>
+				<Text>
+					{rssi}
+				</Text>
+			</View>
+			<View style={{flexDirection:"row"}}>
+				<Text>
+					{snr}
+				</Text>
+			</View>
+		</View>
+	)
+}
+
+
+export const ERROR_BLOCK = params => {
+	var error = params.error
+	return(
+		<View style={{width:width/8,borderRadius:30,alignItems:"center"}}>
+			<Text style={{backgroundColor:gray_background,padding:5,margin:1,fontSize:10}}>
+				{doPrettyZeros(error)}
+			</Text>
+		</View>
+	)
+}
+
+
+export const TIME = params => {
+	var value = ""
+	var minutes = params.minutes
+	
+	if(minutes < 1){
+		value = "Less than a minute"
+
+	}else if(minutes >= 1 && minutes <= 60){
+		
+		value = minutes + " minutes"
+
+	}else if(minutes > 60 && minutes < 240){
+	
+		var hours = parseInt(minutes / 60)
+		var rest_minutes = minutes - (hours * 60)
+		value = hours + " Hours " + rest_minutes + " minutes"
+
+	}else if(minutes >= 240 && minutes <= 254){
+
+		value = "More than 4 hours"
+
+	}else {
+		value = "Empty"
+	}
+
+	return (
+		<View style={{marginLeft:5}}>
+			<Text>
+				{value}
+			</Text>
+		</View>
+	)
+}
+
+
+export const SWITCH = params => {
+	let style = {
+		borderWidth:3,
+		width:35,
+		height:35,
+		marginHorizontal:3,
+		alignItems:"center",
+		borderRadius:2,
+		justifyContent:"center",
+		borderColor: params.color,
+		borderRadius:50,
+		backgroundColor: params.background,
+	}
+	
+	let name = params.name ? params.name : " - " 
+
+	if(params.isActivated){
+		style.borderColor = params.color
+		style.backgroundColor = params.color
+
+		return (
+			<TouchableOpacity 
+				style={style}
+				onPress={() => params.onPress(1)}
+			>
+				<Text style={{color:"black",fontSize:14}}>
+					{name}
+				</Text>
+			</TouchableOpacity> 
+		)
+	}
+
+	return (
+		<TouchableOpacity 
+			style={style}
+			onPress={() => params.onPress(0)}
+		>
+			<Text style={{color:"black",fontSize:14}}>
+				{name}
+			</Text>
+		</TouchableOpacity>
+	)	
+}

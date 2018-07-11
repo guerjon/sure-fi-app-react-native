@@ -30,7 +30,9 @@ import {
 	UNPAIR_STATUS,
 	PAIR_STATUS,
 	FORCE_PAIR_STATUS,
-	FORCE_UNPAIR_STATUS
+	FORCE_UNPAIR_STATUS,
+	RELAY_WIEGAND_CENTRAL,
+	RELAY_WIEGAND_REMOTE
 } from '../../constants'
 import { 
 	PUSH_CLOUD_STATUS,
@@ -102,14 +104,6 @@ class Options extends Component{
 				{text : "UNPAIR", onPress:() => this.props.unPair()}
 			]
 		)
-	}
-
-	isAdminUser(){
-
-	}
-
-	isNormalUser(){
-
 	}
 
     forceUnPair(){
@@ -254,34 +248,44 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToOperationValues()} image={require('../../images/menu_operating_dark.imageset/menu_operating.png')} name="Operating Values"/>
     }
 
-    getInstructionalVideos(){
-    	//<Option callback={() => this.props.goToInstructionalVideos()} image={require('../../images/menu_video.imageset/menu_video.png')} name="Wiring Guides"/>
-    	return (
-    		<View>
-				<Text style={{textAlign:"center",fontSize:19,color:"black"}}>
-					ADDITIONAL OPTIONS
-				</Text>    		
-    			
-    		</View>
-    	)
-    }
-
     getConfiguration(){
-    	return <Option callback={() => this.props.goToConfiguration()} image={require('../../images/menu_relay_dark.imageset/menu_relay.png')} name="Configuration" />
+    	return <Option callback={() => this.props.goToConfiguration()} image={require('../../images/menu_config_dark/menu_config_dark.png')} name="Configuration" />
    	}
 
 
     getUnPairBridgeOption(){
-
     	return <Option callback={() => this.showAlertUnpair()} image={require('../../images/menu_unpair_dark.imageset/menu_unpair.png')} name="Unpair Bridge"/>
-
     }
-
 
     getPairBridgeOption(){
     	//console.log("getPairBridgeOption",this.hardware_type)
     	if(this.hardware_type == EQUIPMENT_TYPE){
-    		return null
+    		return(
+				<View style={{marginBottom:20}}>
+					<View style={styles.device_control_title_container}>
+						<Text style={styles.device_control_title}>
+							NEXT STEP
+						</Text>
+					</View>			
+					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.goToPair()}>
+						<View style={{
+							flexDirection:"row",
+							padding:5,
+							alignItems:"center",						
+	  					}}>
+							<View style={styles.white_touchable_highlight_image_container}>
+								<Image source={require('../../images/menu_pair_dark.imageset/menu_pair.png')} style={styles.white_touchable_highlight_image}/>
+							</View>
+							<View style={styles.white_touchable_text_container}>
+								<Text style={{color:"black",fontSize:30}}>
+									Pair Bridge
+								</Text>
+							</View>
+						</View>
+					</TouchableHighlight>
+					
+				</View>
+    		)
     	}else{
 			return (
 				<View style={{marginBottom:20}}>
@@ -390,6 +394,10 @@ class Options extends Component{
     	)
     }    
 
+    getResetUnit(){
+    	return <Option callback={() => this.props.resetUnitAlert()} image={require('../../images/menu_reset_demo_unit/menu_reset_demo_unit.png')} name="Reset Unit" />
+    }
+
     renderForcePairOption(){
 		return (
 			<View style={{marginBottom:50}}>
@@ -452,8 +460,13 @@ class Options extends Component{
 
 		const bridge_status = parseInt(this.props.bridge_status) 
 		const hardware_type = parseInt(this.hardware_type)
-		
-		if(hardware_type == parseInt(MODULE_WIEGAND_REMOTE) || hardware_type == parseInt(MODULE_WIEGAND_CENTRAL) || hardware_type ==  parseInt(EQUIPMENT_TYPE) ) {
+
+		if( hardware_type == parseInt(MODULE_WIEGAND_REMOTE) || 
+			hardware_type == parseInt(MODULE_WIEGAND_CENTRAL) || 
+			hardware_type ==  parseInt(EQUIPMENT_TYPE) || 
+			parseInt(this.hardware_type,16) == RELAY_WIEGAND_CENTRAL || 
+			parseInt(this.hardware_type,16) ==  RELAY_WIEGAND_REMOTE) 
+		{
 			switch(bridge_status){
 				case UNPAIR_STATUS:
 				return this.getPairBridgeOption()
@@ -501,6 +514,14 @@ class Options extends Component{
 					{this.getConfigureRadioOption()}
 				</View>
 			)
+
+		if(sales_dist.lastIndexOf(user_type) !== -1){
+			return(
+				<View>
+					{this.getResetUnit()}
+				</View>
+			)
+		}
 
 		return null
 	}

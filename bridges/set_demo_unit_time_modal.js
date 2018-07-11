@@ -12,7 +12,14 @@ import {
   	Alert
 } from 'react-native'
 import { connect } from 'react-redux';
-import {GET_USERS_FROM_PIN,INT_TO_BYTE_ARRAY} from '../constants'
+import {
+	GET_USERS_FROM_PIN,
+	INT_TO_BYTE_ARRAY,
+	MODULE_WIEGAND_CENTRAL,
+	MODULE_WIEGAND_REMOTE,
+	EQUIPMENT_TYPE,
+	THERMOSTAT_TYPE
+} from '../constants'
 
 
 const option_blue = "#5AB0E3"
@@ -26,33 +33,7 @@ class SetDemoUnitTimeModal extends Component{
 	constructor(props) {
 	  	super(props);
 	  	this.text = ""
-	}
-
-	fetchResults(text){
-		fetch(GET_USERS_FROM_PIN,{
-			method: "POST",
-			headers: {
-				'Accept' : 'application/json',
-				'Content-Type' : 'application/json'
-			},
-			body: JSON.stringify({
-				"user_pin": text,
-			}) 
-		}).then(response => {
-			var data = JSON.parse(response._bodyInit)
-
-			if(data.status == "success"){
-				var user_data = data.data.user_data
-				this.props.dispatch({type: "SET_USER_DATA",user_data: user_data})
-				this.props.hideRightButton()
-				this.closeModal()
-			}else{
-				Alert.alert("Error",data.msg)
-			}
-		}).catch(error => {
-			console.log("error",error);
-			Alert.alert("Error",error)
-		})
+	  	this.hardware_type = props.device.manufactured_data.hardware_type
 	}
 
 	handleNumberChange(text){
@@ -60,13 +41,18 @@ class SetDemoUnitTimeModal extends Component{
 	}
 
 	handleEnterButton(){
+		const hardware_type = this.hardware_type;
 		if(this.text.length){
-			//this.fetchResults(this.text)
 			var number_of_days = parseInt(this.text) 
-			var numer_seconds = number_of_days * 86400
-			var number_seconds_bytes = INT_TO_BYTE_ARRAY(numer_seconds)
+			if(hardware_type == MODULE_WIEGAND_CENTRAL || hardware_type == MODULE_WIEGAND_REMOTE || hardware_type == EQUIPMENT_TYPE ||  hardware_type == THERMOSTAT_TYPE){
+				var numer_seconds = number_of_days * 86400
+				var number_seconds_bytes = INT_TO_BYTE_ARRAY(numer_seconds)
+				this.props.setDemoModeTime(number_seconds_bytes)
 
-			this.props.setDemoModeTime(number_seconds_bytes)
+			}else{
+				this.props.setDemoModeTime(number_of_days)
+			}
+
 			setTimeout(() => this.props.getDemoModeTime(),2000)
 			this.closeModal()
 

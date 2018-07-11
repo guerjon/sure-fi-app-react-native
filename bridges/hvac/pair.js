@@ -28,6 +28,8 @@ import {
     NORMAL_PAIR,
     EQUIPMENT_TYPE,
     THERMOSTAT_TYPE,
+    PAIRING_STATUS,
+    PAIR_STATUS,
 } from '../../constants'
 
 import BleManager from 'react-native-ble-manager'
@@ -177,20 +179,10 @@ class HVACPair extends Component{
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
         this.fast_manager.stopDeviceScan();
-
-        if(!this.props.debug_mode_status)
-            this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
-
-        this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
-        
+        this.props.dispatch({type: "SET_PAIRING_DEVICE_STATUS",pairing_device_status: PAIRING_STATUS})
         //this.props.saveOnCloudLog(remote_id_bytes,"PAIR")
-
-        console.log("central_device.id",this.central_device.id)
-        console.log("remote_id_bytes",remote_id_bytes)
-        console.log("rxUUID",rxUUID)
-        console.log("txUUID",txUUID)
+        
         let data = [PhoneCmd_Pair,NORMAL_PAIR].concat(remote_id_bytes)
-        console.log("data",data)
         HVAC_WRITE_COMMAND(this.central_device.id,data)
 		
 		PUSH_CLOUD_STATUS(rxUUID,"04|04|" + rxUUID + "|" + txUUID)
@@ -204,28 +196,14 @@ class HVACPair extends Component{
 
 				this.central_device.manufactured_data.tx = txUUID
 				this.central_device.manufactured_data.device_state = "0004";
-				this.central_device.writePairResult = true
-                
-                this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
-	    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
-                
-                this.props.dispatch({
-                    type: "CENTRAL_DEVICE_MATCHED",
-                    central_device: this.central_device
-                });
-                
-                if(this.props.debug_mode_status){
-                    this.props.dispatch({type: "NORMAL_CONNECTING_CENTRAL_DEVICE"})
-                    setTimeout(() => this.props.readStatusOnDevice(this.central_device),1000)
-                    setTimeout(() => this.props.searchPairedUnit(this.central_device),3000)
-                }
-
-                
-               
+                this.props.setBridgeStatus(PAIR_STATUS)
+                this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.central_device});
 			}).catch(error => console.log(error))
 		}).catch(error => console.log("error",error))
-    	
-        this.props.navigator.pop();
+
+        setTimeout(() => this.props.writePairResult(),1000)
+        
+        Alert.alert("Pairing the bridges.","The Bridges are being paired. This can take a second. ",[],{cancelable: false})
     }
 
     getNoMatchedMessage(){
@@ -307,7 +285,7 @@ class HVACPair extends Component{
                     this.showCorrectErrorForPair(this.central_device)
                 }
             }else{
-                this.showDeviceNotFound(device_id)
+                this.showDeviceNotFound(this.central_device,device_id)
             }
         }
     }
@@ -325,10 +303,18 @@ class HVACPair extends Component{
         );   
     }
 
-    showDeviceNotFound(device_id){
+    showDeviceNotFound(device,device_id){
+        console.log("showDeviceNotFound()")
+        var device_type = device.manufactured_data.hardware_type
+        var text = "The device " + device_id.toUpperCase() + " was not found"
+        
+        if(device_id == device.manufactured_data.device_id){
+            text = "The device scanned is the same connected, please scan the other device."
+        }
+
         Alert.alert(
             "Pairing error",
-            "The device " + device_id.toUpperCase() + " was not found",
+            text,
             [
                 {text: "Accept", onPress: () => this.showCamera()}
             ],
@@ -338,18 +324,18 @@ class HVACPair extends Component{
         );        
     }
 
-
-
-
     showCorrectErrorForPair(device){
+
         var device_type = device.manufactured_data.hardware_type
+        console.log("device_type",device_type)
         var correct_device = ""
+
         switch(device_type){
-            case CENTRAL_HARDWARE_TYPE:
-                correct_device = "Remote Sure-Fi Bridge"
+            case EQUIPMENT_TYPE:
+                correct_device = "HVAC THERMOSTAT INTERFACE"
             break
-            case REMOTE_HARDWARE_TYPE:
-                correct_device = "Controller Sure-Fi Bridge"
+            case THERMOSTAT_TYPE:
+                correct_device = "HVAC EQUIPMENT INTERFACE"
             break
             default:
                 correct_device = " "
@@ -358,7 +344,7 @@ class HVACPair extends Component{
 
         Alert.alert(
             "Pairing Error",
-            "Device \n" + device.manufactured_data.device_id.toUpperCase() + "  \n needs be paired with a "+ correct_device +" .",
+            "Device : " + device.manufactured_data.device_id.toUpperCase() + "  \nMUST be paired with a \n"+ correct_device +" .",
             [
                 {text: "Accept", onPress: () => this.showCamera()}
             ],
@@ -393,6 +379,35 @@ class HVACPair extends Component{
 
     hideCamera(){
         this.props.dispatch({type:"HIDE_REMOTE_CAMERA"})
+    }
+
+    renderResetButton(current_device,remote_device){
+        if(!IS_EMPTY(current_device) && !IS_EMPTY(remote_device)){
+            if(this.props.pairing_device_status == PAIRING_STATUS){
+                return (    
+                    <TouchableHighlight
+                        style={{flex:0.5,backgroundColor: "gray",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
+                        onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
+                    >
+                        <Text style={{color:"white",fontSize:16}}>
+                            Pairing Device ...
+                        </Text>
+                    </TouchableHighlight>
+                )
+            }else{
+                return(    
+                    <TouchableHighlight
+                        style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
+                        onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
+                    >
+                        <Text style={{color:"white",fontSize:16}}>
+                            Reset
+                        </Text>
+                    </TouchableHighlight>
+                )
+            }            
+        }
+        return null
     }
 
 	render(){
@@ -497,20 +512,9 @@ class HVACPair extends Component{
 						{remote_content}
 					</View>
 				</View>
-				{!IS_EMPTY(current_device) && !IS_EMPTY(remote_device) &&
-					(
-				        <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
-				            <TouchableHighlight
-				            	style={{flex:0.5,backgroundColor: "red",alignItems:"center",justifyContent:"center",borderRadius:10,marginRight:10,height:50}}
-				            	onPress={() =>  this.props.dispatch({type: "RESET_REMOTE_REDUCER"})}
-				            >
-				                <Text style={{color:"white",fontSize:16}}>
-				                    Reset
-				                </Text>
-				            </TouchableHighlight>
-				        </View>
-					)
-				}								
+                <View style={{flex:1,flexDirection:"row",marginTop:10,marginHorizontal:10}}>
+                    {this.renderResetButton(current_device,remote_device)}                              
+                </View>
 			</Background>
 		)
 	}
@@ -526,6 +530,7 @@ const mapStateToProps = state => ({
   	remote_device_status : state.scanRemoteReducer.remote_device_status,
   	device: state.scanCentralReducer.central_device,
     debug_mode_status : state.setupCentralReducer.debug_mode_status,
+    pairing_device_status: state.setupCentralReducer.pairing_device_status
 });
 
 export default connect(mapStateToProps)(HVACPair);

@@ -37,37 +37,54 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
      * correct information after user comes back to the activity and this information can't be read from the service
      * as it might have been killed already (DFU completed or finished with error).
      */
-    private final DfuProgressListener mDfuProgressListener = new DfuProgressListenerAdapter() {
+        private final DfuProgressListener mDfuProgressListener = new DfuProgressListenerAdapter() {
         @Override
         public void onDeviceConnecting(final String deviceAddress) {
-            Log.d("onDeviceConnecting()",deviceAddress);
+            Log.d(METHOD_TAG,"onDeviceConnecting()");
+            this.sendDFUEvent("onDeviceConnecting()");
         }
 
         @Override
         public void onDfuProcessStarting(final String deviceAddress) {
-            Log.d("onDfuProcessStarting()",deviceAddress);
+            Log.d(METHOD_TAG,"onDfuProcessStarting()");
+            this.sendDFUEvent("onDfuProcessStarting()");
         }
 
         @Override
         public void onEnablingDfuMode(final String deviceAddress) {
-            Log.d("onEnablingDfuMode()",deviceAddress);
+            Log.d(METHOD_TAG,"onEnablingDfuMode()");
+            this.sendDFUEvent("onEnablingDfuMode()");
+
         }
 
-
+        private void sendDFUEvent(String eventName){
+            try{
+                JSONObject json = new JSONObject();
+                json.put("dfu_event",eventName);
+                Bundle bundle = null;
+                bundle = BundleJSONConverter.convertToBundle(json);
+                WritableMap map = Arguments.fromBundle(bundle);
+                sendEvent("DFUEvent",map);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
 
         @Override
         public void onFirmwareValidating(final String deviceAddress) {
-            Log.d("onFirmwareValidating()",deviceAddress);
+            Log.d(METHOD_TAG,"onFirmwareValidating()");
+            this.sendDFUEvent("onFirmwareValidating()");
         }
 
         @Override
         public void onDeviceDisconnecting(final String deviceAddress) {
-            Log.d("onDeviceDisconnecting()",deviceAddress);
+            Log.d(METHOD_TAG,"onDeviceDisconnecting()");
+            this.sendDFUEvent("onDeviceDisconnecting()");
         }
 
         @Override
         public void onDfuCompleted(final String deviceAddress) {
-            Log.d("onDfuCompleted()",deviceAddress);
+            Log.d(METHOD_TAG,"onDfuCompleted()");
 
             // let's wait a bit until we cancel the notification. When canceled immediately it will be recreated by service again.
             new Handler().postDelayed(new Runnable() {
@@ -90,7 +107,7 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
 
         @Override
         public void onDfuAborted(final String deviceAddress) {
-            Log.d("onDfuAborted()",deviceAddress);
+            Log.d(METHOD_TAG,"onDfuAborted()");
             try {
                 JSONObject json = new JSONObject();
                 json.put("error","DFU aborted");
@@ -121,6 +138,7 @@ public class BluetoothModule extends ReactContextBaseJavaModule {
 
         @Override
         public void onError(final String deviceAddress, final int error, final int errorType, final String message) {
+            Log.d(METHOD_TAG,"onError()");
             try {
                 JSONObject json = new JSONObject();
                 json.put("error",error);

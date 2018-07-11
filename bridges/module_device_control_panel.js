@@ -71,7 +71,12 @@ import {
     UNPAIR_STATUS,
     PAIR_STATUS,
     TWO_BYTES_TO_INT,
-    LOADING_VALUE
+    LOADING_VALUE,
+    IS_STRING,
+    UPDATING,
+    NO_UPDATING,
+    RELAY_WIEGAND_CENTRAL,
+    RELAY_WIEGAND_REMOTE
 } from '../constants'
 
 import StatusBox from './status_box'
@@ -106,6 +111,13 @@ import {
 	WRITTED_START_RADIO_UPDATE_COMMAND,
 	WRITTED_START_APP_UPDATE_COMMAND,
 	WRITTED_START_BLUETOOTH_UPDATE_COMMAND,
+
+} from '../action_creators'
+
+import{
+	startFirmwareUpdate,
+	chooseCommand,
+	FIRMWARE_LOG_CREATOR,
 	STARTING_WRITING_PAGES,
 	STARTING_ROW,
 	WRITING_ROW_PICE,
@@ -121,14 +133,6 @@ import {
 	FETCHED_RADIO_FILE_FETCHED,
 	FETCHED_APP_FILE_FETCHED,
 	FETCHED_BLUETOOTH_FILE_FETCHED,
-
-} from '../action_creators'
-
-import{
-	startFirmwareUpdate,
-	fetchFirmwareFile,
-	chooseCommand,
-	FIRMWARE_LOG_CREATOR,
 
 } from '../action_creators/firmware_update'
 
@@ -239,8 +243,14 @@ import {
 	PhoneRsp_UnpairResult,
 	PhoneRsp_PairResult,
     PhoneRsp_DebugModeEnabled,
-	PhoneCmd_GetVoltageLevels
-    
+	PhoneCmd_GetVoltageLevels,
+    PhoneCmd_SecurityHash,
+    PhoneCmd_FactoryReset,
+    PhoneCmd_GetWiegandLedMode,
+    PhoneRsp_WiegandLedMode,
+    PhoneRsp_WiegandEnabled,
+    PhoneCmd_SetWiegandEnabled,
+    PhoneCmd_GetWiegandEnabled
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -273,6 +283,8 @@ const MAX_NUMBER_OF_RETRIES = 5
 var connection_interval = 0;
 var second_interval = 0;
 var general_interval = 0;
+var getting_commands_interval = 0;
+
 var getAllEventActivate = false;
 var scanning_status_interval = 0
 var get_update_radio_status_inteval = 0
@@ -284,6 +296,7 @@ const FIRMWARE_UPDATE_AVAIBLE  = 0
 const UPDATING_FIRMWARE = 1
 const FINISHING_FIRMWARE_UDAPTE = 2
 const SYSTEM_UPDATED = 3
+const SCREEN_NAME = "ModuleOperatingValues"
 
 const eraseInterval = () => {
 		
@@ -313,6 +326,8 @@ class SetupCentral extends Component{
 		
 		this.device = props.device
 		this.hardware_type = props.device.manufactured_data.hardware_type
+
+
 		this.manufactured_device_id = props.device.manufactured_data
 		this.handleDisconnectedPeripheral = this.handleDisconnectedPeripheral.bind(this)
 		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
@@ -355,33 +370,33 @@ class SetupCentral extends Component{
                 this.showPINModal()
             break
             case "backPress":
-                endDeployDisconnect()
-        		eraseInterval()
-
-        	
-        		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
-            	this.props.dispatch({type:"SHOW_GOING_BACK_SCREEN",show_going_back_screen:true})
-            	this.props.dispatch({type:"SET_ON_BACK_DISCONNECT",on_back_disconnect:true})	 
-
-            	this.fast_manager.stopDeviceScan()
-
-				this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
-				
-				this.props.showCamera()
-
-				this.changing_time = true
-
-				this.disconnect() // don't chante this order (disconnect() and removeListeners()) or the device won't disconnect
-            
+            	this.goBack()
             break
             default:
             break
         }
     }
 
+    goBack(){
+        endDeployDisconnect()
+		eraseInterval()
+	
+		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
+    	this.props.dispatch({type:"SHOW_GOING_BACK_SCREEN",show_going_back_screen:true})
+    	this.props.dispatch({type:"SET_ON_BACK_DISCONNECT",on_back_disconnect:true})	 
+
+    	this.fast_manager.stopDeviceScan()
+
+		this.props.dispatch({type: "OPTIONS_LOADED",options_loaded: false})
+		
+		this.props.showCamera()
+
+		this.changing_time = true
+		this.createGettingCommandsInterval()
+    }
+
     componentWillMount() {
 		this.startSlowBleManager()
-		
 		this.props.dispatch({type: "RESET_SETUP_CENTRAL_REDUCER"}) //something its wrong when the user push back after connect to another device, with this we reset all the state.
 		this.props.dispatch({type: "SET_FAST_MANAGER",fast_manager: this.fast_manager})
 		this.props.dispatch({type: "SET_MANUAL_DISCONNECT",manual_disconnect: false})
@@ -404,6 +419,31 @@ class SetupCentral extends Component{
 		SlowBleManager.start().then(response => {}).catch(error => console.log(error))
 	}
 
+    /*
+	* In order to check if the connection process hasn't ended i.e. all the values have been readed 
+	* and updated from the bridge
+    */
+    createGettingCommandsInterval(){
+    	if(getting_commands_interval == 0){
+    		getting_commands_interval = setInterval(() => {
+    			console.log("createGettingCommandsInterval()")
+    			if(!this.props.getting_commands)
+    				this.disconnect()
+    		},500)
+    	}else{
+    		console.log("getting_commands_interval previosly created")
+    	}
+    }
+
+	clearGettingCommandsInterval(){
+    	if(getting_commands_interval != 0){
+    		clearInterval(getting_commands_interval)
+    		getting_commands_interval = 0
+    	}else{
+    		console.log("getting_commands_interval previosly cleared")
+    	}
+    }
+
 	activateListeners(){
 		console.log("activateListeners()");
 		this.activateHandleDisconnectedPeripheral()		
@@ -418,7 +458,7 @@ class SetupCentral extends Component{
         this.onDFUError = bleManagerEmitter.addListener("DFUOnError",this.handleOnDFUError)
 	}
 
-	removeListeners(){
+	removeListeners(goBackAtFinished){
 		console.log("removeListenerss()")
 		this.removeHandleCharacteristic()
 		this.removeHandleConnectDevice()
@@ -427,6 +467,8 @@ class SetupCentral extends Component{
         this.discoverPeripheral.remove()
         this.completedEvent.remove()
         this.uGraph.remove()		
+		if(goBackAtFinished)
+			this.props.navigator.pop()        
 	}
 
 	disconnect(){
@@ -441,24 +483,17 @@ class SetupCentral extends Component{
 				}).catch(error => console.log("error",error))
 			}else{
 				this.props.navigator.pop()
-				this.handleDisconnected()
+				this.handleDisconnectedPeripheral()
 			}
 		})
 	}
 
     unPair() {
     	console.log("unPair()",this.device.manufactured_data.device_id)
-	    if(!this.props.debug_mode_status){
-		    this.props.dispatch({
-		    	type: "SET_UNPAIR_DISCONNECT",
-		    	unpair_disconnect: true
-		    })
-		}
-
-		this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
 		this.setBridgeStatus(UNPAIR_STATUS)
 		this.writeUnpair()
-
+		Alert.alert("Unpairing the bridge.","Wait a moment. Unpairing the bridge.",[],{ cancelable: false })
+		setTimeout(() => this.writeUnpairResult(),500)
     }
 
     writeUnpair(){
@@ -612,7 +647,6 @@ class SetupCentral extends Component{
 		if(device){
 			const manufactured_data_status = device.manufactured_data.device_state 
 			const status = this.getDeviceStatus()
-
 			
 			this.setBridgeStatus(status)
 
@@ -624,16 +658,13 @@ class SetupCentral extends Component{
 
 			let is_connected = await IS_CONNECTED(device.id)
 			
-
 			if(is_connected){
 				this.handleConnectedDevice()
 			}else{
 				initDeployDisconnect()
-				
-				console.log("connection_interval",connection_interval)
 
 				if(connection_interval == 0){
-					connection_interval = setInterval(() => this.connect(device),1000)
+					connection_interval = setInterval(() => this.connect(device),3000)
 				}else{
 					console.log("the connection_interval can't be created it was created previosly")
 				}
@@ -658,9 +689,18 @@ class SetupCentral extends Component{
 		
 		var data = GET_SECURITY_STRING_WITH_EXTRA_BYTE(device.manufactured_data.device_id,device.manufactured_data.tx,device.manufactured_data.extra_byte)
 		
-		var device_type = parseInt(this.hardware_type)
+		var hardware_type = parseInt(this.hardware_type)
+
+		if(hardware_type == 0){
+			console.log("connect()",device.manufactured_data)
+			console.log("connect()",device.manufactured_data.hardware_type)
+
+			hardware_type = parseInt(device.manufactured_data.hardware_type,16)
+		}
 		
-		SlowBleManager.controllHVACConnect(device.id,data,device_type,device.manufactured_data.device_id,device.manufactured_data.tx)
+		
+		console.log("connect()",hardware_type)
+		SlowBleManager.controllHVACConnect(device.id,data,hardware_type)
 		.then(response => console.log("response connect()",response))
 		.catch(error => {
 			console.log("error on connect()",error)
@@ -672,7 +712,7 @@ class SetupCentral extends Component{
 
     handleConnectedDevice(){
     	console.log("handleConnectedDevice()")
-    	if(this.props.current_screen != "ModuleOperatingValues"){
+    	if(this.props.current_screen != SCREEN_NAME){
     		LOG_INFO([0xA1],CONNECTED,this.device.manufactured_data.device_id) // 0xA1 ITS DEFINED ON commands.js
 
 	    	SlowBleManager.startHVACNotifications(this.device.id);
@@ -689,22 +729,6 @@ class SetupCentral extends Component{
     	}	
     }
 
-	deployConnected(){
-		console.log("deployConnected()")
-		let device = this.device
-		var id = device.id
-		var data = GET_SECURITY_STRING_WITH_EXTRA_BYTE(device.manufactured_data.device_id,device.manufactured_data.tx,device.manufactured_data.extra_byte)
-		if(this.props.setConnectionEstablished){
-	        	this.setConnectionEstablished(device)
-		}else{
-		    SlowBleManager.write(id,SUREFI_SEC_SERVICE_UUID,SUREFI_SEC_HASH_UUID,data,20).then(response => {
-	        	this.setConnectionEstablished()
-	        }).catch(error => {
-	        	console.log("Error",error)
-	        })			
-		}
-	}
-
     setBridgeStatus(bridge_status){
     	console.log("setBridgeStatus()",bridge_status)
     	this.props.dispatch({type: "SET_BRIDGE_STATUS",bridge_status: bridge_status})
@@ -717,20 +741,6 @@ class SetupCentral extends Component{
     	this.renderConnectedStatus()
     	eraseInterval()
     	
-		if(this.props.pair_disconnect || this.props.unpair_disconnect){
-			
-    		if(this.props.pair_disconnect){
-
-    			this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: false})
-    			this.writePairResult(this.device)
-
-    		}else{
-
-    			this.props.dispatch({type:"SET_UNPAIR_DISCONNECT",unpair_disconnect:false})
-    			this.writeUnpairResult(this.device)
-
-    		}
-    	}
     	var state = this.getDeviceStatus()
 
     	this.setBridgeStatus(state)
@@ -864,30 +874,17 @@ class SetupCentral extends Component{
     	
         var {props} = this
     	console.log("handleDisconnectedPeripheral()",
-    		props.pair_disconnect,
-    		props.unpair_disconnect,
-    		props.manual_disconnect,
     		props.deploy_disconnect,
     		props.firmware_update_disconnect,
-    		props.on_back_disconnect
+    		props.on_back_disconnect,
+    		props.reset_factory_disconnect,
     	)
 
     	props.dispatch({type:"SET_CONNECTION_ESTABLISHED",connection_established:false})
     	
     	LOG_INFO([0xA2],DISCONNECTED,props.device.manufactured_data.device_id)
 
-    	if(props.pair_disconnect || props.unpair_disconnect){
-    		console.log("entra aqui - 1");
-    		this.renderNormalConnecting()
-    		setTimeout(() => this.deployConnection(this.device),2000)
-	
-    	}else if(props.manual_disconnect){
-    		console.log("this.props.firmware_update_status",this.props.firmware_update_status)
-    		if(this.props.firmware_update_status == UPDATING_FIRMWARE){
-    			this.deployConnection()
-    		}
-
-		}else if(props.deploy_disconnect){
+		if(props.deploy_disconnect){
 			
 			console.log("entra aqui 4 - deploy");
 
@@ -896,47 +893,34 @@ class SetupCentral extends Component{
 
     	}else if (props.on_back_disconnect){
 				
-				props.createScanInterval()
-				this.removeListeners()
-				setTimeout(() => props.navigator.pop(),1000)
+			this.clearGettingCommandsInterval()
+			this.props.createScanInterval()
+			const goBackAtFinished = true
+			this.removeListeners(goBackAtFinished)
 
-    	}else{
-    		console.log("this.props.current_screen",this.props.current_screen)
-    		if(this.props.current_screen == "ModuleOperatingValues"){
-    			this.connect()
-    		}else{
-				props.navigator.screenIsCurrentlyVisible().then(response => {
-	    			console.log("response",response)
-	    			if(!response){
-	    				props.navigator.pop()
-	    			}    			
-	    		})
+    	}else if(props.reset_factory_disconnect){
+    		this.deployConnection()
+    	}else{	
+			props.navigator.screenIsCurrentlyVisible().then(response => {
+    			
+    			if(!response){
+    				props.navigator.pop()
+    				props.navigator.pop()
+    			}else {
+    				props.navigator.pop()
+    			}
 
-	    		if(props.show_disconnect_notification){
-	    			props.navigator.screenIsCurrentlyVisible().then(response => {
-	    				if(!response){
-	    					Alert.alert("Alert","Bluetooth Device Disconnect.")
-	    				}
-	    			})
-	    		}
-
-				props.dispatch({
-					type : "DISCONNECT_CENTRAL_DEVICE"
-				})    
-
-				this.deployConnection(this.device)
-    		}
+    		})
     	}
 	}
 
-	writePairResult(device){
-		console.log("writePairResult()",device.id)
+	writePairResult(){
 		var data = [PhoneCmd_GetPairResult]
 		this.write(data)
 	}
 
 	writeUnpairResult(device){
-		console.log("writeUnpairResult()",device.id)
+		console.log("writeUnpairResult()")
 		var data = [PhoneCmd_GetUnpairResult]
 		this.write(data)
 	}
@@ -1090,19 +1074,18 @@ class SetupCentral extends Component{
 		}	
 	}
 
-	turnOnNotifications(){
-		console.log("turnOnNotifications()")
-		this.props.dispatch({type :"ALLOW_NOTIFICATIONS",allow_notifications:true})
-	}
+	setHardwareType(hardware_type){
+		this.hardware_type = parseInt(this.props.device.manufactured_data.hardware_type) 
+		if(this.hardware_type == 0)
+			this.hardware_type = parseInt(this.props.device.manufactured_data.hardware_type,16)
 
-	turnOffNotifications(){
-		console.log("turnOffNotifications()")
-		this.props.dispatch({type: "ALLOW_NOTIFICATIONS",allow_notifications:false})
+		let device_copy = this.props.device
+		device_copy.manufactured_data.hardware_type = this.hardware_type
+		this.props.dispatch({type: "UPDATE_DEVICE",device:device_copy})
 	}
 
 	getCorrectHexVersion(values){
-		var current_version = BYTES_TO_HEX([values[3],values[2],values[1],values[0]]).toString().toUpperCase()
-		//console.log("current_version()",current_version)
+		var current_version = BYTES_TO_HEX(values.reverse()).toString().toUpperCase()
 		return current_version
 	}
 
@@ -1224,6 +1207,9 @@ class SetupCentral extends Component{
 		//console.log("isCentral()")
 		if(this.hardware_type == MODULE_WIEGAND_CENTRAL || this.hardware_type == parseInt(MODULE_WIEGAND_CENTRAL))
 			return true
+		if(parseInt(this.hardware_type,16) == RELAY_WIEGAND_CENTRAL){
+			return true
+		}
 
 		return false
 	}
@@ -1232,6 +1218,10 @@ class SetupCentral extends Component{
 		//console.log("isRemote()")
 		if(this.hardware_type == MODULE_WIEGAND_REMOTE || this.hardware_type == parseInt(MODULE_WIEGAND_REMOTE))
 			return true
+		
+		if(parseInt(this.hardware_type,16) == RELAY_WIEGAND_REMOTE) //it need be parsed like 16 because the string is something like 0A
+			return true
+
 		return false
 	}
 
@@ -1246,7 +1236,7 @@ class SetupCentral extends Component{
 			info = {}
 			info.version = PRETY_VERSION(parseFloat(values[0]) + "." + parseFloat(values[1])) 
 			info.build_number = parseInt(BYTES_TO_HEX([values[2],values[3]].reverse()),16) 
-			info.pic_number = this.getCorrectHexVersion(values.slice(6,10)) 
+			info.pic_number = BYTES_TO_HEX(values.slice(6,10).reverse()).toString().toUpperCase() 
 		}
 
 		return info
@@ -1279,16 +1269,6 @@ class SetupCentral extends Component{
 			var admin_values = (
 				<View>
 					<View>
-						<View style={{alignItems:"center"}}>
-							<Text style={{color:"gray",fontSize:20,marginBottom:5}}>
-								FIRMWARE VERSIONS
-							</Text>
-						</View>
-						<WhiteRow name="Application" value={app_info.version   + " (" + app_info.build_number  + ")"}/>
-						{this.isRemote() && <WhiteRow name="Radio" value={radio_info.version   + " (" + radio_info.build_number  + ")"}/>}
-						<WhiteRow name="Bluetooth" value ={bluetooth_version   + " (" + bluetooth_build_number  + ")"}/>
-					</View>
-					<View>
 						<View style={styles.device_control_title_container}>
 							<Text style={{color:"gray",fontSize:20,marginVertical:5}}>
 								RADIO SETTINGS
@@ -1310,6 +1290,16 @@ class SetupCentral extends Component{
 			return (
 				<View style={{alignItems:"center"}}>
 					{admin_values}
+					<View>
+						<View style={{alignItems:"center"}}>
+							<Text style={{color:"gray",fontSize:20,marginBottom:5}}>
+								FIRMWARE VERSIONS
+							</Text>
+						</View>
+						<WhiteRow name="Application" value={app_info.version   + " (" + app_info.build_number  + ")"}/>
+						<WhiteRow name="Radio" value={radio_info.version   + " (" + radio_info.build_number  + ")"}/>
+						<WhiteRow name="Bluetooth" value ={bluetooth_version   + " (" + bluetooth_build_number  + ")"}/>
+					</View>					
 					<View>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
@@ -1334,13 +1324,13 @@ class SetupCentral extends Component{
 						)
 					}
 
-					<View style={{marginBottom:80}}>
+					<View style={{marginBottom:50}}>
 						<View style={styles.device_control_title_container}>
 							<Text style={styles.device_control_title}>
 								OTHER COMMANDS
 							</Text>
 						</View>
-						{this.getOtherCommands(user_type)}
+						{this.renderOtherCommands(user_type)}
 					</View>
 				</View>	
 			)
@@ -1356,13 +1346,42 @@ class SetupCentral extends Component{
 		)
 	}
 
-	getOtherCommands(user_type){
+	showFactoryResetAlert(){
+		Alert.alert(
+			"Warning",
+			"Are you sure you want to reset this unit to a factory state?",
+			[
+				{text:"Cancel" },
+				{text:"Continue",onPress:() => this.writeFactoryResetCommand()}
+			]
+		)
+	}
+
+	writeFactoryResetCommand(){
+		const data = [PhoneCmd_FactoryReset]
+		this.write(data)
+	}
+
+	writeWiegandEnabled(wiegand_enable){
+		const data = [PhoneCmd_SetWiegandEnabled,wiegand_enable]
+		
+		this.write(data)
+
+		setTimeout(() => this.getWiegandEnabled(),1000)
+		setTimeout(() => this.goBack(),2000)
+		setTimeout(() => this.props.navigator.pop(),2500)
+	}
+
+	renderOtherCommands(user_type){
 		let name = "Set Demo Time (" + parseSecondsToHumanReadable(this.props.demo_mode_time)+ ")";
 		let run_time_name = "Set Run Time (" + parseSecondsToHumanReadable(this.props.run_time)+ ")"; 
 		let activated_name = this.props.activated[0] ? "Deactivate" : "Activate"
 		let activated_value = this.props.activated[0] ? 0 : 1
+		//console.log("wiegand_enable",this.props.wiegand_enable)
+		let wiegand_enable = this.props.wiegand_enable[0] ? 0 : 1
+		let wiegand_enable_text = this.props.wiegand_enable[0] ? "Deactivate Wiegand Enabled" : "Activate Wiegand enabled"
+
 		//console.log("this.props.debug_mode_status",this.props.debug_mode_status)
-		
 
 		if(user_type){
 			return (
@@ -1374,6 +1393,9 @@ class SetupCentral extends Component{
 					<WhiteRowLink name={name} callback={() => this.showDemoUnitTimeModal()}/>
 					<WhiteRowLink name={run_time_name} callback={() => this.showRunTimeModal()}/>
 					<WhiteRowLink name={activated_name} callback={() => this.setActivate(activated_value)}/>
+					<WhiteRowLink name={"Advance firmware update"} callback={() => this.goToAdvanceFirmwareUpdate()}/>
+					<WhiteRowLink name={"Factory Reset"} callback={() => this.showFactoryResetAlert()}/>
+					<WhiteRowLink name={wiegand_enable_text} callback={() => this.writeWiegandEnabled(wiegand_enable)}/>
 				</View>
 			)
 		}else{
@@ -1383,6 +1405,28 @@ class SetupCentral extends Component{
 				</View>
 			)
 		}
+	}
+
+	resetUnitAlert(){
+		Alert.alert("Reset Unit","This action will reset the unit to the new demo.",[
+			{text: "Cancel"},
+			{text: "Reset",onPress : () => this.resetUnit()}
+		])
+	}
+	
+
+	/*
+	* Take the run time and add 30 days to the demo_mode_time in order to "reset the unit" to a new demo unit state
+	*/
+	resetUnit(){
+		const time = BYTES_TO_INT_LITTLE_ENDIANG(this.props.run_time)
+		const time_on_days = Math.floor(((time / 60) / 60) / 24) 
+		const new_extended_time = time_on_days + 30
+		const number_seconds = new_extended_time * 86400
+		const number_seconds_bytes = INT_TO_BYTE_ARRAY(number_seconds)
+		this.setDemoModeTime(number_seconds_bytes)
+		setTimeout(() => this.getDemoModeTime(),500)
+		setTimeout(() => this.getRunTime(),1000)
 	}
 
 	renderOptions(){
@@ -1406,6 +1450,7 @@ class SetupCentral extends Component{
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
 			setConnectionEstablished = {() => this.setConnectionEstablished()}
 			saveOnCloudLog = { (bytes,type) => this.saveOnCloudLog(bytes,type)}
+			resetUnitAlert = {() => this.resetUnitAlert()}
 			showModalToResetDemoUnits = {() => this.goToPayMentOptions() }
 			unPair = {() => this.unPair()}
 		/>
@@ -1438,18 +1483,21 @@ class SetupCentral extends Component{
 		console.log("setActivateLed()",value)
 		var data = [PhoneCmd_SetLedsEnabled].concat(value)
 		this.write(data)
-		setTimeout(() => this.getActivatedLed(),2000)
+		//setTimeout(() => this.getActivatedLed(),2000)
 	}
 
 
-
+	setWiegandLedMode(value){
+		var data = [PhoneCmd_SetWiegandLedMode].concat(value)
+		this.write(data)
+		setTimeout(() => this.getWiegandLedMode(),2000)	
+	}
 
 	setFailSafeOption(value){
 		console.log("setFailSafeOption()",value)
 		if(value){
 			var data = [PhoneCmd_SetFailSafeOption].concat(value)
 			this.write(data)
-			setTimeout(() => this.getFailSafeOption(),2000)			
 		}else{
 			console.log("Error","The value on setFailSafeOption is null.")
 		}
@@ -1460,7 +1508,6 @@ class SetupCentral extends Component{
 		if(value){
 			var data = [PhoneCmd_SetHeartbeatTime].concat(value)
 			this.write(data)
-			setTimeout(() => this.getHeartBeatTime(),2000)
 		}else{
 			Alert.alert("Error","The Heartbeat value")
 		}
@@ -1487,8 +1534,12 @@ class SetupCentral extends Component{
 		this.write([PhoneCmd_GetLedsEnabled])
 	}
 
+	getWiegandLedMode(){
+		this.write([PhoneCmd_GetWiegandLedMode])	
+	}
+
 	write(data){
-		//console.log("write()",prettyBytesToHex(data))
+		console.log("write()",prettyBytesToHex(data))
 		HVAC_WRITE_COMMAND(this.device.id,data)
 		.then(response => {
 
@@ -1519,7 +1570,6 @@ class SetupCentral extends Component{
 	/* --------------------------------------------------------------------------------------------------- Go To Seccion ---------------------------------------------------------------*/
 
 	goToPair(){
-		
 		this.fast_manager.stopDeviceScan()
 		this.props.navigator.push(
 			{
@@ -1532,7 +1582,8 @@ class SetupCentral extends Component{
 					saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
 					isCentral: () => this.isCentral(),
 					isRemote: () => this.isRemote(),
-					setBridgeStatus: (value) => this.setBridgeStatus(value)
+					setBridgeStatus: (value) => this.setBridgeStatus(value),
+					writePairResult: () => this.writePairResult(),
 				},
 				rightButtons: [
 		            {
@@ -1542,9 +1593,6 @@ class SetupCentral extends Component{
 		        ],					
 			}
 		)
-		/*}else{
-			this.props.dispatch({type:"SHOW_MODAL"})
-		}*/
 	}
 
 	paymentResponse(values){
@@ -1568,7 +1616,7 @@ class SetupCentral extends Component{
 	goToFirmwareUpdate(){
 		Alert.alert(
 			"Warning",
-			"In order to do a firmware update, you must be instructed by a support call, this action can't be undone.",
+			"In order to do a firmware update, you must be instructed by a support call.",
 			[
 				{text:"Cancel" },
 				{text:"Continue",onPress:() => this.showUpdateTwoSitesAlert()}
@@ -1579,7 +1627,7 @@ class SetupCentral extends Component{
 	showUpdateTwoSitesAlert(){
 		Alert.alert(
 			"Warning",
-			"In order to work the firmware update must be done in both sides, remote and central, this action can't be undone.",
+			"In order to work the firmware update must be done in both sides, remote and central. This action can't be undone.",
 			[
 				{text: "Cancel"},
 				{text: "Continue",onPress: () => this.doGoToFirmwareUpdate() }
@@ -1587,41 +1635,51 @@ class SetupCentral extends Component{
 		)
 	}
 
+    showDetails(){
+    	console.log("showDetails()")
+        this.props.dispatch({type: "SET_SHOW_FIRMWARE_UPDATE_DETAILS",show_firmware_update_details:true})
+    }
+
+    hideDetails(){
+    	console.log("hideDetails()")
+        this.props.dispatch({type: "SET_SHOW_FIRMWARE_UPDATE_DETAILS",show_firmware_update_details:false})
+    }
+
 	doGoToFirmwareUpdate(){
 		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
-		//console.log("getOptions()",this.props.indicatorNumber,this.props.user_data);
 		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
 
-
-		if(admin_options.lastIndexOf(user_type) !== -1){
-		//if(true){
-			this.props.navigator.push({
-				screen: "HVACFirmwareUpdate",
-				title : "Firmware Update",
-				rightButtons: [
-		            {
-		                title: 'Advanced', // for a textual button, provide the button title (label)
-		                id: 'advanced', // id for this button, given in onNavigatorEvent(event) to help understand which button was clicked
-		            },
-		        ],
-		        passProps: {
-		        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
-		        	animated: false,
-		        	admin : true
-		        	//device : this.device
-		        }
-			})			
-		}else{
-			this.props.navigator.push({
-				screen: "HVACFirmwareUpdate",
-				title : "Firmware Update",
-				animated: false,
-				passProps: {
-		        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
-				}
-			})			
-		}
+		this.props.navigator.push({
+			screen: "HVACFirmwareUpdate",
+			title : "Firmware Update",
+	        passProps: {
+	        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
+	        	showDetails: () => this.showDetails(),
+	        	hideDetails: () => this.hideDetails(),
+	        }
+		})			
 	}
+
+	goToAdvanceFirmwareUpdate(){
+		let user_type = this.props.user_data ?  this.props.user_data.user_type : false
+		var admin_options = ["SYS_ADMIN","PROD_ADMIN","CLIENT_DEV"]
+
+		this.props.navigator.push({
+			screen: "AdvanceFirmwareUpdate",
+			title : "Firmware Update",
+	        passProps: {
+	        	startFirmwareUpdate: type => this.startFirmwareUpdate(type),
+	        	showDetails: () => this.showDetails(),
+	        	hideDetails: () => this.hideDetails(),
+	        }
+		})			
+	}
+
+	saveOnCloudLog(value,log_type){
+		var body = LOG_CREATOR(value,this.device.manufactured_data.device_id,this.device.id,log_type)
+		POST_LOG(body)
+	}
+
 
 	goToConfigureRadio(){
 		console.log("goToConfigureRadio()");
@@ -1637,7 +1695,8 @@ class SetupCentral extends Component{
 					getHoppingTable:  () => this.getHoppingTable(),
 					getRadioSettings: () => this.getRadioSettings(),
 					setFailSafeOption: (values) => this.setFailSafeOption(values),
-					setActivateLed: (values) => this.setActivateLed(values)
+					setActivateLed: (values) => this.setActivateLed(values),
+					setWiegandLedMode: (value) => this.setWiegandLedMode(value)
 				},
 				navigatorButtons : {
 					rightButtons: [
@@ -1656,13 +1715,15 @@ class SetupCentral extends Component{
 	goToConfiguration(){
 		console.log("goToConfiguration()");
 		this.getActivatedLed()
+		let title ="Controller Configuration"
 		if(this.isRemote()){
 			setTimeout(() => this.getFailSafeOption(),1000)	
+			title = "Remote Configuration"
 		}
 
 		this.props.navigator.push({
 			screen: "ModuleConfiguration",
-			title: "Configuration",
+			title: title,
 			animated: false,
 			passProps: {
 				saveOnCloudLog : (bytes,type) => this.saveOnCloudLog(bytes,type),
@@ -1751,43 +1812,9 @@ class SetupCentral extends Component{
 	}
 
 	getLastPackageTime(){
-		//console.log("getLastPackageTime()")
-		if(this.isRemote()){
-			var data = [PhoneCmd_GetLastPacketTime]
-			this.write(data)
-		}else if(this.isCentral()){
-			if(this.props.pairing_info.length > 0){				
-
-				var pair_info = this.props.pairing_info
-				var pair_status = pair_info.slice(0,1)
-				var number_pairs = pair_info.slice(1,2)
-				var equipment_pairs = pair_info.slice(2,pair_info.length)
-				let equipments_ids = []
-
-				for(let i = 0; i < number_pairs; i++){
-					var first = i * 3
-					var second = (i * 3) + 1
-					var third = (i * 3) + 2
-					var id = [equipment_pairs[first],equipment_pairs[second],equipment_pairs[third]]
-
-					this.props.dispatch({
-						type:"SET_LAST_PACKAGE_TIME_THERMOSTAT",
-						last_package_time_thermostat: []
-					})	 
-					equipments_ids.push(id)
-				}
-				
-				this.props.dispatch({type: "SET_EQUIPMENTS_PAIRED_WITH",equipments_paired_with: equipments_ids})
-
-				var data = [PhoneCmd_GetLastPacketTime]
-				this.write(data)
-
-			}else{
-				console.log("Error","Can't get last packet time to the termostat because there are not pairing_info")
-			}
-		}else{
-			console.log("Error","Error on getLastaPackageTime")
-		}
+		//console.log("getLastPackageTime()")	
+		var data = [PhoneCmd_GetLastPacketTime]
+		this.write(data)
 	}
 
 	writeLastPackageTimeCommand(id){
@@ -1866,10 +1893,6 @@ class SetupCentral extends Component{
 		}		
 	}
 
-
-
-
-
 	updateRadioVersion(values){
 		console.log("updateRadioVersion()",values)
 		if(values.length > 1){
@@ -1894,16 +1917,12 @@ class SetupCentral extends Component{
 	
 	updateBluetoothVersion(values){
 		console.log("updateBluetoothVersion()",values)
-		
 		this.props.dispatch({type: "SET_BLUETOOTH_INFO",bluetooth_info : values })
 	}
 
 	updateRegistration(values){
 		//console.log("updateRegistration()",values)
-		this.props.dispatch({
-			type:"UPDATE_REGISTRATION_INFO",
-			registration_info : values 
-		})	 
+		this.props.dispatch({type:"UPDATE_REGISTRATION_INFO",registration_info : values})
 		if(values.length > 62){
 			var name = values.slice(3,23)
 			var register_board_1_values = values.slice(23,43)
@@ -1914,10 +1933,16 @@ class SetupCentral extends Component{
 		}else{
 			console.log("Error!","Update registration can't be finished, the format isn't correct.")
 		}
+
+	}
+
+	updateWiegandLedMode(values){
+		console.log("updateWiegandLedMode()",values)
+		this.props.dispatch({type:"SET_WIEGAND_LED_MODE",wiegand_led_mode : values})
 	}
 
 	updateLastPackageTime(values){
-		//console.log("updateLastPackageTime",values)
+		console.log("updateLastPackageTime",values)
 		if(this.isRemote()){
 			this.props.dispatch({
 				type:"SET_LAST_PACKAGE_TIME",
@@ -1999,11 +2024,6 @@ class SetupCentral extends Component{
 	}
 
 	updateHoppingTable(values){
-		
-		
-	}
-
-	updateHoppingTable(values){
 		console.log("updateHoppingTable()",values)
 		this.props.dispatch({"type" : "SET_HOPPING_TABLE",hopping_table: values})
 		
@@ -2011,7 +2031,6 @@ class SetupCentral extends Component{
 		selectedDeviceHoppingTable = parseInt(selectedDeviceHoppingTable,16)
 		
 		this.selectHoppingTable(selectedDeviceHoppingTable,values[0])
-
 	}
 
 	selectHoppingTable(selectedDeviceHoppingTable,normal_hopping_table){
@@ -2070,7 +2089,7 @@ class SetupCentral extends Component{
 	}
 
 	updateFailSafeOption(values){
-		console.log("updateFailSafeOption()",values)
+		console.log("updateFailSafeOption()",values)		
 		this.props.dispatch({type: "SET_FAIL_SAFE_OPTION",fail_safe_option: values})
 	}
 
@@ -2385,6 +2404,11 @@ class SetupCentral extends Component{
 		this.write(data)
 	}
 
+	getWiegandEnabled(){
+		var data = [PhoneCmd_GetWiegandEnabled]
+		this.write(data)
+	}
+
 	/*
 	* @to_subscribe is variable to activate the notifications, that coming from the operating values
 	*/
@@ -2429,6 +2453,7 @@ class SetupCentral extends Component{
 
 	getAllCommandsEvent(data){
 		console.log("getAllCommandsEvent()",data)
+		//this.setHardwareType(data.hardware_type)
 		setTimeout(() => {
 			this.checkInitValues()
 		},3000)
@@ -2449,6 +2474,9 @@ class SetupCentral extends Component{
 			heart_beat,
 			debug_mode_status,
 			power_voltage,
+			wiegand_led_mode,
+			last_package_time,
+			wiegand_enable
 		} = this.props
 		var commands = []
 
@@ -2464,6 +2492,7 @@ class SetupCentral extends Component{
 		if(registration_info.length == 0){
 			commands.push(PhoneCmd_GetRegistration)
 		}
+
 
 		if(operating_values.length == 0){
 			commands.push(PhoneCmd_GetOperatingValues)
@@ -2493,14 +2522,28 @@ class SetupCentral extends Component{
 			commands.push(PhoneCmd_GetVoltageLevels)
 		}
 
-		if(this.isRemote()){ // the thermostat isn't support this commands, so we need filter for equiment
-			if(radio_info.length == 0){
-				commands.push(PhoneRsp_RadioVersion)
-			}		
-			if(fail_safe_option.length == 0){
-				commands.push(PhoneRsp_FailSafeOption)
-			}				
+		if(last_package_time.length){
+			commands.push(PhoneCmd_GetLastPacketTime)
 		}
+
+		if(wiegand_enable.length == 0){
+			commands.push(PhoneCmd_GetWiegandEnabled)
+		}
+
+		if(radio_info.length == 0){
+			commands.push(PhoneCmd_GetRadioVersion)
+		}		
+
+		if(this.isRemote()){ // the thermostat isn't support this commands, so we need filter for equiment
+			if(wiegand_led_mode == 0){
+				commands.push(PhoneCmd_GetWiegandLedMode)
+			}
+		}
+
+		if(fail_safe_option.length == 0){
+			commands.push(PhoneRsp_FailSafeOption)
+		}
+
 
 		if(this.isCentral()){ // The equipment is not support it this commands so we need filter for thermostat
 			if(heart_beat.length == 0){
@@ -2529,7 +2572,6 @@ class SetupCentral extends Component{
 				this.readCharacteristic()
 			}else{
 				//handle the other cases
-
 				this.handleResponse(command,value)
 				this.logCommandToCloud(command,value)
 			}
@@ -2566,17 +2608,19 @@ class SetupCentral extends Component{
 			case PhoneRsp_Registration: //0x24
 				this.updateRegistration(data)
 			break
-
+			case PhoneRsp_WiegandLedMode:
+				this.updateWiegandLedMode(data)
+			break
 			case PhoneRsp_OperatingValues: //0x26
 				this.updateOperatingValues(data)
-			break			
+			break		
+
 			case PhoneRsp_PowerOnTime: //0x2D
 				this.updatePowerOnTime(data)
 				this.props.dispatch({type:"LOADING_OPERATION_VALUES",loading_operation_values:false})
 			break
 			case PhoneRsp_PairingInfo: // 2C
 				this.updatePairingInfo(data)
-				this.getLastPackageTime()
 			break
 
 			case PhoneRsp_ResetCauses: 
@@ -2610,6 +2654,9 @@ class SetupCentral extends Component{
 			case PhoneRsp_UartTimeout: //0x82
 				Alert.alert("Failure", "PhoneRsp_UartTimeout (" + command.toString(16) + ") data: ( " + prettyBytesToHex(data) + ")")
 			break
+			case PhoneRsp_WiegandEnabled:
+				this.updateWiegandEnabled(data)
+			break			
 			case PhoneRsp_VoltageLevels:
 				this.updateVoltage(data)
 			break
@@ -2633,18 +2680,43 @@ class SetupCentral extends Component{
 			break
 			case PhoneRsp_PairResult: //0x45
 				const pair_result = data[0]
+				
+				this.props.dispatch({type: "SET_PAIRING_DEVICE_STATUS",pairing_device_status: 0}) // 0 IS EQUAL TO NO PAIRED
+
 				if(pair_result){
-					Alert.alert("Success","The pair was successfully.")
+					Alert.alert("Success","The pair was successfully.",[
+						{
+							text: "OK",
+							onPress: () => this.popOrKeepTheCurrentScreen()
+						}
+					])
 				}else{
-					Alert.alert("Error","The pair process fail, connect to the other Sure-Fi Wiegand to Force Pair.")
+					Alert.alert("Error","The pair process fail, connect to the other Sure-Fi Wiegand to Force Pair.",[
+						{	
+							text: "OK",
+							onPress: () => this.popOrKeepTheCurrentScreen()
+						}
+					])
 				}
+
 			break
 			case PhoneRsp_UnpairResult: // 0x47
 				const unpair_result = data[0]
 				if(unpair_result){
-					Alert.alert("Success","The un-pair was successfully.")
+					Alert.alert("Success","The un-pair was successfully.",[
+						{
+							text: "OK",
+							onPress: () => this.popOrKeepTheCurrentScreen()		
+						}
+					])
 				}else{
-					Alert.alert("Error","The pair process fail, connect to the other Sure-Fi Wiegand to Force the UnPair.")
+					Alert.alert("Error","The pair process fail, connect to the other Sure-Fi Wiegand to Force the UnPair.",[
+						{	
+							text: "OK",
+							onPress: () => this.popOrKeepTheCurrentScreen()
+						}
+					])
+
 				}
 			break
 
@@ -2654,8 +2726,30 @@ class SetupCentral extends Component{
 		}
 	}
 
+	/*
+	*if the current is screen is diferent to this screen this function will do a pop going back on the screen 
+	*/
+	async popOrKeepTheCurrentScreen(){
+		console.log("popOrKeepTheCurrentScreen()")
+		try{
+			let response = await this.props.navigator.screenIsCurrentlyVisible()
+			if(!response)
+				this.props.navigator.pop()
+
+		}catch(error) {
+			if(IS_STRING(error)){
+				Alert.alert("Error",error)	
+			}else{
+				console.log("error",error)
+			}
+
+		}
+	}
+
 	handleSuccess(data){
-		//console.log("handleSuccess()",data.toString(16))
+		console.log("handleSuccess()",data.toString(16))
+		const commands_without_action = [PhoneCmd_SecurityHash]
+
 		if(data == PhoneCmd_RadioStartFirmwareUpdate){
 			FIRMWARE_LOG_CREATOR(WRITTED_START_RADIO_UPDATE_COMMAND)
 			this.writePages()
@@ -2687,27 +2781,50 @@ class SetupCentral extends Component{
 			this.page_count++;
 			this.writePages()
 
+		
+		}else if(data == PhoneCmd_FactoryReset){
+			
+			initDeployDisconnect()
+			this.props.dispatch({type: "SET_RESET_FACTORY_DISCONNECT",reset_factory_disconnect:true})
+			this.disconnect()
+			Alert.alert("Success","The device has been reset.")
+
 		}else if(data == PhoneCmd_AppFinishFirmwareUpdate){
 			
 			this.createGetAppVersionInterval()
 
+		}else if(data == PhoneCmd_SetFailSafeOption){
+			if(this.props.configuration_update_status == UPDATING)
+				this.setActivateLed(this.props.activated_led)
+
 		}else if(data == PhoneCmd_SetLedsEnabled){
+			if(this.props.configuration_update_status == UPDATING)
+				this.setWiegandLedMode(this.props.wiegand_led_mode)
 
 		}else if(data == PhoneCmd_SetWiegandLedMode){
+			if(this.props.configuration_update_status == UPDATING){			
+				if(this.isCentral())
+					this.setHeartbeat(this.props.heart_beat)
+				else{
+					Alert.alert("Success.","All changes are saved correctly.")
+					this.finishConfigurationUpdate()	
+				}
+			}
 
-
-
-		}else if(data == PhoneCmd_SetFailSafeOption){
-
+		}else if(commands_without_action.includes(data)){
+			
 		}else{
-			console.log("data",data)
 			Alert.alert("Success.","All changes are saved correctly.")
 		}
-
 	}
 
 	writeDFUCommand(){
 		this.write([PhoneCmd_StartBleBootloader])
+	}
+
+	updateWiegandEnabled(value){
+		console.log("updateWiegandEnabled()",value)
+		this.props.dispatch({type: "SET_WIEGAND_ENABLE",wiegand_enable: value})
 	}
 
 	/*
@@ -2746,6 +2863,10 @@ class SetupCentral extends Component{
 		}
 	}
 
+
+	finishConfigurationUpdate(){
+		this.props.dispatch({type: "SET_CONFIGURATION_UPDATE_STATUS", configuration_update_status: NO_UPDATING})
+	}
 
 	/*
 	* writePages, take a page from this.byte_arrays and try to writed unless repeat_pages is true, in this case
@@ -3009,7 +3130,7 @@ class SetupCentral extends Component{
 	}
 
 	choseNameIfNameNull(name){
-		console.log("name",name)
+		console.log("choseNameIfNameNull()",this.hardware_type)
 
 		var hardware_type = this.hardware_type
 		if(name == "" || name == " " || name == null){
@@ -3017,6 +3138,10 @@ class SetupCentral extends Component{
 				return "WIEGAND REMOTE"
 			}else if(hardware_type == MODULE_WIEGAND_CENTRAL || hardware_type == parseInt(MODULE_WIEGAND_CENTRAL)){
 				return "WIEGAND CONTROLLER"
+			}else if(parseInt(hardware_type,16) == RELAY_WIEGAND_CENTRAL){
+				return "RELAY B"
+			}else if(parseInt(hardware_type,16) == RELAY_WIEGAND_REMOTE){
+				return "RELAY A"
 			}
 		}
 		return name
@@ -3048,7 +3173,6 @@ class SetupCentral extends Component{
 		
 	}
 
-
 	renderWarrantyInformation(){
 		//console.log("run_time",this.props.run_time)
 
@@ -3067,7 +3191,7 @@ class SetupCentral extends Component{
 				<View style={{position: 'absolute',zIndex:0}}>
 					<View style={{alignItems:"center"}}>
 						<Text style={{color:"gray",fontSize:20,marginBottom:5}}>
-							WARRANTY INFORMATION
+							MANUFACTURER WARRANTY
 						</Text>
 					</View>
 					<View style={{height:70,backgroundColor:"white",width:width,alignItems:"center",justifyContent:"center",zIndex:1}}>
@@ -3101,7 +3225,7 @@ class SetupCentral extends Component{
 		if(this.props.demo_unit_time != 0){
 	    	return (
 				<View style={{marginBottom:20}}>		
-					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.props.showModalToResetDemoUnits()}>
+					<TouchableHighlight style={styles.white_touchable_highlight} onPress={() => this.goToPayMentOptions()}>
 						<View style={{
 							flexDirection:"row",
 							alignItems:"center",						
@@ -3126,7 +3250,7 @@ class SetupCentral extends Component{
 
 	render(){
 		var props = this.props
-	
+		
 		if(props.show_going_back_screen){
 			return (
 				<Background>
@@ -3203,16 +3327,14 @@ const mapStateToProps = state => ({
   	show_switch_button : state.setupCentralReducer.show_switch_button,
   	
   	pair_disconnect: state.setupCentralReducer.pair_disconnect,
-  	unpair_disconnect : state.setupCentralReducer.unpair_disconnect,
   	deploy_disconnect : state.setupCentralReducer.deploy_disconnect,
   	manual_disconnect : state.setupCentralReducer.manual_disconnect,
   	firmware_update_disconnect : state.setupCentralReducer.firmware_update_disconnect,
   	on_back_disconnect: state.setupCentralReducer.on_back_disconnect,
+  	reset_factory_disconnect : state.setupCentralReducer.reset_factory_disconnect,
   	show_status_box : state.setupCentralReducer.show_status_box,
   	show_disconnect_notification : state.setupCentralReducer.show_disconnect_notification,
   	allow_notifications: state.setupCentralReducer.allow_notifications,
-  	write_pair_result : state.setupCentralReducer.write_pair_result,
-  	write_unpair_result: state.setupCentralReducer.write_unpair_result,
   	connection_established : state.setupCentralReducer.connection_established,
   	manager : state.scanCentralReducer.manager,
   	just_deploy : state.scanCentralReducer.just_deploy,
@@ -3251,19 +3373,11 @@ const mapStateToProps = state => ({
 	radio_and_bluetooth_firmware_update: state.updateFirmwareCentralReducer.radio_and_bluetooth_firmware_update,
 	application_and_bluetooth_firmware_update: state.updateFirmwareCentralReducer.application_and_bluetooth_firmware_update,
 	show_going_back_screen: state.setupCentralReducer.show_going_back_screen,
-	firmareButtonAnimation: state.updateFirmwareCentralReducer.firmareButtonAnimation,
-	radioFirmwareUpdateBoxRadius: state.updateFirmwareCentralReducer.radioFirmwareUpdateBoxRadius,
-	radioFirmwareUpdateBoxPosition: state.updateFirmwareCentralReducer.radioFirmwareUpdateBoxPosition,
-	radioFirmwareUpdateBoxShape: state.updateFirmwareCentralReducer.radioFirmwareUpdateBoxShape,
-	appFirmwareUpdateBoxRadius: state.updateFirmwareCentralReducer.appFirmwareUpdateBoxRadius,
-	appFirmwareUpdateBoxPosition: state.updateFirmwareCentralReducer.appFirmwareUpdateBoxPosition,
-	appFirmwareUpdateBoxShape: state.updateFirmwareCentralReducer.appFirmwareUpdateBoxShape,
-	bluetoothFirmwareUpdateBoxRadius: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxRadius,
-	bluetoothFirmwareUpdateBoxPosition: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxPosition,
-	bluetoothFirmwareUpdateBoxShape: state.updateFirmwareCentralReducer.bluetoothFirmwareUpdateBoxShape,
 	firmware_update_status: state.updateFirmwareCentralReducer.firmware_update_status,
 	current_screen: state.screenReducer.current_screen,
-
+	wiegand_led_mode: state.scanCentralReducer.wiegand_led_mode,
+	configuration_update_status: state.scanCentralReducer.configuration_update_status,
+	wiegand_enable : state.scanCentralReducer.wiegand_enable
 });
 
 

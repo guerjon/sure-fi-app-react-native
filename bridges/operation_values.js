@@ -18,10 +18,13 @@ import {
 	BYTES_TO_HEX,
 	Hex2Bin,
 	stringFromUTF8Array,
-	NOTIFICATION
+	NOTIFICATION,
+	prettyBytesToHexTogether,
+	BYTES_TO_INT
 } from '../constants'
-import {WRITE_COMMAND,LOG_INFO} from '../action_creators'
+import {WRITE_COMMAND,LOG_INFO,parserIntSecondsToHumanReadable} from '../action_creators'
 import Background from '../helpers/background'
+import {WhiteRowInfoLink} from '../helpers/white_row_link'
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const text_style = {
@@ -41,9 +44,11 @@ function bytesToHex(bytes) {
     return hex.join("");
 }
 
+var relay_nc = <Image style={{width:80,height:80}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
+var relay_no = <Image style={{width:80,height:80}} source={require('../images/relay_no.imageset/relay_no.png') }/>
+
 
 const Item = params => {
-	console.log("params",params.snr);
 	if(params.message_success){
 		var text_style = {color:"green"} 
 	}else{
@@ -97,6 +102,61 @@ const Item = params => {
 	)
 }
 
+var WIEGAND_DATA = params => {
+	let wiegand_data = params.wiegand_data
+	let wiegandDataString = -1
+	let bitCount = -1
+	let code = -1
+	let facility = -1
+
+	
+	bitCount = wiegand_data[0]
+	let wiegandInt =  wiegand_data.slice(1,wiegand_data.length).reverse()
+	
+	wiegandInt = BYTES_TO_HEX(wiegandInt)
+	
+	wiegandInt = parseInt(wiegandInt,16) 
+
+	if(bitCount == 26){
+		wiegandInt = wiegandInt >> 1
+		code = wiegandInt & 0xFFFF
+		wiegandInt = wiegandInt >> 16
+		facility = wiegandInt & 0xFF
+
+	}else if(bitCount == 37){
+		
+		wiegandInt = wiegandInt >> 1
+		code = wiegandInt & 0x7FFFF
+		wiegandInt = wiegandInt >> 15
+		facility = wiegandInt & 0xFFFF
+
+	}
+
+
+	if(wiegand_data && (Array.isArray(wiegand_data)) && (wiegand_data.length > 7)){
+		return(
+			<View style={{marginHorizontal:10,marginVertical:10,borderBottomWidth:1,borderBottomColor:"gray"}}>
+				<View style={{flexDirection:"row", marginRight:5,alignItems:"center", justifyContent:"space-between"}}>
+					<Text>
+						{bitCount} bits
+					</Text>
+					<Text>
+						Code: {code}
+					</Text>
+					<Text>
+						Fac: {facility}
+					</Text>
+				</View>
+				<View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
+					<Text>
+						0x {prettyBytesToHexTogether(wiegand_data)}
+ 					</Text>
+				</View>
+			</View>
+		)
+	}
+}
+
 class OperationValues extends Component{
 	
     static navigatorStyle = {
@@ -110,65 +170,32 @@ class OperationValues extends Component{
 
 	constructor(props) {
 		super(props);
-		/*console.log("--------")
-		console.log(props)
-		console.log("--------")
-		*/
-		this.handleCharacteristicNotification = this.handleCharacteristicNotification.bind(this)
 		this.device = this.props.device
 	}
 
 	componentWillMount() {
-		
-		
-		this.handleCharacteristic = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleCharacteristicNotification)
-		
-		this.getOperationValues()
+		this.props.dispatch({type: "SET_OPERATING_VALUES_DISCONNECT",operating_values_disconnect: true})
+		this.props.getLastPackageTime()
+		this.handleValues()
 	}
 
-    componentWillUnmount() {
-      this.props.activateHandleCharacteristic()
-    }
-
-	handleCharacteristicNotification(data){
-			var device = this.device;
-			LOG_INFO(data.value,NOTIFICATION)
-			switch(data.value[0]){
-				case 0x19:
-					data.value.shift()
-					this.props.saveOnCloudLog(data.value,"OPERATINGVALUES")
-					this.handleValues(data.value)
-
-					break		
-				default:
-				break
-			}
+	componentWillUnmount(){
+		this.props.dispatch({type: "SET_OPERATING_VALUES_DISCONNECT",operating_values_disconnect: false})
 	}
 
-	getOperationValues(){
-		console.log("getOperationValues()");
-		
-		this.props.dispatch({type:"LOADING_OPERATION_VALUES",loading_operation_values:true})
-
-		WRITE_COMMAND(this.device.id,[0x25])
-		.then(response => {
-		})
-		.catch(error =>  Alert.alert("Error",error))
-	}
-
-    handleValues(values){
-    	console.log("handleValues()",values);
-
-		this.values = values
+    handleValues(){
+		var values = this.props.operating_values
+		console.log("handleValues()",values);
 		
 		var values_hex = bytesToHex(values)
 		var relayValues = parseInt(values_hex.substr(0,2),16)
 		var wiegandValue = values_hex.substr(2,10)
 		var wiegandBytes =  parseInt(values_hex.substr(12,2), 16)
-		
 
 		this.tryRelayValues(relayValues)
+		
 		this.tryWiegandValues(wiegandValue,wiegandBytes)
+
 		this.tryTransmitValues(values_hex)
 		this.tryRecieveValues(values_hex)
     }
@@ -217,19 +244,15 @@ class OperationValues extends Component{
 
 
 	tryWiegandValues(wiegandValue,wiegandBytes){
-		console.log("wiegandValue",wiegandValue)
-		console.log("wiegandBytes",wiegandBytes)
         var codeString = ""
         var facString = ""
         var rawString = wiegandValue
         let bitsString = wiegandBytes
 
-        /*
-	        console.log("wiegandValue",wiegandValue);
-	        console.log("wiegandBytes",wiegandBytes);
-	        console.log("rawString",rawString);
-	        console.log("bitsString",bitsString);
-		*/
+        console.log("wiegandValue",wiegandValue);
+        console.log("wiegandBytes",wiegandBytes);
+        console.log("rawString",rawString);
+        console.log("bitsString",bitsString);
 
 		if(wiegandBytes == 4){
 			
@@ -250,7 +273,8 @@ class OperationValues extends Component{
 
 			facString = parseInt(wiegandBinary.substr(1,8), 2) 
 			codeString = parseInt(wiegandBinary.substr(9,16), 2) 
-
+			console.log("facString",facString)
+			console.log("codeString",codeString)
 
 
 		}else if(wiegandBytes == 37){
@@ -285,21 +309,15 @@ class OperationValues extends Component{
 		console.log("tryTransmitValues")
 
         if(values_hex.length > 26){
-	        this.txSuccess = parseInt(values_hex.substr(14,2), 16)
-	        this.numRetries = parseInt(values_hex.substr(16,2), 16) 
-	        this.maxRetries = parseInt(values_hex.substr(18,2), 16)
-	        this.rssiValue = 0 - (parseInt(values_hex.substr(20,4), 16) - 20)
-	        this.snrValue = 0 - (parseInt(values_hex.substr(24,2) - 20), 16)
-	        console.log("txSuccess",this.txSuccess);
 	        this.props.dispatch(
 	        	{
 	        		type:"SET_TRANSMIT_VALUES",
 	        		transmit_values: {
-	        			txSuccess: this.txSuccess,
-	        			numRetries: this.numRetries,
-	        			maxRetries: this.maxRetries,
-	        			rssiValue : this.rssiValue,
-	        			snrValue : this.snrValue
+	        			txSuccess: parseInt(values_hex.substr(14,2), 16),
+	        			numRetries: parseInt(values_hex.substr(16,2), 16),
+	        			maxRetries: parseInt(values_hex.substr(18,2), 16),
+	        			rssiValue : 0 - (parseInt(values_hex.substr(20,4), 16) - 20),
+	        			snrValue : 0 - (parseInt(values_hex.substr(24,2) - 20), 16)
 	        		}
 	        	}
 	        )
@@ -309,8 +327,39 @@ class OperationValues extends Component{
 
 	}
 
-	addZerosUntilNumber(string,number){
-		
+
+	renderWiegandData(data){
+		console.log(data)
+
+		if(this.checkCorrectData(data)){
+			return (
+				<View>
+					<Text style={styles.device_control_title}>
+						Wiegand Data
+					</Text>					
+					<View style={{backgroundColor:"white",marginVertical:5}}>
+						<WIEGAND_DATA wiegand_data={data}/>
+					</View>
+				</View>
+			)
+		}
+
+		return null
+	}	
+
+	checkCorrectData(data){
+		if(data){
+			if(Array.isArray(data)){
+				if(data.length){
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+
+	addZerosUntilNumber(string,number){	
 		do{
 			string = 0 + string
 		}while(string.length < number)
@@ -319,11 +368,12 @@ class OperationValues extends Component{
 	}
 
 
+
 	tryRecieveValues(values_hex){
 		
         if(values_hex.length > 31){
-        	var rssiValue_2 = values_hex.substr(26,4)
-        	var snrValue_2 = values_hex.substr(30,2)
+        	let rssiValue_2 = values_hex.substr(26,4)
+        	let snrValue_2 = values_hex.substr(30,2)
             
             
             rssiValue_2 = parseInt(rssiValue_2,16)
@@ -345,75 +395,82 @@ class OperationValues extends Component{
         }		
 	}
 
-	getCentralImages(){
-		var relay_nc = <Image style={{width:80,height:80}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
-		var relay_no = <Image style={{width:80,height:80}} source={require('../images/relay_no.imageset/relay_no.png') }/>
+	getCentralImages(relay_states){
+		//console.log("getCentralImages()",relay_states)
+		let central_relay_image_1 = relay_nc
+		let central_relay_image_2 = relay_nc
+		if(relay_states && Array.isArray(relay_states) && relay_states.length){
+			if(relay_states[0]){
+				central_relay_image_1 = relay_no
+			}
 
-		if(this.props.central_relay_image_1){
-			var central_relay_image_1 = relay_nc
-		}else{
-			var central_relay_image_1 = relay_no
+			if(relay_states[1]){
+				central_relay_image_2 = relay_no
+			}
+
+			return (
+				<View style={{flexDirection:"row"}}>
+					<View>
+						{central_relay_image_1}
+						<Text style={{textAlign:"center",fontSize:12}}>
+							Relay 3
+						</Text>
+					</View>
+					<View>
+						{central_relay_image_2}
+						<Text style={{textAlign:"center",fontSize:12}}>
+							Relay 4
+						</Text>
+					</View>
+				</View>
+			)
 		}
 
-		if(this.props.central_relay_image_2){
-			var central_relay_image_2 = relay_nc
-		}else{
-			var central_relay_image_2 = relay_no
-		}
-
-		return (
-			<View style={{flexDirection:"row"}}>
-				<View>
-					{central_relay_image_1}
-					<Text style={{textAlign:"center",fontSize:12}}>
-						Relay 1
-					</Text>
-				</View>
-				<View>
-					{central_relay_image_2}
-					<Text style={{textAlign:"center",fontSize:12}}>
-						Relay 2
-					</Text>
-				</View>
-			</View>
-		)
+		return null
 	}
 
-	getRemoteImages(){
-		var relay_nc = <Image style={{width:80,height:80}} source={require('../images/relay_nc.imageset/relay_nc.png')} />
-		var relay_no = <Image style={{width:80,height:80}} source={require('../images/relay_no.imageset/relay_no.png') }/>
+	getRemoteImages(relay_states){
+		//console.log("getRemoteImages()",relay_states)
+		if(relay_states && Array.isArray(relay_states) && relay_states.length){
+			if(relay_states.length > 0){
+				var remote_relay_image_1 = relay_nc
+				var remote_relay_image_2 = relay_nc
 
-		if(this.props.remote_relay_image_1){
-			var remote_relay_image_1 = relay_nc
-		}else{
-			var remote_relay_image_1 = relay_no
+				if(relay_states[2]){
+					var remote_relay_image_1 = relay_no
+				}
+				
+				if(relay_states[3]){
+					var remote_relay_image_2 = relay_no
+				}
+
+				return (
+					<View style={{flexDirection:"row"}}>
+						<View>
+							{remote_relay_image_1}
+							<Text style={{textAlign:"center",fontSize:12}}>
+								Relay 1
+							</Text>
+						</View>
+						<View>
+							{remote_relay_image_2}
+							<Text style={{textAlign:"center",fontSize:12}}>
+								Relay 2
+							</Text>
+						</View>
+					</View>
+				)
+			}
 		}
+	}
 
-		if(this.props.remote_relay_image_2){
-			var remote_relay_image_2 = relay_nc
-		}else{
-			var remote_relay_image_2 = relay_no
-		}
-
-		return (
-			<View style={{flexDirection:"row"}}>
-				<View>
-					{remote_relay_image_1}
-					<Text style={{textAlign:"center",fontSize:12}}>
-						Relay 1
-					</Text>
-				</View>
-				<View>
-					{remote_relay_image_2}
-					<Text style={{textAlign:"center",fontSize:12}}>
-						Relay 2
-					</Text>
-				</View>
-			</View>
-		)
+	parseRelays(byte){
+		var relay_states = this.addZerosUntilNumber(byte.toString(2),4).split("").reverse().map(x => parseInt(x))
+		return relay_states
 	}
 
 	renderRelaySettings(){
+		const relay_states = this.parseRelays(this.props.operating_values[0])
 		return(
 			<View>
 				<Text style={styles.device_control_title}>
@@ -427,7 +484,7 @@ class OperationValues extends Component{
 							</Text>
 						</View>
 						<View style={{height:130,backgroundColor:"white",width:width/2,alignItems:"center"}}>
-							{this.getCentralImages()}
+							{this.getCentralImages(relay_states)}
 							<View>
 								<Text>
 									Aux: {this.props.aux_label ? "Low" : "High"}
@@ -442,7 +499,7 @@ class OperationValues extends Component{
 							</Text>
 						</View>
 						<View style={{height:130,backgroundColor:"white",width:width/2,alignItems:"center"}}>
-							{this.getRemoteImages()}
+							{this.getRemoteImages(relay_states)}
 							<View>
 								<Text>
 									LED: {this.props.aux_label ? "ON" : "OFF"}
@@ -464,63 +521,67 @@ class OperationValues extends Component{
 	}
 
 	renderWiegandValues(wiegand_values){
-		return (
-			<View>
-				<Text style={styles.device_control_title}>
-					WIEGAND VALUES
-				</Text>
-				<View style={{flexDirection:"row"}}>
-					<View>
-						<View style={{height:30,backgroundColor:"gray",width:width/2,alignItems:"center",justifyContent:"center",borderRightWidth:1,borderRightColor:"white"}}>
-							<Text style={{color:"white"}}>
-								Raw Data
-							</Text>
+		const wiegand_bytes = wiegand_values.wiegand_bytes
+		console.log("renderWiegandValues",wiegand_values)
+		if(wiegand_values){
+			return (
+				<View>
+					<Text style={styles.device_control_title}>
+						WIEGAND VALUES
+					</Text>
+					<View style={{flexDirection:"row"}}>
+						<View>
+							<View style={{height:30,backgroundColor:"gray",width:width/2,alignItems:"center",justifyContent:"center",borderRightWidth:1,borderRightColor:"white"}}>
+								<Text style={{color:"white"}}>
+									Raw Data
+								</Text>
+							</View>
+							<View style={text_style}>
+								<Text>
+									{wiegand_values.raw_string ?  "0x" + wiegand_values.raw_string.toUpperCase() : "0"}
+								</Text>
+							</View>
 						</View>
-						<View style={text_style}>
-							<Text>
-								{this.doPrettyZeros(parseInt(wiegand_values.wiegand_bytes, 2).toString(16))}
-							</Text>
+						<View >
+							<View style={{height:30,backgroundColor:"gray",width:width/4,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
+								<Text style={{color:"white"}}>
+									Code
+								</Text>
+							</View>
+							<View style={{height:30,backgroundColor:"white",width:width/4,alignItems:"center",justifyContent:"center"}}>
+								<Text >
+									{wiegand_values.code_string }
+								</Text>						
+							</View>
 						</View>
-					</View>
-					<View >
-						<View style={{height:30,backgroundColor:"gray",width:width/4,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
-							<Text style={{color:"white"}}>
-								Code
-							</Text>
-						</View>
-						<View style={{height:30,backgroundColor:"white",width:width/4,alignItems:"center",justifyContent:"center"}}>
-							<Text >
-								{wiegand_values.code_string}
-							</Text>						
-						</View>
-					</View>
-					<View >
-						<View style={{height:30,backgroundColor:"gray",width:width/8,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
-							<Text style={{color:"white"}}>
-								FAC
-							</Text>
-						</View>
-						<View style={{height:30,backgroundColor:"white",width:width/8,justifyContent:"center",alignItems:"center"}}>
-							<Text>
-								{wiegand_values.fac_bin_string}
-							</Text>
-						</View>
-					</View>	
-					<View >
-						<View style={{height:30,backgroundColor:"gray",width:width/8,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
-							<Text style={{color:"white"}}>
-								Bits
-							</Text>
-						</View>
-						<View style={{height:30,backgroundColor:"white",width:width/8,justifyContent:"center",alignItems:"center"}}>
-							<Text>
-								{wiegand_values.wiegand_bytes}
-							</Text>
-						</View>
-					</View>												
-				</View>		
-			</View>
-		)
+						<View >
+							<View style={{height:30,backgroundColor:"gray",width:width/8,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
+								<Text style={{color:"white"}}>
+									FAC
+								</Text>
+							</View>
+							<View style={{height:30,backgroundColor:"white",width:width/8,justifyContent:"center",alignItems:"center"}}>
+								<Text>
+									{wiegand_values.fac_bin_string}
+								</Text>
+							</View>
+						</View>	
+						<View >
+							<View style={{height:30,backgroundColor:"gray",width:width/8,alignItems:"center",justifyContent:"center",borderLeftWidth:1,borderLeftColor:"white"}}>
+								<Text style={{color:"white"}}>
+									Bits
+								</Text>
+							</View>
+							<View style={{height:30,backgroundColor:"white",width:width/8,justifyContent:"center",alignItems:"center"}}>
+								<Text>
+									{wiegand_values.wiegand_bytes}
+								</Text>
+							</View>
+						</View>												
+					</View>		
+				</View>
+			)
+		}
 	}
 
 	renderTransmitValues(transmit_values){
@@ -560,31 +621,34 @@ class OperationValues extends Component{
 		)
 	}
 
-	render(){	
-		if(this.props.loading_operation_values)
-			return (
-				<Background> 
-					<View style={{height:height}}>
-						<ActivityIndicator /> 
-					</View>
-				</Background>
-			)
-		console.log("wiegand_values",this.props.wiegand_values);
-		console.log("transmit_values",this.props.transmit_values);
-		console.log("receive_values",this.props.receive_values);
+	render(){			
+		
+		const last_package_time_bytes = this.props.last_package_time
+		
+		const last_package_time_int = parseInt(BYTES_TO_INT(last_package_time_bytes) / 1000) 
+		
+		const last_package_time = parserIntSecondsToHumanReadable(last_package_time_int) 
+		
 
-		return(
-			<ScrollView style={styles.pairContainer}>
-				<Background>
-					<View style={{height:height+40}}>
-						{this.renderRelaySettings()}
-        				{this.renderWiegandValues(this.props.wiegand_values)}
-    					{this.renderTransmitValues(this.props.transmit_values)}
-    					{this.renderReceiveValues(this.props.receive_values)}
-					</View>
-				</Background>
-			</ScrollView>
-		);	
+		if(this.props.operating_values.length > 0){		
+			return(
+				<ScrollView style={styles.pairContainer}>
+					<Background>
+						<View style={{height:height+40}}>
+							{this.renderRelaySettings()}
+	        				{this.renderWiegandValues(this.props.wiegand_values)}
+	    					{this.renderTransmitValues(this.props.transmit_values)}
+	    					{this.renderReceiveValues(this.props.receive_values)}
+	    					<View style={{marginTop:20}}>
+	    						<WhiteRowInfoLink name="Last Communication" value={last_package_time}/>
+	    					</View>
+						</View>
+					</Background>
+				</ScrollView>
+			);	
+		}
+
+		return <ActivityIndicator />
 	}
 }
 
@@ -599,7 +663,9 @@ const mapStateToProps = state => ({
 	loading_operation_values : state.operationValuesReducer.loading_operation_values,
 	wiegand_values : state.operationValuesReducer.wiegand_values,
 	transmit_values : state.operationValuesReducer.transmit_values,
-	receive_values : state.operationValuesReducer.receive_values
+	receive_values : state.operationValuesReducer.receive_values,
+	last_package_time : state.scanCentralReducer.last_package_time,
+	operating_values: state.operationValuesReducer.operating_values,
 } );
 
 export default connect(mapStateToProps)(OperationValues);

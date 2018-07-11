@@ -59,7 +59,15 @@ const initialState = {
   cloud_fail_safe_options: [],
   temp_fail_safe_options_value: [],
   relay_times_selected: 0,
-  appState: AppState.currentState
+  appState: AppState.currentState,
+  wiegand_led_mode: 0,
+  configuration_update_status: 0,
+  get_last_package_time_queue: [],
+  show_paired_devices_modal: false,
+  devices_name: [],
+  loading_devices_name: false,
+  show_devices_paired_with: false,
+  wiegand_enable : []
 }
 
 
@@ -95,7 +103,8 @@ export default function scanCentralReducer (state = initialState, action) {
         heart_beat: [],
         cloud_heart_beat : [],
         cloud_equipment_fail_safe_options: [],
-        appState: AppState.currentState,        
+        appState: AppState.currentState,
+        wiegand_enable: [0],        
       }
     case "SET_POWER_ACTIVATE_LED":
       return{
@@ -163,7 +172,6 @@ export default function scanCentralReducer (state = initialState, action) {
         show_camera : action.show_camera 
       }
     case "UPDATE_DEVICE":
-      console.log("new_device",action.device)
       return {
         ...state,
         central_device : action.device
@@ -365,6 +373,47 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         app_state: action.app_state
+      }
+    case "SET_WIEGAND_LED_MODE":
+      return{
+        ...state,
+        wiegand_led_mode: action.wiegand_led_mode
+      }
+    case "SET_CONFIGURATION_UPDATE_STATUS":
+      return{
+      ...state,
+      configuration_update_status: action.configuration_update_status
+      }
+    case "SET_GET_LAST_PACKAGE_TIME_QUEUE":
+      return{
+        ...state,
+        get_last_package_time_queue: action.get_last_package_time_queue
+      }
+
+    case "SET_SHOW_PAIRED_DEVICES_MODAL":
+      return{
+        ...state,
+        show_paired_devices_modal: action.show_paired_devices_modal
+      }
+    case "SET_DEVICES_NAME":
+      return{
+        ...state,
+        devices_name: action.devices_name
+      }
+    case "SET_LOADING_DEVICES_NAME":
+      return{
+        ...state,
+        loading_devices_name: action.loading_devices_name
+      }
+    case "SET_SHOW_DEVICES_PAIRED_WITH":
+      return{
+        ...state,
+        show_devices_paired_with: action.show_devices_paired_with
+      }
+    case "SET_WIEGAND_ENABLE":
+      return{
+        ...state,
+        wiegand_enable: action.wiegand_enable
       }
     default:
       return state

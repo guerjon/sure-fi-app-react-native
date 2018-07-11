@@ -28,7 +28,9 @@ import {
     NORMAL_PAIR,
     MODULE_WIEGAND_CENTRAL,
     MODULE_WIEGAND_REMOTE,
-    PAIR_STATUS
+    PAIR_STATUS,
+    RELAY_WIEGAND_CENTRAL,
+    RELAY_WIEGAND_REMOTE
 } from '../../constants'
 
 import BleManager from 'react-native-ble-manager'
@@ -179,25 +181,13 @@ class HVACPair extends Component{
 		let remote_id_bytes = HEX_TO_BYTES(remote_device.manufactured_data.device_id)
 
         this.fast_manager.stopDeviceScan();
+        this.props.saveOnCloudLog(remote_id_bytes,"PAIR")
 
-        if(!this.props.debug_mode_status)
-            this.props.dispatch({type:"SET_PAIR_DISCONNECT",pair_disconnect: true})
-
-        this.props.dispatch({type:"ALLOW_NOTIFICATIONS",allow_notifications:false})
-        
-        //this.props.saveOnCloudLog(remote_id_bytes,"PAIR")
-
-        console.log("central_device.id",this.central_device.id)
-        console.log("remote_id_bytes",remote_id_bytes)
-        console.log("rxUUID",rxUUID)
-        console.log("txUUID",txUUID)
         
         var force_pair_origin_byte = 0
         let data = [PhoneCmd_Pair,NORMAL_PAIR].concat(remote_id_bytes)
         
         data.push(force_pair_origin_byte)
-
-        console.log("data",data)
 
         HVAC_WRITE_COMMAND(this.central_device.id,data)
 		
@@ -212,19 +202,13 @@ class HVACPair extends Component{
 
 				this.central_device.manufactured_data.tx = txUUID
 				this.central_device.manufactured_data.device_state = "0004";
-				this.central_device.writePairResult = true
-                
-                this.props.dispatch({type: "SET_WRITE_PAIR_RESULT",write_pair_result : true})
-	    		this.props.dispatch({type:"SET_WRITE_UNPAIR_RESULT",write_unpair_result: false})
                 this.props.dispatch({type: "CENTRAL_DEVICE_MATCHED",central_device: this.central_device});
                 this.props.setBridgeStatus(PAIR_STATUS)
-                
-               
+
 			}).catch(error => console.log(error))
 		}).catch(error => console.log("error",error))
-    	
-        this.props.navigator.pop();
-        
+
+        setTimeout(() => this.props.writePairResult(),1000)
     }
 
     getNoMatchedMessage(){
@@ -265,7 +249,7 @@ class HVACPair extends Component{
             dispatch,
             navigation
         } = this.props;
-        var hardware_type = this.central_device.manufactured_data.hardware_type
+
         var devices = this.devices
         var matched_device = []
         var device_on_pairing_mode_flag = false
@@ -278,8 +262,11 @@ class HVACPair extends Component{
                //if we found devices, now we need be sure that the matched devices are the correct type to pair
                
                 var correct_type = this.getCorrectPairType(this.central_device)
+                local_hardware_type = parseInt(device.manufactured_data.hardware_type) 
+                if(local_hardware_type == 0)
+                    local_hardware_type = parseInt(device.manufactured_data.hardware_type,16)
 
-                if(device.manufactured_data.hardware_type == correct_type){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
+                if(local_hardware_type == correct_type){ // if centra_devices > 0 this means we found a device with the same qr scanned id and its a REMOTE _device
                     if(this.isDeviceOnPairingMode(device)){
                         
                         dispatch({
@@ -297,7 +284,7 @@ class HVACPair extends Component{
                     this.showCorrectErrorForPair(this.central_device)
                 }
             }else{
-                this.showDeviceNotFound(device_id)
+                this.showDeviceNotFound(this.central_device,device_id)
             }
         }
     }
@@ -315,10 +302,18 @@ class HVACPair extends Component{
         );   
     }
 
-    showDeviceNotFound(device_id){
+    showDeviceNotFound(device,device_id){
+        console.log("showDeviceNotFound()")
+        var device_type = device.manufactured_data.hardware_type
+        var text = "The device " + device_id.toUpperCase() + " was not found"
+        
+        if(device_id == device.manufactured_data.device_id){
+            text = "The device scanned is the same connected, please scan the other device."
+        }
+
         Alert.alert(
             "Pairing error",
-            "The device " + device_id.toUpperCase() + " was not found",
+            text,
             [
                 {text: "Accept", onPress: () => this.showCamera()}
             ],
@@ -360,15 +355,28 @@ class HVACPair extends Component{
     }
 
     getCorrectPairType(device){
-        var device_type = device.manufactured_data.hardware_type 
+        var hardware_type = device.manufactured_data.hardware_type 
         var correct_type = 0
-        
-        switch(device_type){
+
+        if(hardware_type == "0A")
+            hardware_type = 0x0A
+        if(hardware_type == "0B")
+            hardware_type = 0x0B
+
+        console.log("hardware_type",hardware_type + " " + RELAY_WIEGAND_CENTRAL + " " + RELAY_WIEGAND_REMOTE)
+
+        switch(hardware_type){
             case MODULE_WIEGAND_REMOTE:
                 correct_type = MODULE_WIEGAND_CENTRAL
             break
             case MODULE_WIEGAND_CENTRAL:
                 correct_type = MODULE_WIEGAND_REMOTE
+            break
+            case RELAY_WIEGAND_CENTRAL:
+                correct_type = RELAY_WIEGAND_REMOTE
+            break
+            case RELAY_WIEGAND_REMOTE:
+                correct_type = RELAY_WIEGAND_CENTRAL
             break
             default:
                 correct_type = 0
@@ -516,6 +524,7 @@ const mapStateToProps = state => ({
   	remote_device_status : state.scanRemoteReducer.remote_device_status,
   	device: state.scanCentralReducer.central_device,
     debug_mode_status : state.setupCentralReducer.debug_mode_status,
+    pairing_device_status: state.setupCentralReducer.pairing_device_status
 });
 
 export default connect(mapStateToProps)(HVACPair);
