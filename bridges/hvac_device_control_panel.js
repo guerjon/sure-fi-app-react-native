@@ -213,6 +213,10 @@ import {
 	PhoneCmd_GetVoltageLevels,
     PhoneCmd_SecurityHash,
     PhoneCmd_FactoryReset,
+    PhoneRsp_WiegandEnabled,
+    PhoneCmd_SetManualMode,
+    PhoneRsp_ManualMode,
+    PhoneCmd_SetRelays
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -1314,6 +1318,9 @@ class SetupCentral extends Component{
 		}
 	}
 
+
+
+
 	renderOptions(){
 
 		return <Options 
@@ -1331,6 +1338,7 @@ class SetupCentral extends Component{
 			goToConfiguration = {() => this.goToConfiguration()}
 			goToChat={() => this.goToChat()}
 			goToDocumentation = {() => this.goToDocumentation()}
+			goToTroubleshoothing = {() => this.goToTroubleshoothing()}
 			activateHandleCharacteristic = {() => this.activateHandleCharacteristic()}
 			readStatusOnDevice = {(device) => this.readStatusOnDevice(device)}
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
@@ -1757,6 +1765,27 @@ class SetupCentral extends Component{
 				device_id: this.props.device.manufactured_data.device_id
 			}
 		})
+	}
+
+	goToTroubleshoothing(){
+		this.props.navigator.push({
+			screen: "Troubleshooting",
+			title: "Troubleshooting",
+			animated: false,
+			passProps:{
+				activateManualMode : () => this.activateManualMode(),
+				disableManualMode: () => this.disableManualMode(),
+				writeManualRelaysState: (value) => this.writeManualRelaysState(value)
+			}
+		})
+	}
+
+	activateManualMode(){
+		this.writeManualMode(1)
+	}
+
+	disableManualMode(){
+		this.writeManualMode(0)
 	}
 
     setBridgeStatus(bridge_status){
@@ -2637,8 +2666,8 @@ class SetupCentral extends Component{
 
 
 	handleSuccess(data){
-		//console.log("handleSuccess()",data.toString(16))
-		const commands_without_action = [PhoneCmd_SecurityHash]
+		console.log("handleSuccess()",data.toString(16))
+		const commands_without_action = [PhoneCmd_SecurityHash,PhoneCmd_SetManualMode]
 
 		if(data == PhoneCmd_RadioStartFirmwareUpdate){
 			this.writePages()
@@ -2678,7 +2707,7 @@ class SetupCentral extends Component{
 
 		}else if(data == PhoneCmd_SetWiegandLedMode){
 
-		}else if(commands_without_action.includes(data)){
+		}else if(commands_without_action.includes(data[0])){
 			
 		}else{
 			console.log("data",data)
@@ -2687,10 +2716,24 @@ class SetupCentral extends Component{
 
 	}
 
+	writeManualMode(value){
+		this.write([PhoneCmd_SetManualMode,value])
+	}
+
 	writeDFUCommand(){
 		this.write([PhoneCmd_StartBleBootloader])
 	}
 
+	writeManualRelaysState(manual_relays_state){
+		console.log("writeManualRelaysState()",manual_relays_state)
+		
+		if(manual_relays_state && manual_relays_state.length){
+			const data = manual_relays_state[0]
+			this.write([PhoneCmd_SetRelays,data])
+		}else{
+			Alert.alert("Error writing manual relay states")
+		}
+	}
      
 	updateWiegandEnabled(value){
 		this.props.dispatch({type: "SET_WIEGAND_ENABLE",wiegand_enable: value})
@@ -3295,7 +3338,8 @@ const mapStateToProps = state => ({
 	get_last_package_time_queue: state.scanCentralReducer.get_last_package_time_queue,
 	devices_name : state.scanCentralReducer.devices_name,
 	loading_devices_name : state.scanCentralReducer.loading_devices_name,	
-	wiegand_enable : state.scanCentralReducer.wiegand_enable
+	wiegand_enable : state.scanCentralReducer.wiegand_enable,
+	manual_relays_state: state.scanCentralReducer.manual_relays_state
 });
 
 

@@ -347,6 +347,10 @@ class Options extends Component{
     	return <Option callback={() => this.props.goToFirmwareUpdate()} image={require('../../images/menu_flash_firmware_dark.imageset/menu_flash_firmware.png')} name="Update Firmware" />
     }
 
+    getTroubleshootingOption(){
+    	return <Option callback={() => this.props.goToTroubleshoothing()} image={require('../../images/menu_troubleshooting_dark_universal/menu_troubleshooting_dark.png')} name="Troubleshoothing" />
+    }
+
     getConfigureRadioOption(){
     	return <Option callback={() => this.props.goToConfigureRadio()} image={require('../../images/menu_radio_settings_dark.imageset/menu_radio_settings.png')} name="Configure Radio" />
     }
@@ -499,6 +503,7 @@ class Options extends Component{
 				{this.getOperatingValuesOption()}
 				{this.getConfiguration()}
 				{this.getUpdateFirwmareOption()}
+				{this.getTroubleshootingOption()}
 			</View>
 		)
 	}
@@ -526,22 +531,14 @@ class Options extends Component{
 		return null
 	}
 
-	renderOptions(){
-		return (
-			<View>
-				{this.renderFirstOption()}
-				{this.renderDefaultOptions()}
-				{this.renderAdminOptions()}
-			</View>
-		)
-	}
-
 	render(){	
 
 		return (
 			<View style={{marginVertical:20}}>
 				<View>
-					{this.renderOptions()}
+					{this.renderFirstOption()}
+					{this.renderDefaultOptions()}
+					{this.renderAdminOptions()}					
 				</View>
 			</View>
 		)

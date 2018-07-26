@@ -67,7 +67,8 @@ const initialState = {
   devices_name: [],
   loading_devices_name: false,
   show_devices_paired_with: false,
-  wiegand_enable : []
+  wiegand_enable : [],
+  manual_relays_state: [0x00]
 }
 
 
@@ -104,7 +105,8 @@ export default function scanCentralReducer (state = initialState, action) {
         cloud_heart_beat : [],
         cloud_equipment_fail_safe_options: [],
         appState: AppState.currentState,
-        wiegand_enable: [0],        
+        wiegand_enable: [0],  
+        manual_relays_state: [0x00]      
       }
     case "SET_POWER_ACTIVATE_LED":
       return{
@@ -414,6 +416,11 @@ export default function scanCentralReducer (state = initialState, action) {
       return{
         ...state,
         wiegand_enable: action.wiegand_enable
+      }
+    case "SET_MANUAL_RELAYS_STATE":
+      return{
+        ...state,
+        manual_relays_state: action.manual_relays_state
       }
     default:
       return state

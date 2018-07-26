@@ -29,6 +29,12 @@ export const PhoneCmd_Unpair = 0x46;
 export const PhoneCmd_GetUnpairResult = 0x47;
 export const PhoneCmd_ClearResetCauses = 0x48;
 export const PhoneCmd_SetRunTime = 0x49;
+export const PhoneCmd_RequestInfo = 0x4A
+export const PhoneCmd_GetInfo = 0x4B
+export const PhoneCmd_SetRelays = 0x4C
+export const PhoneCmd_OutputWiegand = 0x4D
+	
+
 // +==============================+
 // |       Firmware Update        |
 // +==============================+
@@ -56,6 +62,7 @@ export const PhoneCmd_SetWiegandLedMode = 0x86;
 export const PhoneCmd_SetDemoModeTime = 0x87;
 export const PhoneCmd_SetHeartbeatTime = 0x88;
 export const PhoneCmd_SetWiegandEnabled = 0x89;
+export const PhoneCmd_SetManualMode = 0x8A
 // +==============================+
 // |             Get              |
 // +==============================+
@@ -69,6 +76,7 @@ export const PhoneCmd_GetWiegandLedMode = 0xA6;
 export const PhoneCmd_GetDemoModeTime = 0xA7;
 export const PhoneCmd_GetHeartbeatTime = 0xA8
 export const PhoneCmd_GetWiegandEnabled = 0xA9
+export const PhoneCmd_GetManualMode = 0xAA
 
 
 // +============================================================+
@@ -93,6 +101,7 @@ export const PhoneRsp_RunTime = 0x2B;
 export const PhoneRsp_PairingInfo = 0x2C;
 export const PhoneRsp_PowerOnTime = 0x2D;
 export const PhoneRsp_WiegandEnabled = 0xA9;
+export const PhoneRsp_ManualMode = 0xAA
 
 
 // +==============================+

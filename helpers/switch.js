@@ -4,6 +4,7 @@ import {
   	TouchableOpacity,
 } from 'react-native'
 
+
 export const SWITCH = params => {
 	if(params.isActivated)
 		return (
