@@ -348,7 +348,8 @@ class Options extends Component{
     }
 
     getTroubleshootingOption(){
-    	return <Option callback={() => this.props.goToTroubleshoothing()} image={require('../../images/menu_troubleshooting_dark_universal/menu_troubleshooting_dark.png')} name="Troubleshoothing" />
+    	//return <Option callback={() => this.props.goToTroubleshoothing()} image={require('../../images/menu_troubleshooting_dark_universal/menu_troubleshooting_dark.png')} name="Troubleshoothing" />
+    	return null
     }
 
     getConfigureRadioOption(){

@@ -250,7 +250,11 @@ import {
     PhoneRsp_WiegandLedMode,
     PhoneRsp_WiegandEnabled,
     PhoneCmd_SetWiegandEnabled,
-    PhoneCmd_GetWiegandEnabled
+    PhoneCmd_GetWiegandEnabled,
+    PhoneCmd_SetManualMode,
+    PhoneRsp_ManualMode,
+    PhoneCmd_SetRelays,
+    PhoneCmd_OutputWiegand
 } from '../hvac_commands_and_responses';
 import {
 	powerOptions,
@@ -622,7 +626,7 @@ class SetupCentral extends Component{
 	activateHandleDisconnectedPeripheral(){
 		//console.log("activateHandleDisconnectedPeripheral()",this.props.handleDisconnected)
 		if(this.props.handleDisconnected){
-			console.log("Handle disconnect listener its already active")
+			console.log("Handle disconnect listener its already goToTroubleshoothing")
 		}else{
 			this.props.dispatch({type:"SET_HANDLE_DISCONNECT",handleDisconnected:true})
 			this.handleDisconnected = bleManagerEmitter.addListener('BleManagerDisconnectPeripheral',this.handleDisconnectedPeripheral);
@@ -1445,6 +1449,7 @@ class SetupCentral extends Component{
 			goToConfiguration = {() => this.goToConfiguration()}
 			goToChat={() => this.goToChat()}
 			goToDocumentation = {() => this.goToDocumentation()}
+			goToTroubleshoothing = {() => this.goToTroubleshoothing()}
 			activateHandleCharacteristic = {() => this.activateHandleCharacteristic()}
 			readStatusOnDevice = {(device) => this.readStatusOnDevice(device)}
 			readStatusAfterUnpair = {device => this.readStatusAfterUnpair(device)} 
@@ -1838,6 +1843,32 @@ class SetupCentral extends Component{
 		})
 	}
 
+	goToTroubleshoothing(){
+		this.props.navigator.push({
+			screen: "TroubleshootingModule",
+			title: "Troubleshooting",
+			animated: false,
+			passProps:{
+				activateManualMode : () => this.activateManualMode(),
+				disableManualMode: () => this.disableManualMode(),
+				writeManualRelaysState: (value) => this.writeManualRelaysState(value),
+				writeOutPutWiegand: (value) => this.writeOutPutWiegand(value),
+				updateOutputWiegand: (value) => this.updateOutputWiegand(value)
+			}
+		})
+	}
+	
+	activateManualMode(){
+		this.writeManualMode(1)
+	}
+
+	disableManualMode(){
+		this.writeManualMode(0)
+	}
+
+	writeManualMode(value){
+		this.write([PhoneCmd_SetManualMode,value])
+	}
 	
 	/* --------------------------------------------------------------------------------------------------- End Go To Seccion ---------------------------------------------------------------*/	
 
@@ -2144,6 +2175,11 @@ class SetupCentral extends Component{
 				this.startFirmwareUpdate(APP_FIRMWARE_UDATE)
 			}
 		}
+	}
+
+	updateOutputWiegand(values){
+		console.log("updateOutputWiegand()",values)
+		this.props.dispatch({type: "SET_OUTPUT_WIEGAND",output_wiengad:values})
 	}
 
 	async startFirmwareUpdate(firmware_type){
@@ -2748,7 +2784,7 @@ class SetupCentral extends Component{
 
 	handleSuccess(data){
 		console.log("handleSuccess()",data.toString(16))
-		const commands_without_action = [PhoneCmd_SecurityHash]
+		const commands_without_action = [PhoneCmd_SecurityHash,PhoneCmd_SetManualMode,PhoneCmd_SetRelays]
 
 		if(data == PhoneCmd_RadioStartFirmwareUpdate){
 			FIRMWARE_LOG_CREATOR(WRITTED_START_RADIO_UPDATE_COMMAND)
@@ -2811,16 +2847,35 @@ class SetupCentral extends Component{
 				}
 			}
 
-		}else if(commands_without_action.includes(data)){
+		}else if(commands_without_action.includes(data[0])){
 			
 		}else{
 			Alert.alert("Success.","All changes are saved correctly.")
 		}
 	}
 
+	writeManualRelaysState(manual_relays_state){
+		console.log("writeManualRelaysState()",manual_relays_state)
+		
+		if(manual_relays_state && manual_relays_state.length){
+			const data = manual_relays_state[0]
+			this.write([PhoneCmd_SetRelays,data])
+		}else{
+			Alert.alert("Error writing manual relay states")
+		}
+	}
+
+
+
 	writeDFUCommand(){
 		this.write([PhoneCmd_StartBleBootloader])
 	}
+
+	writeOutPutWiegand(values){
+		var data = [PhoneCmd_OutputWiegand].concat(values)
+		this.write(data)
+	}
+	
 
 	updateWiegandEnabled(value){
 		console.log("updateWiegandEnabled()",value)

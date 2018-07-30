@@ -100,8 +100,6 @@ export const PhoneRsp_HoppingTable = 0x2A;
 export const PhoneRsp_RunTime = 0x2B;
 export const PhoneRsp_PairingInfo = 0x2C;
 export const PhoneRsp_PowerOnTime = 0x2D;
-export const PhoneRsp_WiegandEnabled = 0xA9;
-export const PhoneRsp_ManualMode = 0xAA
 
 
 // +==============================+
@@ -109,6 +107,8 @@ export const PhoneRsp_ManualMode = 0xAA
 // +==============================+
 export const PhoneRsp_PairResult = 0x45;
 export const PhoneRsp_UnpairResult = 0x47;
+export const PhoneRsp_Info = 0x4B;
+
 // +==============================+
 // |       Success/Failure        |
 // +==============================+
@@ -127,6 +127,8 @@ export const PhoneRsp_QuietMode = 0xA5;
 export const PhoneRsp_WiegandLedMode = 0xA6;
 export const PhoneRsp_DemoModeTime = 0xA7;
 export const PhoneRsp_HeartbeatTime = 0xA8
+export const PhoneRsp_WiegandEnabled = 0xA9;
+export const PhoneRsp_ManualMode = 0xAA
 
 // +============================================================+
 // |         				Errors          					|

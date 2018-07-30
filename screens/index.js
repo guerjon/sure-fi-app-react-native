@@ -54,7 +54,7 @@ import HVACFirmwareUpdate from '../bridges/hvac/firmware_update'
 import AdvanceFirmwareUpdate from '../bridges/hvac/advance_firmware_update'
 import HelpScreen from '../help_screen'
 import Troubleshooting from '../bridges/hvac/troubleshooting'
-
+//import TroubleshootingModule from '../bridges/module/troubleshooting'
 const screens =
 [
 	['MainScreen',MainScreen],
@@ -106,7 +106,8 @@ const screens =
 	["ModulePair",ModulePair],
 	["AdvanceFirmwareUpdate",AdvanceFirmwareUpdate],
 	["ProcessTransactionModal",ProcessTransactionModal],
-	["Troubleshooting",Troubleshooting]
+	["Troubleshooting",Troubleshooting],
+//	["TroubleshootingModule",TroubleshootingModule]
 ];
 
 export function registerScreens(store,Provider){
