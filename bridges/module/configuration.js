@@ -669,17 +669,17 @@ class Configuration extends Component{
             
             return (
                 <View>
-                    <View style={{height:50,flexDirection:"row",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+                    <View style={{height:50,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
                         <View style={{flexDirection:"row"}}>
-                            <RELAY_TIME option_selected={option_selected} relay_time={0} onPress={() => this.updateRelayFailSafe(0, seconds_heart_beat)} text="Off"/>
+                            <RELAY_TIME option_selected={option_selected} relay_time={0} onPress={() => this.updateRelayFailSafe(0, seconds_heart_beat)} text="OFF"/>
                             <RELAY_TIME option_selected={option_selected} relay_time={1} onPress={() => this.updateRelayFailSafe(1, seconds_heart_beat)} text="1x"/>
                             <RELAY_TIME option_selected={option_selected} relay_time={2} onPress={() => this.updateRelayFailSafe(2, seconds_heart_beat)} text="2x"/>
                             <RELAY_TIME option_selected={option_selected} relay_time={3} onPress={() => this.updateRelayFailSafe(3, seconds_heart_beat)} text="3x"/>
                             <RELAY_TIME option_selected={option_selected} relay_time={4} onPress={() => this.updateRelayFailSafe(4, seconds_heart_beat)} text="4x"/>
                             <RELAY_TIME option_selected={option_selected} relay_time={5} onPress={() => this.updateRelayFailSafe(5, seconds_heart_beat)} text="5x"/>
                         </View>
-                        <View style={{alignItems:"center",justifyContent:"center"}}>
-                            <Text style={{fontSize:16,color:"black"}}>  
+                        <View style={{alignItems:"center",justifyContent:"center",marginTop:5}}>
+                            <Text style={{fontSize:18,color:"black"}}>  
                                 {select_text}
                             </Text>
                         </View>
@@ -732,10 +732,13 @@ class Configuration extends Component{
         }else{
             var local_fail_safe_options = this.getCloudFailSafeOptions()
         }
+
+
         var text = "REMOTE RELAY FAILSAFES - THIS DEVICE"
 
         if(this.props.isCentral())
             text = "REMOTE RELAY FAILSAFES - THIS DEVICE"
+
 
 
         return(
@@ -767,52 +770,54 @@ class Configuration extends Component{
         const second_value = second_pos == 0 ? 1 : 0
         var content = null
         
-        if(fail_safe_options_time){
-            if(actived){
-                return(
-                    content = (     
+        if(this.props.relay_times_selected != 0){
+            if(fail_safe_options_time){
+                if(actived){
+                    return(
+                        content = (     
+                            <View style={{flexDirection:"row",width:width,alignItems:"center",justifyContent:"center"}}>
+                                <TouchableNativeFeedback  onPress={() => this.changeSwitchStatus(first_value,pos_1 - 1)} useForeground={true}>
+                                    <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
+                                    <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_1}</Text> 
+                                    {first_pos == 0 && relay_nc}
+                                    {first_pos == 1 && relay_no}
+                                    </View>
+                                </TouchableNativeFeedback>
+                                <TouchableNativeFeedback  onPress={() => this.changeSwitchStatus(second_value,pos_2 - 1)} useForeground={false}>
+                                    <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
+                                        <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_2}</Text> 
+                                        {second_pos == 0 && relay_nc}
+                                        {second_pos == 1 && relay_no}
+                                    </View>
+                                </TouchableNativeFeedback>
+                            </View>
+                        )
+                    )
+                }else{
+                    content = (
                         <View style={{flexDirection:"row",width:width,alignItems:"center",justifyContent:"center"}}>
-                            <TouchableNativeFeedback  onPress={() => this.changeSwitchStatus(first_value,pos_1 - 1)} useForeground={true}>
-                                <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
+                            <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}} >
                                 <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_1}</Text> 
                                 {first_pos == 0 && relay_nc}
                                 {first_pos == 1 && relay_no}
-                                </View>
-                            </TouchableNativeFeedback>
-                            <TouchableNativeFeedback  onPress={() => this.changeSwitchStatus(second_value,pos_2 - 1)} useForeground={false}>
-                                <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
-                                    <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_2}</Text> 
-                                    {second_pos == 0 && relay_nc}
-                                    {second_pos == 1 && relay_no}
-                                </View>
-                            </TouchableNativeFeedback>
+                            </View>
+                            <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
+                                <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_2}</Text> 
+                                {second_pos == 0 && relay_nc}
+                                {second_pos == 1 && relay_no}
+                            </View>
                         </View>
                     )
-                )
-            }else{
-                content = (
-                    <View style={{flexDirection:"row",width:width,alignItems:"center",justifyContent:"center"}}>
-                        <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}} >
-                            <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_1}</Text> 
-                            {first_pos == 0 && relay_nc}
-                            {first_pos == 1 && relay_no}
-                        </View>
-                        <View style={{marginHorizontal:5,alignItems:"center",justifyContent:"center"}}>
-                            <Text style={{marginVertical:10,fontSize:20,color:"black"}}> Relay {pos_2}</Text> 
-                            {second_pos == 0 && relay_nc}
-                            {second_pos == 1 && relay_no}
+                }
+            
+                return(
+                    <View>
+                        <View style={{justifyContent:"center",alignItems:"center"}}>
+                            {content}
                         </View>
                     </View>
-                )
+                )    
             }
-        
-            return(
-                <View>
-                    <View style={{justifyContent:"center",alignItems:"center"}}>
-                        {content}
-                    </View>
-                </View>
-            )    
         }
         return null                
     }

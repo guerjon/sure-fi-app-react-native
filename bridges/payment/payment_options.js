@@ -40,8 +40,7 @@ class PaymentOptions extends Component {
 		this.price = 0
 	}
 	//fake key --> pk_test_DkfAPP0epveDUsdjCnc9c9Bz
-	//real key --> pk_live_eBINMcXVt60GGZy3ZK42rHld
-
+	
     componentWillMount(){
 	    stripe.setOptions({
 		  publishableKey: 'pk_live_eBINMcXVt60GGZy3ZK42rHld',

@@ -1264,8 +1264,8 @@ class SetupCentral extends Component{
 		bluetooth_build_number = 0.0
 
 		if(bluetooth_info.length > 3){
-			bluetooth_version = parseFloat(bluetooth_info[0].toString() + "." + bluetooth_info[1].toString())
-			bluetooth_build_number = parseInt(BYTES_TO_HEX([bluetooth_info[2],bluetooth_info[3]].reverse()),16) 
+			bluetooth_version = PRETY_VERSION(parseFloat(bluetooth_info[0].toString() + "." + bluetooth_info[1].toString()))
+			bluetooth_build_number =  parseInt(BYTES_TO_HEX([bluetooth_info[2],bluetooth_info[3]].reverse()),16) 
 		}
 
 		if(user_type)

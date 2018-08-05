@@ -2500,7 +2500,7 @@ class SetupCentral extends Component{
 				this.logCommandToCloud(command,value)
 			}
 		}else{
-			Alert.alert("Error","Error getting the value on the notification the notification length is less than 2.")
+			console.log("Error getting the value on the notification the notification length is less than 2.")
 		}
 	}
 

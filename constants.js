@@ -226,9 +226,13 @@ export const FORCE_PAIR = 1
 export const NORMAL_PAIR = 0
 
 export const BYTES_TO_HEX = (byteArray) => {
-	return byteArray.map(function(byte) {
-		return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-	}).join('')
+	if(byteArray){
+		return byteArray.map(function(byte) {
+			return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+		}).join('')		
+	}
+	return ""
+
 }
 
 export const TWO_BYTES_TO_INT = (byte_1,byte_2) =>{

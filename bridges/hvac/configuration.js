@@ -69,8 +69,7 @@ class Configuration extends Component{
             this.fetchLog()
 
         }else if(this.props.isThermostat()){
-
-            if(this.props.equipments_paired_with.length > 0){
+            if(this.props.equipments_paired_with && this.props.equipments_paired_with.length > 0){
                 this.fetchLogThermostat()
             }else{
                 this.createEquipmentsPairedWithInterval()
@@ -84,9 +83,11 @@ class Configuration extends Component{
         console.log("createEquipmentsPairedWithInterval()")
         if(equipments_paired_with_interval == 0){
             equipments_paired_with_interval = setInterval(() => {
-                if(this.props.equipments_paired_with_interval.length > 0){
-                    this.deleteEquipmentsPairedWithInterval()
-                    this.fetchLogThermostat()
+                if(this.props.equipments_paired_with_interval && this.props.equipments_paired_with){
+                    if(this.props.equipments_paired_with_interval.length > 0 ){
+                        this.deleteEquipmentsPairedWithInterval()
+                        this.fetchLogThermostat()
+                    }
                 }
             },1000)
         }
@@ -153,39 +154,40 @@ class Configuration extends Component{
     async fetchLogThermostat(){
         console.log("fetchLogThermostat()")
         
-        this.props.dispatch({type: "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS",cloud_equipment_fail_safe_options:[]})
+        if(this.props.equipments_paired_with){
+            this.props.dispatch({type: "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS",cloud_equipment_fail_safe_options:[]})
+            let ids = this.props.equipments_paired_with
+            let ids_text = ids.map(id => BYTES_TO_HEX(id).toUpperCase())
+            console.log("ids_text",ids_text)
+            var promises = ids_text.map(async (id) =>  {
+                var response = await fetch(GET_CONFIGURATION_LOG_URL,{
+                    headers: HEADERS_FOR_POST,
+                    method: 'POST',            
+                    body: JSON.stringify({
+                        "hardware_serial":id,
+                        "log_field": "BridgeRsp_FailsafeOption"
+                    })            
+                })
+                console.log("response",response)
+                const clean_response =  CHECK_GENERIC_RESPONSE(response)
+                console.log("clean_response",clean_response)
 
-        let ids = this.props.equipments_paired_with
-        let ids_text = ids.map(id => BYTES_TO_HEX(id).toUpperCase())
-        console.log("ids_text",ids_text)
-        var promises = ids_text.map(async (id) =>  {
-            var response = await fetch(GET_CONFIGURATION_LOG_URL,{
-                headers: HEADERS_FOR_POST,
-                method: 'POST',            
-                body: JSON.stringify({
-                    "hardware_serial":id,
-                    "log_field": "BridgeRsp_FailsafeOption"
-                })            
-            })
-            console.log("response",response)
-            const clean_response =  CHECK_GENERIC_RESPONSE(response)
-            console.log("clean_response",clean_response)
-
-            if(clean_response){
-                if(clean_response.value){
-                    let int_bytes = clean_response.value.match(/.{2}/g) //split in chunks of 2
-                    let bytes =  int_bytes.map(x => parseInt(x,16))
-                    let current_fail_safe_options = this.props.cloud_equipment_fail_safe_options.slice()
-                    current_fail_safe_options.push(bytes)
-                    this.props.dispatch({type: "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS",cloud_equipment_fail_safe_options:current_fail_safe_options})
+                if(clean_response){
+                    if(clean_response.value){
+                        let int_bytes = clean_response.value.match(/.{2}/g) //split in chunks of 2
+                        let bytes =  int_bytes.map(x => parseInt(x,16))
+                        let current_fail_safe_options = this.props.cloud_equipment_fail_safe_options.slice()
+                        current_fail_safe_options.push(bytes)
+                        this.props.dispatch({type: "SET_CLOUD_EQUIPMENT_FAIL_SAFE_OPTIONS",cloud_equipment_fail_safe_options:current_fail_safe_options})
+                    }else{
+                        Alert.alert("Error","Error the fails safe options on the equipments are incorrect.")
+                    }
                 }else{
                     Alert.alert("Error","Error the fails safe options on the equipments are incorrect.")
                 }
-            }else{
-                Alert.alert("Error","Error the fails safe options on the equipments are incorrect.")
-            }
-        })
-        setTimeout(() => this.loadedConfigurationData(),1000)
+            })
+            setTimeout(() => this.loadedConfigurationData(),1000)
+        }
     }
 
     onNavigatorEvent(event) { // this is the onPress handler for the two buttons together
@@ -288,6 +290,8 @@ class Configuration extends Component{
         }else{
             relay_state = bytes_string.split("")
         }
+        relay_state.reverse();
+
         const row_style = {
             alignItems:"center",
             flexDirection:"row",
@@ -302,35 +306,35 @@ class Configuration extends Component{
                 <View style={{alignItems:"center"}}>
                     <View style={row_style}>
                         <Text style={{width:width-70}}> Relay 1 (W,O/B) </Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[0])} onPress={(value) => this.changeSwitchStatus(value,0)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[0])} onPress={(value) => this.changeSwitchStatus(value,7)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 2 (Y)</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[1])}  onPress={(value) => this.changeSwitchStatus(value,1)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[1])}  onPress={(value) => this.changeSwitchStatus(value,6)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 3 (G)</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[2])} onPress={(value) => this.changeSwitchStatus(value,2)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[2])} onPress={(value) => this.changeSwitchStatus(value,5)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 4 (Y2)</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[3])} onPress={(value) => this.changeSwitchStatus(value,3)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[3])} onPress={(value) => this.changeSwitchStatus(value,4)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 5 (W2,AUX)</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[4])}  onPress={(value) => this.changeSwitchStatus(value,4)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[4])}  onPress={(value) => this.changeSwitchStatus(value,3)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 6 (E)</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[5])} onPress={(value) => this.changeSwitchStatus(value,5)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[5])} onPress={(value) => this.changeSwitchStatus(value,2)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 7</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[6])}  onPress={(value) => this.changeSwitchStatus(value,6)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[6])}  onPress={(value) => this.changeSwitchStatus(value,1)}/>
                     </View>
                     <View style={row_style}>
                         <Text style={{width:width-70}}>Relay 8</Text> 
-                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[7])} onPress={(value) => this.changeSwitchStatus(value,7)}/>
+                        <SWITCH isActivated={this.getTrueOrFalseFromByte(relay_state[7])} onPress={(value) => this.changeSwitchStatus(value,0)}/>
                     </View>
                 </View>
             </View>
@@ -415,88 +419,108 @@ class Configuration extends Component{
             }
             console.log(option_selected)
         }else{
-            Alert.alert("Error","The seconds of the heartbeat are 0.")
+            //Alert.alert("Error","The seconds of the heartbeat are 0.")
         }
     }   
 
     renderFailSafeOptionOn(element){
-        console.log("element",element)
-        let index = element.index
-        let item = element.item
-        let seconds_fail_option = BYTES_TO_INT_LITTLE_ENDIANG(item.slice(0,4))
-        let relay_options = item.slice(4,5)
-        let id = BYTES_TO_HEX(this.props.equipments_paired_with[index]).toUpperCase()
-        
-        if(relay_options.length < 8){
-            relay_state = this.addZerosUntilNumber(relay_options,8).split("")    
-        }else{
-            relay_state = relay_options.split("")
-        }
+        console.log("renderFailSafeOptionOn()",element)
+        if(this.props.equipments_paired_with && this.props.equipments_paired_with.length > 0){
 
-        const row_style = {
-            alignItems:"center",
-            flexDirection:"row",
-            borderBottomWidth:.5,
-            width:width,
-            borderBottomColor:"gray",
-            padding:10
-        }
+            let index = element.index
+            let item = element.item
+            let seconds_fail_option = BYTES_TO_INT_LITTLE_ENDIANG(item.slice(0,4))
+            let relay_options = item.slice(4,5)
+            relay_options = relay_options[0].toString(2)
+            let id = BYTES_TO_HEX(this.props.equipments_paired_with[index]).toUpperCase()
 
-        return(
-            <View>
-                <Text style={{padding:10,fontSize:14}}>
-                    Relay FAILSAFE DEFAULTS - {id}
-                </Text>            
-                <View style={{backgroundColor:"white",borderBottomWidth:1,borderTopWidth:1,padding:10,marginBottom:20}}>
-                    <View style={{alignItems:"center",flexDirection:"row",borderBottomWidth:.5,width:width,borderBottomColor:"gray",padding:10,justifyContent:"space-between"}}>
-                        <Text >
-                            Equipment Failsafe Delay Time : 
-                        </Text>
-                        <Text style={{marginRight:15}}>
-                            {seconds_fail_option} Sec
-                        </Text>
-                    </View>
-                
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}> Relay 1 (W,O/B) </Text> 
-                        <Text>{relay_state[0] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 2 (Y)</Text> 
-                        <Text>{relay_state[1] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 3 (G)</Text> 
-                        <Text>{relay_state[2] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 4 (Y2)</Text> 
-                        <Text>{relay_state[3] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 5 (W2,AUX)</Text> 
-                        <Text>{relay_state[4] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 6 (E)</Text> 
-                        <Text>{relay_state[5] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 7</Text> 
-                        <Text>{relay_state[6] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                    <View style={row_style}>
-                        <Text style={{width:width-90}}>Relay 8</Text> 
-                        <Text>{relay_state[7] == 1 ? "Enabled" : "Disabled"}</Text>
-                    </View>
-                </View>            
-            </View>
-        )
+            if(relay_options.length < 8){
+                relay_state = this.addZerosUntilNumber(relay_options,8).split("")    
+            }else{
+                relay_state = relay_options.split("")
+            }
+
+            relay_state.reverse()
+
+            const row_style = {
+                alignItems:"center",
+                flexDirection:"row",
+                borderBottomWidth:.5,
+                width:width,
+                borderBottomColor:"gray",
+                padding:10
+            }
+
+            return(
+                <View>
+                    <Text style={{padding:10,fontSize:14}}>
+                        Relay FAILSAFE DEFAULTS - {id}
+                    </Text>            
+                    <View style={{backgroundColor:"white",borderBottomWidth:1,borderTopWidth:1,padding:10,marginBottom:20}}>
+                        <View style={{alignItems:"center",flexDirection:"row",borderBottomWidth:.5,width:width,borderBottomColor:"gray",padding:10,justifyContent:"space-between"}}>
+                            <Text >
+                                Equipment Failsafe Delay Time : 
+                            </Text>
+                            <Text style={{marginRight:15}}>
+                                {seconds_fail_option} Sec
+                            </Text>
+                        </View>
+                    
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}> Relay 1 (W,O/B) </Text> 
+                            <Text>{relay_state[0] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 2 (Y)</Text> 
+                            <Text>{relay_state[1] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 3 (G)</Text> 
+                            <Text>{relay_state[2] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 4 (Y2)</Text> 
+                            <Text>{relay_state[3] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 5 (W2,AUX)</Text> 
+                            <Text>{relay_state[4] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 6 (E)</Text> 
+                            <Text>{relay_state[5] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 7</Text> 
+                            <Text>{relay_state[6] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                        <View style={row_style}>
+                            <Text style={{width:width-90}}>Relay 8</Text> 
+                            <Text>{relay_state[7] == 1 ? "Enabled" : "Disabled"}</Text>
+                        </View>
+                    </View>            
+                </View>
+            )
+        }
+        return null
     }
+
 
     updateHeartBeat(value){
       let bytes_time =  DECIMAL_TO_FOUR_BYTES(value)
       this.props.updateHeartBeat(bytes_time)
+    }
+
+    renderFlatList(){
+        if(this.props.equipments_paired_with && this.props.equipments_paired_with.length > 0 && this.props.cloud_equipment_fail_safe_options.length)
+            return (
+                <FlatList 
+                    data={this.props.cloud_equipment_fail_safe_options} 
+                    renderItem={(item) => this.renderFailSafeOptionOn(item)} 
+                    keyExtractor={(item,index) => index}
+                />
+            )
+        return null
     }
 
     renderHeatBeatTimeStuffs(){
@@ -508,28 +532,22 @@ class Configuration extends Component{
                     let time = BYTES_TO_INT_LITTLE_ENDIANG(this.props.heart_beat)
 
                         return (
-                        <View>
                             <View>
-                                <Text style={{padding:20}}>HEARTBEAT TIME</Text>
-                                <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
-                                    <Button text="Off" width={width/9} active={time == 0} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(0)}/>
-                                    <Button text="1m" width={width/9} active={time == 60} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(60)}/>
-                                    <Button text="2m" width={width/9} active={time == 120} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(120)}/>
-                                    <Button text="5m" width={width/9} active={time == 300} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(300)}/>
-                                    <Button text="10m" width={width/9} active={time == 600} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(600)}/>
-                                    <Button text="30m" width={width/9} active={time == 1800} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(1800)}/>
-                                    <Button text="1h" width={width/9} active={time == 3600} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(3600)}/>
-                                    <Button text="2h" width={width/9} active={time == 7200} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(7200)}/>
+                                <View>
+                                    <Text style={{padding:20}}>HEARTBEAT TIME</Text>
+                                    <View style={{flexDirection:"row",alignItems:"center",justifyContent:"center"}}>
+                                        <Button text="Off" width={width/9} active={time == 0} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(0)}/>
+                                        <Button text="1m" width={width/9} active={time == 60} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(60)}/>
+                                        <Button text="2m" width={width/9} active={time == 120} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(120)}/>
+                                        <Button text="5m" width={width/9} active={time == 300} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(300)}/>
+                                        <Button text="10m" width={width/9} active={time == 600} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(600)}/>
+                                        <Button text="30m" width={width/9} active={time == 1800} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(1800)}/>
+                                        <Button text="1h" width={width/9} active={time == 3600} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(3600)}/>
+                                        <Button text="2h" width={width/9} active={time == 7200} marginHorizontal={1} handleTouchButton={() => this.updateHeartBeat(7200)}/>
+                                    </View>
                                 </View>
+                                {this.renderFlatList()}
                             </View>
-                            {this.props.cloud_equipment_fail_safe_options.length && (
-                                <FlatList 
-                                    data={this.props.cloud_equipment_fail_safe_options} 
-                                    renderItem={(item) => this.renderFailSafeOptionOn(item)} 
-                                    keyExtractor={(item,index) => index}
-                                />
-                            )}
-                        </View>
                     )
 
                 }else{
